@@ -4,10 +4,10 @@ using pds_back_end.API;
 namespace pds_back_end.Controllers;
 
 [ApiController]
-[Route("[controller]")]
-public class HomeController : ControllerBase
+[Route("")]
+public class IndexController : ControllerBase
 {
-    [HttpGet(Name = "Test")]
+    [HttpGet(Name = "index")]
     public ApiResponse<string> TestResponse() =>
         new() { Succeed = true, Message = "Bem vindo à API!", Results = "Resultados" };
 }
