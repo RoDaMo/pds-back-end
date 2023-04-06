@@ -25,30 +25,15 @@ public class ChampionshipService
             return errorMessages;
         }
 
-        var result2 = await CreateSendAsync(championship);
-        if(!result2)
-        {
-            errorMessages.Add("Erro ao cadastrar campeonato");
-            return errorMessages;
-        }
+        await CreateSendAsync(championship);
 
         return errorMessages;
     }
 
-    public async Task<bool> CreateSendAsync(Championship championship)
+    public async Task CreateSendAsync(Championship championship)
     {
-        try
-        {
-            var result = await _dbService.EditData(
-                "INSERT INTO championships (id, name, prize, sportsid, initialdate, finaldate) VALUES (@Id, @Name, @Prize, @SportsId, @Initialdate, @Finaldate)",
-                championship);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            return false;
-        }
-        
+        await _dbService.EditData(
+            "INSERT INTO championships (name, prize, sportsid, initialdate, finaldate) VALUES (@Name, @Prize, @SportsId, @Initialdate, @Finaldate)",
+            championship);
     }
 }

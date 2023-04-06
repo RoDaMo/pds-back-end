@@ -19,16 +19,23 @@ public class ChampionshipController : ControllerBase
     public async Task<ApiResponse<List<string>>> CreateAsync([FromBody]Championship championship) 
     {
         var result = new List<string>();
-        
-        result = await _championshipService.CreateValidationAsync(championship);
-        if(result.Any())
+
+        try
         {
+            result = await _championshipService.CreateValidationAsync(championship);
+            if(result.Any())
+            {
+                return new() { Succeed = false, Results = result };
+            }
+
+            result.Add("Campeonato cadastrado");
+            return new() { Succeed = true, Results = result };
+        }
+        catch (ApplicationException ex)
+        {
+            result.Add(ex.Message);
             return new() { Succeed = false, Results = result };
         }
-
-        result.Add("Campeonato cadastrado");
-
-        return new() { Succeed = true, Results = result };
     }
        
 }

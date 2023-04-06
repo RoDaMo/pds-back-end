@@ -15,31 +15,52 @@ public class DbService
 
      public async Task<T> GetAsync<T>(string command, object parms)
     {
-        T result;
+        try
+        {
+            T result;
 
-        result = (await _db.QueryAsync<T>(command, parms).ConfigureAwait(false)).FirstOrDefault();
+            result = (await _db.QueryAsync<T>(command, parms).ConfigureAwait(false)).FirstOrDefault();
 
-        return result;
-
+            return result;  
+        }
+        catch (Exception)
+        {
+            throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+        }
     }
 
     public async Task<List<T>> GetAll<T>(string command, object parms)
     {
+        try
+        {
+            List<T> result = new List<T>();
 
-        List<T> result = new List<T>();
+            result = (await _db.QueryAsync<T>(command, parms)).ToList();
 
-        result = (await _db.QueryAsync<T>(command, parms)).ToList();
-
-        return result;
+            return result; 
+        }
+        catch (Exception)
+        {
+            throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+        }
+        
     }
 
     public async Task<int> EditData(string command, object parms)
     {
-        int result;
+        try
+        {
+            int result;
 
-        result = await _db.ExecuteAsync(command, parms);
+            result = await _db.ExecuteAsync(command, parms);
 
-        return result;
+            return result;
+        }
+        catch (Exception)
+        {
+            throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+        }
+       
     }
 
 }
