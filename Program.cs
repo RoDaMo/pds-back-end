@@ -1,8 +1,12 @@
+using pds_back_end.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<DbService>();
+builder.Services.AddScoped<ChampionshipService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -16,6 +20,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+// string connectionString; 
+// connectionString = builder.Configuration.GetConnectionString("LOCALHOST");
+
+// builder.Services.AddDbContext<AstroContext>(options =>
+//     options.UseNpgsql(connectionString));
 
 app.UseHttpsRedirection();
 
