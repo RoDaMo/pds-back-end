@@ -1,4 +1,11 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
+ARG PGUSER
+ARG PGHOST
+ARG PGDATABASE
+ARG PGPASSWORD
+ARG PGPORT
+ARG CLOUD_ID
+ARG ELASTIC_API_KEY
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
