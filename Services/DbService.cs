@@ -8,9 +8,23 @@ public class DbService
 {
     private readonly IDbConnection _db;
 
-    public DbService(IConfiguration configuration)
+    public DbService(IConfiguration configuration, IWebHostEnvironment environment)
     {
-        _db = new NpgsqlConnection(configuration.GetConnectionString("LOCALHOST"));
+        string connectionString;
+
+        if (environment.IsProduction())
+        {
+            var PGUSER = Environment.GetEnvironmentVariable("PGUSER");
+            var PGPASSWORD = Environment.GetEnvironmentVariable("PGPASSWORD");
+            var PGHOST = Environment.GetEnvironmentVariable("PGHOST");
+            var PGPORT = Environment.GetEnvironmentVariable("PGPORT");
+            var PGDATABASE = Environment.GetEnvironmentVariable("PGDATABASE");
+
+            connectionString = $"User ID={PGUSER};Password={PGPASSWORD};Host={PGHOST};Port={PGPORT};Database={PGDATABASE};";
+        }
+        else connectionString = configuration.GetConnectionString("LOCALHOST");
+
+        _db = new NpgsqlConnection(connectionString);
     }
 
      public async Task<T> GetAsync<T>(string command, object parms)

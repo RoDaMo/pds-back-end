@@ -9,9 +9,11 @@ namespace pds_back_end.Controllers;
 [Route("/Championship")]
 public class ChampionshipController : ControllerBase
 {
+    private readonly ElasticService _elastic;
     private readonly ChampionshipService _championshipService;
-    public ChampionshipController(ChampionshipService championshipService)
+    public ChampionshipController(ChampionshipService championshipService, ElasticService elastic)
     {
+        _elastic = elastic;
         _championshipService = championshipService;
     }
 
@@ -37,6 +39,13 @@ public class ChampionshipController : ControllerBase
             return new() { Succeed = false, Results = result };
         }
     }
-       
+
+
+    [HttpGet(Name = "index")]
+    public async Task<ApiResponse<string>> Index() 
+    {
+        ApiResponse<string> retorno = new() { Succeed = true, Message = "Deu certo", Results = await _elastic.GetClusterHealth()};
+        return retorno;
+    } 
 }
 
