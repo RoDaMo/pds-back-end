@@ -26,4 +26,4 @@ RUN dotnet publish "pds-back-end.csproj" -c Release -o /app/publish /p:UseAppHos
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-CMD ASPNETCORE_URLS=http://*:$PORT dotnet Astromedia.dll
+CMD ASPNETCORE_URLS=http://*:$PORT dotnet pds-back-end.dll
