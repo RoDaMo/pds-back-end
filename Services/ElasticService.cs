@@ -11,9 +11,13 @@ public class ElasticService
     ElasticsearchClientSettings settings;
     if (environment.IsProduction()) 
     {
-      var cloudID = Environment.GetEnvironmentVariable("CLOUD_ID");
-      var apiKey = Environment.GetEnvironmentVariable("ELASTIC_API_KEY");
-      settings = new ElasticsearchClientSettings(cloudID, new ApiKey(apiKey));
+      var CLOUD_ID = Environment.GetEnvironmentVariable("CLOUD_ID");
+      var API_KEY = Environment.GetEnvironmentVariable("ELASTIC_API_KEY");
+      var ELASTIC_USER = Environment.GetEnvironmentVariable("ELASTIC_USER");
+      var ELASTIC_PASSWORD = Environment.GetEnvironmentVariable("ELASTIC_PASSWORD");
+
+      settings = new ElasticsearchClientSettings(CLOUD_ID, new ApiKey(API_KEY))
+        .Authentication(new BasicAuthentication(ELASTIC_USER, ELASTIC_PASSWORD));
     }
     else 
     {

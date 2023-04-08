@@ -12,17 +12,17 @@ public class DbService
     {
         string connectionString;
 
-        if (environment.IsProduction())
-        {
-            var PGUSER = Environment.GetEnvironmentVariable("PGUSER");
-            var PGPASSWORD = Environment.GetEnvironmentVariable("PGPASSWORD");
-            var PGHOST = Environment.GetEnvironmentVariable("PGHOST");
-            var PGPORT = Environment.GetEnvironmentVariable("PGPORT");
-            var PGDATABASE = Environment.GetEnvironmentVariable("PGDATABASE");
+        // if (environment.IsProduction())
+        // {
+            var PGUSER = "postgres";//Environment.GetEnvironmentVariable("PGUSER");
+            var PGPASSWORD = "JI5O1YMZAbroblSXCMmi";//Environment.GetEnvironmentVariable("PGPASSWORD");
+            var PGHOST = "containers-us-west-202.railway.app";//Environment.GetEnvironmentVariable("PGHOST");
+            var PGPORT = "7676";//Environment.GetEnvironmentVariable("PGPORT");
+            var PGDATABASE = "railway";//Environment.GetEnvironmentVariable("PGDATABASE");
 
             connectionString = $"User ID={PGUSER};Password={PGPASSWORD};Host={PGHOST};Port={PGPORT};Database={PGDATABASE};";
-        }
-        else connectionString = configuration.GetConnectionString("LOCALHOST");
+        // }
+        // else connectionString = configuration.GetConnectionString("LOCALHOST");
 
         _db = new NpgsqlConnection(connectionString);
     }
@@ -70,9 +70,9 @@ public class DbService
 
             return result;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+            throw new ApplicationException(ex.Message); //"Houve um erro de conexão, tente novamente mais tarde."
         }
        
     }
