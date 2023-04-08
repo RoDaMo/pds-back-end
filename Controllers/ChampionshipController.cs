@@ -6,7 +6,7 @@ using pds_back_end.Services;
 namespace pds_back_end.Controllers;
 
 [ApiController]
-[Route("/Championship")]
+[Route("/championship")]
 public class ChampionshipController : ControllerBase
 {
     private readonly ElasticService _elastic;
@@ -42,10 +42,16 @@ public class ChampionshipController : ControllerBase
 
 
     [HttpGet(Name = "index")]
-    public async Task<ApiResponse<string>> Index() 
+    public async Task<ApiResponse<List<Championship>>> Index([FromQuery]string name = "") 
     {
-        ApiResponse<string> retorno = new() { Succeed = true, Message = "Deu certo", Results = await _elastic.GetClusterHealth()};
-        return retorno;
+        try
+        {
+            return new() { Succeed = true, Results = await _championshipService.GetByFilter(name)};            
+        }
+        catch (ApplicationException ex)
+        {
+            return new() { Succeed = false, Message = ex.Message };
+        }
     } 
 }
 

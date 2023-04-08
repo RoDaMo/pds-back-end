@@ -5,7 +5,7 @@ namespace pds_back_end.Services;
 
 public class ElasticService 
 {
-  private readonly ElasticsearchClient _client;
+  public readonly ElasticsearchClient _client;
   public ElasticService(IConfiguration configuration, IWebHostEnvironment environment)
   {
     ElasticsearchClientSettings settings;
@@ -21,9 +21,11 @@ public class ElasticService
     }
     else 
     {
-      settings = new ElasticsearchClientSettings(new Uri("https://localhost:9200"))
+      settings = new ElasticsearchClientSettings(new Uri(configuration.GetValue<string>("ElasticURI")))
         .CertificateFingerprint(configuration.GetValue<string>("Fingerprint"))
-        .Authentication(new BasicAuthentication("elastic", configuration.GetValue<string>("Password")));
+        .Authentication(new BasicAuthentication("elastic", configuration.GetValue<string>("Password")))
+        .EnableDebugMode()
+        .PrettyJson();
     }
 
     _client = new ElasticsearchClient(settings);

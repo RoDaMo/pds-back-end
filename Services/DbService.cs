@@ -66,7 +66,7 @@ public class DbService
         {
             int result;
 
-            result = await _db.ExecuteAsync(command, parms);
+            result = await _db.ExecuteScalarAsync<int>(command, parms);
 
             return result;
         }
