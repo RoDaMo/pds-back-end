@@ -6,7 +6,7 @@ using pds_back_end.Services;
 namespace pds_back_end.Controllers;
 
 [ApiController]
-[Route("/Championship")]
+[Route("/Championships")]
 public class ChampionshipController : ControllerBase
 {
     private readonly ElasticService _elastic;
