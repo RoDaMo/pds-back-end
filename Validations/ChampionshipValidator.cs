@@ -18,7 +18,7 @@ public class ChampionshipValidator : AbstractValidator<Championship>
             .NotEmpty()
             .WithMessage("Campo Prêmio não pode ser vazio.");
          RuleFor(c => c.Prize)
-            .Length(2, 20)
+            .Length(3, 20)
             .WithMessage("Campo Prêmio deve ter entre 3 e 20 caracteres.");
 
         RuleFor(c => c.InitialDate)
