@@ -3,10 +3,10 @@ using pds_back_end.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 builder.Services.AddScoped<DbService>();
 builder.Services.AddScoped<ChampionshipService>();
+builder.Services.AddSingleton<RedisService>();
 builder.Services.AddSingleton<ElasticService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

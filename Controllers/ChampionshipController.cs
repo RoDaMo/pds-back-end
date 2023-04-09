@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using pds_back_end.API;
 using pds_back_end.Models;
@@ -9,12 +10,12 @@ namespace pds_back_end.Controllers;
 [Route("/championship")]
 public class ChampionshipController : ControllerBase
 {
-    private readonly ElasticService _elastic;
     private readonly ChampionshipService _championshipService;
-    public ChampionshipController(ChampionshipService championshipService, ElasticService elastic)
+    private readonly RedisService _redisService;
+    public ChampionshipController(ChampionshipService championshipService, RedisService redisService)
     {
-        _elastic = elastic;
         _championshipService = championshipService;
+        _redisService = redisService;
     }
 
     [HttpPost(Name = "create")]
@@ -46,7 +47,21 @@ public class ChampionshipController : ControllerBase
     {
         try
         {
-            return new() { Succeed = true, Results = await _championshipService.GetByFilter(name)};            
+            List<Championship> retorno;
+            var redisDb = _redisService.Database;
+            
+            if (redisDb.KeyExists(name)) 
+            {
+                var algo = await redisDb.StringGetAsync(name);
+                retorno = JsonSerializer.Deserialize<List<Championship>>(algo.ToString());
+            }
+            else 
+            {
+                retorno = await _championshipService.GetByFilter(name);
+                await redisDb.StringSetAsync(name, JsonSerializer.Serialize(retorno), TimeSpan.FromMinutes(20));
+            }
+
+            return new() { Succeed = true, Results = retorno };            
         }
         catch (ApplicationException ex)
         {
