@@ -11,14 +11,14 @@ public class ChampionshipValidator : AbstractValidator<Championship>
             .NotEmpty()
             .WithMessage("Campo Nome não pode ser vazio.");
          RuleFor(c => c.Name)
-            .Length(2, 20)
+            .Length(4, 50)
             .WithMessage("Campo Nome deve ter entre 4 e 50 caracteres.");
         
         RuleFor(c => c.Prize)
             .NotEmpty()
             .WithMessage("Campo Prêmio não pode ser vazio.");
          RuleFor(c => c.Prize)
-            .Length(2, 20)
+            .Length(3, 20)
             .WithMessage("Campo Prêmio deve ter entre 3 e 20 caracteres.");
 
         RuleFor(c => c.InitialDate)

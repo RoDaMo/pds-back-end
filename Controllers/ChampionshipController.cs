@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using pds_back_end.API;
 using pds_back_end.Models;
@@ -6,15 +7,15 @@ using pds_back_end.Services;
 namespace pds_back_end.Controllers;
 
 [ApiController]
-[Route("/Championships")]
+[Route("/championships")]
 public class ChampionshipController : ControllerBase
 {
-    private readonly ElasticService _elastic;
     private readonly ChampionshipService _championshipService;
-    public ChampionshipController(ChampionshipService championshipService, ElasticService elastic)
+    private readonly RedisService _redisService;
+    public ChampionshipController(ChampionshipService championshipService, RedisService redisService)
     {
-        _elastic = elastic;
         _championshipService = championshipService;
+        _redisService = redisService;
     }
 
     [HttpPost(Name = "create")]
@@ -42,10 +43,30 @@ public class ChampionshipController : ControllerBase
 
 
     [HttpGet(Name = "index")]
-    public async Task<ApiResponse<string>> Index() 
+    public async Task<ApiResponse<List<Championship>>> Index([FromQuery]string name = "") 
     {
-        ApiResponse<string> retorno = new() { Succeed = true, Message = "Deu certo", Results = await _elastic.GetClusterHealth()};
-        return retorno;
+        try
+        {
+            List<Championship> retorno;
+            var redisDb = _redisService.Database;
+            
+            if (redisDb.KeyExists(name)) 
+            {
+                var algo = await redisDb.StringGetAsync(name);
+                retorno = JsonSerializer.Deserialize<List<Championship>>(algo.ToString());
+            }
+            else 
+            {
+                retorno = await _championshipService.GetByFilter(name);
+                await redisDb.StringSetAsync(name, JsonSerializer.Serialize(retorno), TimeSpan.FromMinutes(20));
+            }
+
+            return new() { Succeed = true, Results = retorno };            
+        }
+        catch (ApplicationException ex)
+        {
+            return new() { Succeed = false, Message = ex.Message };
+        }
     } 
 }
 
