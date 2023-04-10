@@ -7,7 +7,7 @@ using pds_back_end.Services;
 namespace pds_back_end.Controllers;
 
 [ApiController]
-[Route("/championship")]
+[Route("/championships")]
 public class ChampionshipController : ControllerBase
 {
     private readonly ChampionshipService _championshipService;
