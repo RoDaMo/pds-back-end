@@ -1,7 +1,7 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 
-namespace pds_back_end.Services;
+namespace PlayOffsApi.Services;
 
 public class ElasticService 
 {

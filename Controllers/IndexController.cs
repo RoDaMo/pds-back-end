@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using pds_back_end.API;
-using pds_back_end.Services;
+using PlayOffsApi.API;
+using PlayOffsApi.Services;
 
-namespace pds_back_end.Controllers;
+namespace PlayOffsApi.Controllers;
 
 [ApiController]
 [Route("/")]

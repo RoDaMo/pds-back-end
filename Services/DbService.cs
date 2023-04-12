@@ -2,7 +2,7 @@ using System.Data;
 using Dapper;
 using Npgsql;
 
-namespace pds_back_end.Services;
+namespace PlayOffsApi.Services;
 
 public class DbService
 {

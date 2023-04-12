@@ -1,4 +1,4 @@
-﻿namespace pds_back_end.API;
+﻿namespace PlayOffsApi.API;
 
 public class ApiResponse<T>
 {

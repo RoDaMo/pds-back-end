@@ -1,13 +1,13 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
-using pds_back_end.API;
-using pds_back_end.Models;
-using pds_back_end.Services;
+using PlayOffsApi.API;
+using PlayOffsApi.Models;
+using PlayOffsApi.Services;
 
-namespace pds_back_end.Controllers;
+namespace PlayOffsApi.Controllers;
 
 [ApiController]
-[Route("/championship")]
+[Route("/championships")]
 public class ChampionshipController : ControllerBase
 {
     private readonly ChampionshipService _championshipService;
@@ -48,17 +48,15 @@ public class ChampionshipController : ControllerBase
         try
         {
             List<Championship> retorno;
-            var redisDb = _redisService.Database;
-            
-            if (redisDb.KeyExists(name)) 
-            {
-                var algo = await redisDb.StringGetAsync(name);
-                retorno = JsonSerializer.Deserialize<List<Championship>>(algo.ToString());
-            }
+            await using var redisDb = await _redisService.GetDatabase();
+            var cachePagina = await redisDb.GetAsync<string>(name);
+
+            if (!string.IsNullOrEmpty(cachePagina)) 
+                retorno = JsonSerializer.Deserialize<List<Championship>>(cachePagina.ToString());
             else 
             {
                 retorno = await _championshipService.GetByFilter(name);
-                await redisDb.StringSetAsync(name, JsonSerializer.Serialize(retorno), TimeSpan.FromMinutes(20));
+                await redisDb.SetAsync<string>(name, JsonSerializer.Serialize(retorno), TimeSpan.FromMinutes(20));
             }
 
             return new() { Succeed = true, Results = retorno };            
