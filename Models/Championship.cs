@@ -1,4 +1,4 @@
-namespace pds_back_end.Models;
+namespace PlayOffsApi.Models;
 
 public class Championship
 {

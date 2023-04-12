@@ -1,7 +1,7 @@
 using FluentValidation;
-using pds_back_end.Models;
+using PlayOffsApi.Models;
 
-namespace pds_back_end.Controllers.Validations;
+namespace PlayOffsApi.Controllers.Validations;
 
 public class ChampionshipValidator : AbstractValidator<Championship>
 {

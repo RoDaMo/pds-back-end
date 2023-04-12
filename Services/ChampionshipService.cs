@@ -1,9 +1,9 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.QueryDsl;
-using pds_back_end.Controllers.Validations;
-using pds_back_end.Models;
+using PlayOffsApi.Controllers.Validations;
+using PlayOffsApi.Models;
 
-namespace pds_back_end.Services;
+namespace PlayOffsApi.Services;
 
 public class ChampionshipService
 {
