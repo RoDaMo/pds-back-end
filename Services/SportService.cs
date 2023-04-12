@@ -1,6 +1,6 @@
-using pds_back_end.Models;
+using PlayOffsApi.Models;
 
-namespace pds_back_end.Services;
+namespace PlayOffsApi.Services;
 
 public class SportService
 {

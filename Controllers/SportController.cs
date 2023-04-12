@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using pds_back_end.API;
-using pds_back_end.Services;
-using pds_back_end.Models;
+using PlayOffsApi.API;
+using PlayOffsApi.Services;
+using PlayOffsApi.Models;
 
-namespace pds_back_end.Controllers;
+namespace PlayOffsApi.Controllers;
 
 [ApiController]
 [Route("/Sports")]
