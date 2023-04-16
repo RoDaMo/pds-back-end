@@ -17,16 +17,16 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["pds-back-end.csproj", "."]
-RUN dotnet restore "./pds-back-end.csproj"
+COPY ["PlayOffsApi.csproj", "."]
+RUN dotnet restore "./PlayOffsApi.csproj"
 COPY . .
 WORKDIR "/src/."
-RUN dotnet build "pds-back-end.csproj" -c Release -o /app/build
+RUN dotnet build "PlayOffsApi.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "pds-back-end.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "PlayOffsApi.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-CMD ASPNETCORE_URLS=http://*:$PORT dotnet pds-back-end.dll
+CMD ASPNETCORE_URLS=http://*:$PORT dotnet PlayOffsApi.dll
