@@ -1,5 +1,6 @@
 using FluentValidation;
 using PlayOffsApi.Models;
+using Resource = PlayOffsApi.Resources.Championship;
 
 namespace PlayOffsApi.Controllers.Validations;
 
@@ -9,30 +10,30 @@ public class ChampionshipValidator : AbstractValidator<Championship>
     {
         RuleFor(c => c.Name)
             .NotEmpty()
-            .WithMessage("Campo Nome não pode ser vazio.");
-         RuleFor(c => c.Name)
-            .Length(4, 50)
-            .WithMessage("Campo Nome deve ter entre 4 e 50 caracteres.");
-        
+            .WithMessage(Resource.NameNotNull);
+        RuleFor(c => c.Name)
+           .Length(4, 50)
+           .WithMessage(Resource.NameCharRange);
+
         RuleFor(c => c.Prize)
             .NotEmpty()
-            .WithMessage("Campo Prêmio não pode ser vazio.");
-         RuleFor(c => c.Prize)
-            .Length(3, 20)
-            .WithMessage("Campo Prêmio deve ter entre 3 e 20 caracteres.");
+            .WithMessage(Resource.PrizeNotNull);
+        RuleFor(c => c.Prize)
+           .Length(3, 20)
+           .WithMessage(Resource.PrizeCharRange);
 
         RuleFor(c => c.InitialDate)
             .NotEmpty()
-            .WithMessage("Campo Data Inicial não pode ser vazio.");
+            .WithMessage(Resource.InitialDateNotNull);
         RuleFor(c => c.InitialDate)
             .GreaterThanOrEqualTo(c => DateTime.UtcNow.Date)
-            .WithMessage("Campo Data Inicial não pode ser anterior a hoje.");
+            .WithMessage(Resource.InitialDateRange);
         RuleFor(c => c.InitialDate)
             .LessThanOrEqualTo(c => c.FinalDate)
-            .WithMessage("Campo Data Inicial não pode ser posterior à data final.");
+            .WithMessage(Resource.FinalDateRange);
 
-         RuleFor(c => c.FinalDate)
-            .NotEmpty()
-            .WithMessage("Campo Data Final não pode ser vazio.");
+        RuleFor(c => c.FinalDate)
+           .NotEmpty()
+           .WithMessage(Resource.FinalDateNotNull);
     }
 }

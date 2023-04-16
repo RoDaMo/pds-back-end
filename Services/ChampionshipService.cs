@@ -1,7 +1,6 @@
-using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.QueryDsl;
 using PlayOffsApi.Controllers.Validations;
 using PlayOffsApi.Models;
+using Resource = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Services;
 
@@ -21,7 +20,7 @@ public class ChampionshipService
         var errorMessages = new List<string>();
 
         var championshipValidator = new ChampionshipValidator();
-    
+
         var result = championshipValidator.Validate(championship);
 
         if (!result.IsValid)
@@ -44,14 +43,18 @@ public class ChampionshipService
         var resultado = await _elasticService._client.IndexAsync(championship, INDEX);
 
         if (!resultado.IsValidResponse)
-            throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+            throw new ApplicationException(Resource.GenericErrorMessage);
     }
 
-    public async Task<List<Championship>> GetByFilter(string name) 
-    {
-        var request = new Action<SearchRequestDescriptor<Championship>>(el => { // request = new Action<SearchRequestDescriptor<Championship>>(el => el.Index(INDEX).From(0).Size(10));
+    public async Task<List<Championship>> GetByFilterValidationAsync(string name)
+        => await GetByFilterSendAsync(name);
+
+    public async Task<List<Championship>> GetByFilterSendAsync(string name)
+        => await _elasticService.SearchAsync<Championship>(el =>
+        {
             el.Index(INDEX).From(0).Size(10);
-            if (!string.IsNullOrWhiteSpace(name)) {
+            if (!string.IsNullOrWhiteSpace(name))
+            {
                 el.Query(q => q
                     .MatchPhrasePrefix(m => m
                         .Query(name)
@@ -60,12 +63,4 @@ public class ChampionshipService
                 );
             }
         });
-
-        var resposta = await _elasticService._client.SearchAsync<Championship>(request);
-
-        if (!resposta.IsValidResponse) 
-            throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
-
-        return resposta.Documents.ToList();
-    }
 }

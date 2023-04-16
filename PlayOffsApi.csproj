@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>PlayOffsApi</RootNamespace>
+    <UserSecretsId>f4ae324d-ecbd-4211-86b6-58ebf9bcfd74</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <DockerfileContext>.</DockerfileContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.0.123" />
+    <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.0.10" />
+    <PackageReference Include="FluentValidation" Version="11.5.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Localization" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Localization" Version="7.0.5" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
+    <PackageReference Include="Npgsql" Version="7.0.2" />
+    <PackageReference Include="ServiceStack.Redis" Version="6.8.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Resources\Validations\Championship\Championship.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Championship.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Validations\Generic\Generic.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Generic.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\Validations\Championship\Championship.en.resx">
+      <Generator></Generator>
+      <CustomToolNamespace>PlayOffsApi.Resources</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Validations\Championship\Championship.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Championship.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>PlayOffsApi.Resources</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Validations\Generic\Generic.en.resx">
+      <CustomToolNamespace>PlayOffsApi.Resources</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Validations\Generic\Generic.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Generic.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>PlayOffsApi.Resources</CustomToolNamespace>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

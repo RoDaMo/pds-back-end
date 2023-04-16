@@ -1,8 +1,9 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using System.Text.Json;
+using Resource = PlayOffsApi.Resources.Championship;
 
 namespace PlayOffsApi.Controllers;
 
@@ -19,19 +20,19 @@ public class ChampionshipController : ControllerBase
     }
 
     [HttpPost(Name = "create")]
-    public async Task<ApiResponse<List<string>>> CreateAsync([FromBody]Championship championship) 
+    public async Task<ApiResponse<List<string>>> CreateAsync([FromBody] Championship championship)
     {
         var result = new List<string>();
 
         try
         {
             result = await _championshipService.CreateValidationAsync(championship);
-            if(result.Any())
+            if (result.Any())
             {
                 return new() { Succeed = false, Results = result };
             }
 
-            result.Add("Campeonato cadastrado");
+            result.Add(Resource.ChampionshipAdded);
             return new() { Succeed = true, Results = result };
         }
         catch (ApplicationException ex)
@@ -43,7 +44,7 @@ public class ChampionshipController : ControllerBase
 
 
     [HttpGet(Name = "index")]
-    public async Task<ApiResponse<List<Championship>>> Index([FromQuery]string name = "") 
+    public async Task<ApiResponse<List<Championship>>> Index([FromQuery] string name = "")
     {
         try
         {
@@ -51,20 +52,20 @@ public class ChampionshipController : ControllerBase
             await using var redisDb = await _redisService.GetDatabase();
             var cachePagina = await redisDb.GetAsync<string>(name);
 
-            if (!string.IsNullOrEmpty(cachePagina)) 
+            if (!string.IsNullOrEmpty(cachePagina))
                 retorno = JsonSerializer.Deserialize<List<Championship>>(cachePagina.ToString());
-            else 
+            else
             {
-                retorno = await _championshipService.GetByFilter(name);
-                await redisDb.SetAsync<string>(name, JsonSerializer.Serialize(retorno), TimeSpan.FromMinutes(20));
+                retorno = await _championshipService.GetByFilterValidationAsync(name);
+                await redisDb.SetAsync(name, JsonSerializer.Serialize(retorno), TimeSpan.FromMinutes(20));
             }
 
-            return new() { Succeed = true, Results = retorno };            
+            return new() { Succeed = true, Results = retorno };
         }
         catch (ApplicationException ex)
         {
             return new() { Succeed = false, Message = ex.Message };
         }
-    } 
+    }
 }
 
