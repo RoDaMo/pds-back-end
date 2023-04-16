@@ -52,7 +52,7 @@ public class ChampionshipService
     public async Task<List<Championship>> GetByFilterSendAsync(string name)
         => await _elasticService.SearchAsync<Championship>(el =>
         {
-            el.Index(INDEX).From(0);
+            el.Index(INDEX).From(0).Size(999);
             if (!string.IsNullOrWhiteSpace(name))
             {
                 el.Query(q => q
