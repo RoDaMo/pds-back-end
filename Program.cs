@@ -17,17 +17,17 @@ builder.Services.AddScoped<SportService>();
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
-    var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("pt-BR") };
+	var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("pt-BR") };
 
-    options.DefaultRequestCulture = new RequestCulture("pt-BR");
-    options.SupportedCultures = supportedCultures;
-    options.SupportedUICultures = supportedCultures;
-    options.AddInitialRequestCultureProvider(new CustomRequestCultureProvider(async context =>
-    {
-        var acceptLanguageHeader = context.Request.Headers["Accept-Language"].ToString();
-        var culture = GetTrueLanguage(acceptLanguageHeader);
-        return new ProviderCultureResult(culture);
-    }));
+	options.DefaultRequestCulture = new RequestCulture("pt-BR");
+	options.SupportedCultures = supportedCultures;
+	options.SupportedUICultures = supportedCultures;
+	options.AddInitialRequestCultureProvider(new CustomRequestCultureProvider(async context =>
+	{
+		var acceptLanguageHeader = context.Request.Headers["Accept-Language"].ToString();
+		var culture = GetTrueLanguage(acceptLanguageHeader);
+		return new ProviderCultureResult(culture);
+	}));
 });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -35,12 +35,12 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin();
-        policy.AllowAnyHeader();
-        policy.AllowAnyMethod();
-    });
+	options.AddDefaultPolicy(policy =>
+	{
+		policy.AllowAnyOrigin();
+		policy.AllowAnyHeader();
+		policy.AllowAnyMethod();
+	});
 });
 
 var app = builder.Build();
@@ -48,8 +48,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+	app.UseSwagger();
+	app.UseSwaggerUI();
 }
 
 // string connectionString; 
@@ -68,7 +68,7 @@ app.Run();
 
 static string GetTrueLanguage(string falseLanguage) => falseLanguage switch
 {
-    "ptbr" => "pt-BR",
-    "en" => "en",
-    _ => "pt-BR",
+	"ptbr" => "pt-BR",
+	"en" => "en",
+	_ => "pt-BR",
 };
