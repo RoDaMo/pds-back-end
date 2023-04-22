@@ -1,5 +1,6 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
+using System.Collections.Specialized;
 using Resource = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Services;
@@ -12,13 +13,14 @@ public class ElasticService
 		ElasticsearchClientSettings settings;
 		if (environment.IsProduction())
 		{
-			var CLOUD_ID = Environment.GetEnvironmentVariable("CLOUD_ID");
-			var API_KEY = Environment.GetEnvironmentVariable("ELASTIC_API_KEY");
-			var ELASTIC_USER = Environment.GetEnvironmentVariable("ELASTIC_USER");
-			var ELASTIC_PASSWORD = Environment.GetEnvironmentVariable("ELASTIC_PASSWORD");
+			var ELASTIC_KEY = Environment.GetEnvironmentVariable("ELASTIC_KEY");
+			var ELASTIC_URL = Environment.GetEnvironmentVariable("ELASTIC_URL");
 
-			settings = new ElasticsearchClientSettings(CLOUD_ID, new ApiKey(API_KEY))
-				.Authentication(new BasicAuthentication(ELASTIC_USER, ELASTIC_PASSWORD));
+			settings = new ElasticsearchClientSettings(new Uri(ELASTIC_URL))
+				.GlobalHeaders(new NameValueCollection
+				{
+					{ "Authorization", ELASTIC_KEY }
+				});
 		}
 		else
 		{
