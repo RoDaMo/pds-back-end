@@ -13,6 +13,7 @@ builder.Services.AddScoped<ChampionshipService>();
 builder.Services.AddSingleton<RedisService>();
 builder.Services.AddSingleton<ElasticService>();
 builder.Services.AddScoped<SportService>();
+builder.Services.AddScoped<TeamService>();
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.Configure<RequestLocalizationOptions>(options =>
