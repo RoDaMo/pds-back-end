@@ -1,5 +1,5 @@
 using PlayOffsApi.Models;
-using Resource = PlayOffsApi.Resources.Generic;
+using PlayOffsApi.Validations;
 
 namespace PlayOffsApi.Services;
 
@@ -20,15 +20,15 @@ public class TeamService
 	{
 		var errorMessages = new List<string>();
 
-		// var teamValidator = new TeamValidator();
+		var teamValidator = new TeamValidator();
 
-		// var result = teamValidator.Validate(team);
+		var result = teamValidator.Validate(team);
 
-		// if (!result.IsValid)
-		// {
-		// 	errorMessages = result.Errors.Select(x => x.ErrorMessage).ToList();
-		// 	return errorMessages;
-		// }
+		if (!result.IsValid)
+		{
+			errorMessages = result.Errors.Select(x => x.ErrorMessage).ToList();
+			return errorMessages;
+		}
 
 		await CreateSendAsync(team);
 
@@ -38,12 +38,9 @@ public class TeamService
 	public async Task CreateSendAsync(Team team)
 	{
 		team.Id = await _dbService.EditData(
-			"INSERT INTO teams (emblem, uniformHome, uniformWay, deleted, sportsid) VALUES (@Emblem, @UniformHome, @UniformWay, @Deleted, @SportsId) RETURNING Id;",
+			"INSERT INTO teams (emblem, uniformHome, uniformWay, deleted, sportsid, name) VALUES (@Emblem, @UniformHome, @UniformWay, @Deleted, @SportsId, @Name) RETURNING Id;",
 			team);
-
-		// var resultado = await _elasticService._client.IndexAsync(team, INDEX);
-
-		// if (!resultado.IsValidResponse)
-		// 	throw new ApplicationException(Resource.GenericErrorMessage);
 	}
+
+	
 }
