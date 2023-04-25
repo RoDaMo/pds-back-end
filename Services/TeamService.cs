@@ -45,4 +45,8 @@ public class TeamService
 	public async Task<List<Team>> GetAllValidationAsync() => await GetAllSendAsync();
 
 	public async Task<List<Team>> GetAllSendAsync() => await _dbService.GetAll<Team>("SELECT * FROM teams", new { });
+
+	public async Task<Team> GetByIdValidationAsync(int id) => await GetByIdSendAsync(id);
+
+	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id", new {id});
 }

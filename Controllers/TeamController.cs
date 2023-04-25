@@ -54,4 +54,19 @@ public class TeamController : ApiBaseController
             return ApiBadRequest(ex.Message);
         }
     }
+
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> Show(int id)
+    {
+        try
+        {
+            var result = await _teamService.GetByIdValidationAsync(id);
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            return ApiBadRequest(ex.Message);
+        }
+    }
 }
