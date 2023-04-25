@@ -30,7 +30,6 @@ public class TeamController : ApiBaseController
                 return ApiOk(result, false);
             }
 
-            // result.Add(Resource.ChampionshipAdded);
             return ApiOk(result);
         }
 
@@ -38,6 +37,21 @@ public class TeamController : ApiBaseController
         {
             result.Add(ex.Message);
             return ApiBadRequest(result);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        try
+        {
+            var result = await _teamService.GetAllValidationAsync();
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            return ApiBadRequest(ex.Message);
         }
     }
 }

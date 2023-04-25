@@ -42,5 +42,7 @@ public class TeamService
 			team);
 	}
 
-	
+	public async Task<List<Team>> GetAllValidationAsync() => await GetAllSendAsync();
+
+	public async Task<List<Team>> GetAllSendAsync() => await _dbService.GetAll<Team>("SELECT * FROM teams", new { });
 }
