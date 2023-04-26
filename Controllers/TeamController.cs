@@ -61,6 +61,11 @@ public class TeamController : ApiBaseController
         try
         {
             var result = await _teamService.GetByIdValidationAsync(id);
+
+            if(result is null)
+            {
+                return ApiOk(result, false);
+            }
             return ApiOk(result);
         }
 
