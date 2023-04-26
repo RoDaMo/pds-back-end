@@ -25,5 +25,12 @@ public class TeamValidator : AbstractValidator<Team>
 		RuleFor(t => t.UniformWay)
 			.NotEmpty()
 			.WithMessage("Campo Uniforme de Fora de Casa não pode ser vazio.");
+
+		RuleFor(t => t.SportsId)
+			.NotEmpty()
+			.WithMessage("Campo Esporte não pode ser vazio.");
+		RuleFor(t => t.SportsId)
+			.Must(t => t.Equals(1) || t.Equals(2))
+			.WithMessage("Campo Esporte deve ser preenchido com vôlei ou futebol.");
 	}
 }

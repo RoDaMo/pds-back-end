@@ -35,5 +35,12 @@ public class ChampionshipValidator : AbstractValidator<Championship>
 		RuleFor(c => c.FinalDate)
 			 .NotEmpty()
 			 .WithMessage(Resource.FinalDateNotNull);
+
+		RuleFor(c => c.SportsId)
+			.NotEmpty()
+			.WithMessage("Campo Esporte não pode ser vazio.");
+		RuleFor(c => c.SportsId)
+			.Must(c => c.Equals(1) || c.Equals(2))
+			.WithMessage("Campo Esporte deve ser preenchido com Vôlei ou futebol.");
 	}
 }
