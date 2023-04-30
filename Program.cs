@@ -46,6 +46,7 @@ builder.Services.AddScoped<ChampionshipService>();
 builder.Services.AddSingleton<RedisService>();
 builder.Services.AddSingleton<ElasticService>();
 builder.Services.AddScoped<SportService>();
+builder.Services.AddScoped<TeamService>();
 builder.Services.AddSingleton(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), CRYPT_KEY));
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
