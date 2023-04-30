@@ -20,12 +20,16 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			var token = await Task.Run(() => _authService.GenerateJwtToken(user.Id, user.Email));
-			return ApiOk<string>(token);
+			user = await _authService.VerifyCredentials(user);
+
+			if (user.Id != Guid.Empty)
+				return ApiOk<string>(_authService.GenerateJwtToken(user.Id, user.Username));
+
+			return ApiUnathorizedRequest("Nome de usuário ou senha incorreta.");
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex, "Erro");
+			return ApiBadRequest(ex.Message, "Erro");
 		}
 	}
 
@@ -40,7 +44,9 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex, "Erro");
+			return ApiBadRequest(ex.Message, "Erro");
 		}
 	}
+
+	
 }
