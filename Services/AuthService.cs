@@ -23,20 +23,20 @@ public class AuthService
 		_criptKey = criptKey;
 	}
 
-	public string GenerateJwtToken(string userId, string email)
+	public string GenerateJwtToken(Guid userId, string username)
 	{
 		var tokenHandler = new JwtSecurityTokenHandler();
 
 		var claims = new[]
 		{
-				new Claim(JwtRegisteredClaimNames.Sub, userId),
-				new Claim(JwtRegisteredClaimNames.UniqueName, email),
+				new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+				new Claim(JwtRegisteredClaimNames.UniqueName, username),
 				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 		};
 
 		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-		var expires = DateTime.UtcNow.AddMinutes(60);
+		var expires = DateTime.UtcNow.AddHours(48);
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
@@ -51,6 +51,8 @@ public class AuthService
 	}
 
 	private static string EncryptPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password);
+
+	private static bool VerifyEncryptedPassword(string password, string encryptedPassword) => BCrypt.Net.BCrypt.Verify(password, encryptedPassword);
 
 	public async Task RegisterUser(User newUser)
 	{
@@ -96,5 +98,14 @@ public class AuthService
 		using StreamReader streamReader = new StreamReader(cryptoStream);
 
 		return streamReader.ReadToEnd();
+	}
+
+	public async Task<User> VerifyCredentials(User user)
+	{
+		var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash FROM users WHERE Username=@Username;", user);
+		if (VerifyEncryptedPassword(user.Password, actualUser.PasswordHash))
+			user.Id = actualUser.Id;
+
+		return user;
 	}
 }
