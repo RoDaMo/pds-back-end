@@ -12,12 +12,14 @@ var config = builder.Configuration;
 var ISSUER = config["JwtSettings:Issuer"];
 var AUDIENCE = config["JwtSettings:Audience"];
 var KEY = config["JwtSettings:Key"];
+var CRYPT_KEY = config["CryptKey"].ToUtf8Bytes();
 
 if (builder.Environment.IsProduction())
 {
 	ISSUER = Environment.GetEnvironmentVariable("AUTH_ISSUER");
 	AUDIENCE = Environment.GetEnvironmentVariable("AUTH_AUDIENCE");
 	KEY = Environment.GetEnvironmentVariable("AUTH_KEY");
+	CRYPT_KEY = Environment.GetEnvironmentVariable("CRYPT_KEY").ToUtf8Bytes();
 }
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(con =>
@@ -39,12 +41,12 @@ builder.Services.AddAuthorization();
 // Add services to the container.
 builder.Services.AddControllers();
 
-builder.Services.AddScoped<DbService>();
+builder.Services.AddSingleton<DbService>();
 builder.Services.AddScoped<ChampionshipService>();
 builder.Services.AddSingleton<RedisService>();
 builder.Services.AddSingleton<ElasticService>();
 builder.Services.AddScoped<SportService>();
-builder.Services.AddSingleton(auth => new AuthService(KEY, ISSUER, AUDIENCE));
+builder.Services.AddSingleton(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), CRYPT_KEY));
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.Configure<RequestLocalizationOptions>(options =>
