@@ -60,7 +60,7 @@ public class AuthService
 		await _dbService.EditData("INSERT INTO users (Name, Username, PasswordHash, EmailHash, Deleted, Birthday) VALUES (@Name, @Username, @PasswordHash, @EmailHash, @Deleted, @Birthday)", newUser);
 	}
 
-	public string EncryptEmail(string plainText)
+	private string EncryptEmail(string plainText)
 	{
 		using Aes aes = Aes.Create();
 		aes.Key = _criptKey;
@@ -80,7 +80,7 @@ public class AuthService
 		return Convert.ToBase64String(memoryStream.ToArray());
 	}
 
-	public string DecryptEmail(string cipherText)
+	private string DecryptEmail(string cipherText)
 	{
 		byte[] cipherData = Convert.FromBase64String(cipherText);
 
