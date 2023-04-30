@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
@@ -19,6 +20,7 @@ public class ChampionshipController : ApiBaseController
     _redisService = redisService;
   }
 
+  [Authorize]
   [HttpPost(Name = "create")]
   public async Task<IActionResult> CreateAsync([FromBody] Championship championship)
   {
