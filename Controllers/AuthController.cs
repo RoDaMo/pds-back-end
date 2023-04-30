@@ -28,4 +28,19 @@ public class AuthController : ApiBaseController
 			return ApiBadRequest(ex, "Erro");
 		}
 	}
+
+	[HttpPost]
+	[Route("/auth/register")]
+	public async Task<IActionResult> RegisterUser(User user)
+	{
+		try
+		{
+			await _authService.RegisterUser(user);
+			return ApiOk("Usuário cadastrado com sucesso");
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex, "Erro");
+		}
+	}
 }

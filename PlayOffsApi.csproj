@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Dapper" Version="2.0.123" />
     <PackageReference Include="Elastic.Clients.Elasticsearch" Version="8.0.10" />
     <PackageReference Include="FluentValidation" Version="11.5.1" />

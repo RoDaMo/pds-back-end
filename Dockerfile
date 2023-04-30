@@ -12,6 +12,7 @@ ARG REDIS_URL
 ARG AUTH_KEY
 ARG AUTH_ISSUER
 ARG AUTH_AUDIENCE
+ARG CRYPT_KEY
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
