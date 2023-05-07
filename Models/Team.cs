@@ -9,14 +9,27 @@ public class Team
     public bool Deleted{ get; set; }
     public int SportsId { get; set; }
     public string Name { get; set; }
+    public Guid ManagersId { get; set; }
 
-	public Team(string emblem, string uniformHome, string uniformWay, string name)
+	public Team(string emblem, string uniformHome, string uniformWay, string name, Guid managersId)
 	{
 		Emblem = emblem;
         UniformHome = uniformHome;
         UniformWay = uniformWay;
         Deleted = false;
         Name = name;
+        ManagersId = managersId;
+	}
+
+    public Team(string emblem, string uniformHome, string uniformWay, int sportsId, string name, Guid managersId)
+	{
+		Emblem = emblem;
+        UniformHome = uniformHome;
+        UniformWay = uniformWay;
+        Deleted = false;
+        SportsId = sportsId;
+        Name = name;
+        ManagersId = managersId;
 	}
 
 	public Team() { }

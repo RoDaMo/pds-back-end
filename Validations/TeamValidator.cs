@@ -1,9 +1,9 @@
 using FluentValidation;
-using PlayOffsApi.Models;
+using PlayOffsApi.DTO;
 
 namespace PlayOffsApi.Validations;
 
-public class TeamValidator : AbstractValidator<Team>
+public class TeamValidator : AbstractValidator<TeamDTO>
 {
     public TeamValidator()
 	{
@@ -32,5 +32,13 @@ public class TeamValidator : AbstractValidator<Team>
 		RuleFor(t => t.SportsId)
 			.Must(t => t.Equals(1) || t.Equals(2))
 			.WithMessage("Campo Esporte deve ser preenchido com vôlei ou futebol.");
+		
+		RuleFor(t => t.Cpf)
+			.NotEmpty()
+			.WithMessage("Campo CPF não pode ser vazio.");
+		RuleFor(t => t.Cpf)
+			.Length(11, 11)
+			.WithMessage("Campo CPF deve ter 11 caracteres.");
+		
 	}
 }
