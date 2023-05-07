@@ -11,4 +11,5 @@ public class User
 	public string EmailHash { get; set; }
 	public bool Deleted { get; set; }
 	public DateTime Birthday { get; set; }
+	public string Cpf { get; set; }
 }

@@ -1,16 +1,20 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
-using PlayOffsApi.Models;
+using PlayOffsApi.DTO;
 using PlayOffsApi.Services;
 
 namespace PlayOffsApi.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("/teams")]
 public class TeamController : ApiBaseController
 {
     private readonly TeamService _teamService;
     private readonly RedisService _redisService;
+
     public TeamController(TeamService teamService, RedisService redisService)
     {
         _teamService = teamService;
@@ -18,13 +22,16 @@ public class TeamController : ApiBaseController
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateAsync([FromBody] Team team)
+    public async Task<IActionResult> CreateAsync([FromBody] TeamDTO teamDto)
     {
         var result = new List<string>();
 
         try
         {
-            result = await _teamService.CreateValidationAsync(team);
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            teamDto.ManagersId = userId;
+
+            result = await _teamService.CreateValidationAsync(teamDto);
             if (result.Any())
             {
                 return ApiOk(result, false);
