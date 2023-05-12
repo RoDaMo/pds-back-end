@@ -8,7 +8,6 @@ public class User
 	public string Password { get; set; }
 	public string Username { get; set; }
 	public string PasswordHash { get; set; }
-	public string EmailHash { get; set; }
 	public bool Deleted { get; set; }
 	public DateTime Birthday { get; set; }
 }
