@@ -9,7 +9,10 @@ public abstract class ApiBaseController : ControllerBase
 
   protected OkObjectResult ApiOk(string message = "") =>
     Ok(CustomResponse(true, message));
-
+  
+  protected OkObjectResult ApiOk(bool succeed, string message) =>
+    Ok(CustomResponse(succeed, message));
+  
   protected OkObjectResult ApiOk<T>(T results, bool succeed = true, string message = "") =>
     Ok(CustomResponse(results, succeed, message));
 
@@ -22,21 +25,12 @@ public abstract class ApiBaseController : ControllerBase
   protected BadRequestObjectResult ApiBadRequest<T>(string message) =>
     BadRequest(CustomResponse(false, message));
 
-  protected UnauthorizedObjectResult ApiUnathorizedRequest(string message) =>
+  protected UnauthorizedObjectResult ApiUnauthorizedRequest(string message) =>
     Unauthorized(CustomResponse(false, message));
 
   private static ApiResponse<T> CustomResponse<T>(T results, bool success = true, string message = "") =>
-    new()
-    {
-      Results = results,
-      Succeed = success,
-      Message = message
-    };
+    new(results: results, succeed: success, message: message);
 
   private static ApiResponse<string> CustomResponse(bool success = true, string message = "") =>
-    new()
-    {
-      Succeed = success,
-      Message = message
-    };
+    new(succeed: success, message: message, results: "");
 }

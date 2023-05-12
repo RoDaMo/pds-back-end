@@ -30,9 +30,7 @@ public class ChampionshipController : ApiBaseController
     {
       result = await _championshipService.CreateValidationAsync(championship);
       if (result.Any())
-      {
         return ApiOk(result, false);
-      }
 
       result.Add(Resource.ChampionshipAdded);
       return ApiOk(result);
