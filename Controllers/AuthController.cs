@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
@@ -10,6 +11,7 @@ namespace PlayOffsApi.Controllers;
 public class AuthController : ApiBaseController
 {
 	private readonly AuthService _authService;
+
 	public AuthController(AuthService authService)
 	{
 		_authService = authService;
@@ -22,15 +24,33 @@ public class AuthController : ApiBaseController
 		{
 			user = await _authService.VerifyCredentials(user);
 
-			if (user.Id != Guid.Empty)
-				return ApiOk<string>(_authService.GenerateJwtToken(user.Id, user.Username));
+			if (user.Id == Guid.Empty)
+				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
 
-			return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Username);
+			var cookieOptions = new CookieOptions
+			{
+				HttpOnly = true,
+				Secure = true,
+				SameSite = SameSiteMode.Strict,
+				Expires = DateTime.UtcNow.AddHours(24)
+			};
+
+			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
+			return ApiOk<string>("Autenticado com sucesso");
 		}
 		catch (ApplicationException ex)
 		{
 			return ApiBadRequest(ex.Message, "Erro");
 		}
+	}
+
+	[HttpDelete]
+	[Authorize]
+	public IActionResult LogoutUser()
+	{
+		Response.Cookies.Delete("playoffs-token");
+		return ApiOk<string>("Usuário deslogado com sucesso");
 	}
 
 	[HttpPost]
