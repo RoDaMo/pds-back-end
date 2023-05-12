@@ -25,7 +25,7 @@ public class AuthController : ApiBaseController
 			if (user.Id != Guid.Empty)
 				return ApiOk<string>(_authService.GenerateJwtToken(user.Id, user.Username));
 
-			return ApiUnathorizedRequest("Nome de usuário ou senha incorreta.");
+			return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
 		}
 		catch (ApplicationException ex)
 		{

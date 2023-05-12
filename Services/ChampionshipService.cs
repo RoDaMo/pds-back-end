@@ -1,5 +1,5 @@
-using PlayOffsApi.Controllers.Validations;
 using PlayOffsApi.Models;
+using PlayOffsApi.Validations;
 using Resource = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Services;
@@ -34,7 +34,7 @@ public class ChampionshipService
 		return errorMessages;
 	}
 
-	public async Task CreateSendAsync(Championship championship)
+	private async Task CreateSendAsync(Championship championship)
 	{
 		championship.Id = await _dbService.EditData(
 			"INSERT INTO championships (name, prize, sportsid, initialdate, finaldate) VALUES (@Name, @Prize, @SportsId, @Initialdate, @Finaldate) RETURNING Id;",
@@ -49,7 +49,7 @@ public class ChampionshipService
 	public async Task<List<Championship>> GetByFilterValidationAsync(string name)
 		=> await GetByFilterSendAsync(name);
 
-	public async Task<List<Championship>> GetByFilterSendAsync(string name)
+	private async Task<List<Championship>> GetByFilterSendAsync(string name)
 		=> await _elasticService.SearchAsync<Championship>(el =>
 		{
 			el.Index(INDEX).From(0).Size(999);

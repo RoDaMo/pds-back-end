@@ -31,9 +31,7 @@ public class DbService
 	{
 		try
 		{
-			T result;
-
-			result = (await _db.QueryAsync<T>(command, parms).ConfigureAwait(false)).FirstOrDefault();
+			var result = (await _db.QueryAsync<T>(command, parms).ConfigureAwait(false)).FirstOrDefault();
 
 			return result;
 		}
@@ -47,9 +45,7 @@ public class DbService
 	{
 		try
 		{
-			List<T> result = new List<T>();
-
-			result = (await _db.QueryAsync<T>(command, parms)).ToList();
+			var result = (await _db.QueryAsync<T>(command, parms)).ToList();
 
 			return result;
 		}
@@ -64,9 +60,7 @@ public class DbService
 	{
 		try
 		{
-			int result;
-
-			result = await _db.ExecuteScalarAsync<int>(command, parms);
+			var result = await _db.ExecuteScalarAsync<int>(command, parms);
 
 			return result;
 		}
