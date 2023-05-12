@@ -34,6 +34,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 		ValidateLifetime = true,
 		ValidateIssuerSigningKey = true
 	};
+
+	con.Events = new JwtBearerEvents
+	{
+		OnMessageReceived = context =>
+		{
+			context.Token = context.Request.Cookies["playoffs-token"];
+			return Task.CompletedTask;
+		}
+	};
 });
 
 builder.Services.AddAuthorization();

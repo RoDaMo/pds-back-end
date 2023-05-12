@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using PlayOffsApi.Validations;
+using FluentValidation;
 
 namespace PlayOffsApi.Services;
 
@@ -56,7 +57,7 @@ public class AuthService
 
 	public async Task<List<string>> RegisterValidationAsync(User newUser)
 	{
-		var result = await new UserValidator().ValidateAsync(newUser);
+		var result = await new UserValidator().ValidateAsync(newUser, options => options.IncludeRuleSets("IdentificadorUsername", "IdentificadorEmail", "Dados"));
 
 		if (!result.IsValid)
 			return result.Errors.Select(x => x.ErrorMessage).ToList();
@@ -70,13 +71,14 @@ public class AuthService
 
 	public async Task<bool> UserAlreadyExists(User user)
 	{
-		var result = await new UserValidator().ValidateAsync(user);
+		var userValidator = new UserValidator();
+		var result = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorUsername"));
+		var result2 = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorEmail"));
 
-		if (result.IsValid)
+		if (result.IsValid || result2.IsValid)
 			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE username = @Username OR email = @Email", user);
-		
-		var errorMessages = result.Errors.Select(x => "|" + x.ErrorMessage).ToList();
-		throw new ApplicationException(errorMessages.ToString());
+
+		throw new ApplicationException("Nome de usuário ou email inválido!");
 	}
 
 	private async Task RegisterUserAsync(User newUser)

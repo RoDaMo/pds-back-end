@@ -2,6 +2,11 @@ namespace PlayOffsApi.Models;
 
 public class User
 {
+	public User()
+	{
+		Username = string.Empty;
+		Email = string.Empty;
+	}
 	public Guid Id { get; set; }
 	public string Name { get; set; }
 	public string Email { get; set; }
