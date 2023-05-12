@@ -2,8 +2,8 @@
 using PlayOffsApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
+using PlayOffsApi.Validations;
 
 namespace PlayOffsApi.Services;
 
@@ -40,7 +40,7 @@ public class AuthService
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
-			Subject = new ClaimsIdentity(claims),
+			Subject = new(claims),
 			Expires = expires,
 			Issuer = _issuer,
 			Audience = _audience,
@@ -54,52 +54,36 @@ public class AuthService
 
 	private static bool VerifyEncryptedPassword(string password, string encryptedPassword) => BCrypt.Net.BCrypt.Verify(password, encryptedPassword);
 
-	public async Task RegisterUser(User newUser)
+	public async Task<List<string>> RegisterValidationAsync(User newUser)
 	{
-		newUser.PasswordHash = EncryptPassword(newUser.Password);
-		// TODO: remove
-		newUser.EmailHash = newUser.Email;
+		var result = await new UserValidator().ValidateAsync(newUser);
 
-		await _dbService.EditData("INSERT INTO users (Name, Username, PasswordHash, EmailHash, Deleted, Birthday) VALUES (@Name, @Username, @PasswordHash, @EmailHash, @Deleted, @Birthday)", newUser);
+		if (!result.IsValid)
+			return result.Errors.Select(x => x.ErrorMessage).ToList();
+
+		if (await UserAlreadyExists(newUser))
+			return new() { "Email ou nome de usuário já cadastrado no sistema" };
+		
+		await RegisterUserAsync(newUser);
+		return new();
 	}
 
-	// private string EncryptEmail(string plainText)
-	// {
-	// 	using Aes aes = Aes.Create();
-	// 	aes.Key = _criptKey;
-	// 	aes.GenerateIV();
+	public async Task<bool> UserAlreadyExists(User user)
+	{
+		var result = await new UserValidator().ValidateAsync(user);
 
-	// 	using MemoryStream memoryStream = new MemoryStream();
-	// 	// Write the IV to the beginning of the MemoryStream
-	// 	memoryStream.Write(aes.IV, 0, aes.IV.Length);
+		if (result.IsValid)
+			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE username = @Username OR email = @Email", user);
+		
+		var errorMessages = result.Errors.Select(x => "|" + x.ErrorMessage).ToList();
+		throw new ApplicationException(errorMessages.ToString());
+	}
 
-	// 	using CryptoStream cryptoStream = new CryptoStream(memoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write);
-	// 	using StreamWriter streamWriter = new StreamWriter(cryptoStream);
-
-	// 	streamWriter.Write(plainText);
-	// 	streamWriter.Flush();
-	// 	cryptoStream.FlushFinalBlock();
-
-	// 	return Convert.ToBase64String(memoryStream.ToArray());
-	// }
-
-	// private string DecryptEmail(string cipherText)
-	// {
-	// 	byte[] cipherData = Convert.FromBase64String(cipherText);
-
-	// 	using Aes aes = Aes.Create();
-	// 	aes.Key = _criptKey;
-
-	// 	using MemoryStream memoryStream = new MemoryStream(cipherData);
-	// 	byte[] iv = new byte[aes.IV.Length];
-	// 	memoryStream.Read(iv, 0, iv.Length);
-	// 	aes.IV = iv;
-
-	// 	using CryptoStream cryptoStream = new CryptoStream(memoryStream, aes.CreateDecryptor(), CryptoStreamMode.Read);
-	// 	using StreamReader streamReader = new StreamReader(cryptoStream);
-
-	// 	return streamReader.ReadToEnd();
-	// }
+	private async Task RegisterUserAsync(User newUser)
+	{
+		newUser.PasswordHash = EncryptPassword(newUser.Password);
+		await _dbService.EditData("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday)", newUser);
+	}
 
 	public async Task<User> VerifyCredentials(User user)
 	{

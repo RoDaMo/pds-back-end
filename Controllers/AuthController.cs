@@ -39,8 +39,9 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			await _authService.RegisterUser(user);
-			return ApiOk("Usuário cadastrado com sucesso");
+			var errors = await _authService.RegisterValidationAsync(user);
+
+			return errors.Any() ? ApiOk(errors, false) : ApiOk("Usuário cadastrado com sucesso");
 		}
 		catch (ApplicationException ex)
 		{
@@ -48,5 +49,17 @@ public class AuthController : ApiBaseController
 		}
 	}
 
-	
+	[HttpPost]
+	[Route("/auth/exists")]
+	public async Task<IActionResult> UserAlreadyExists(User user)
+	{
+		try
+		{
+			return ApiOk(await _authService.UserAlreadyExists(user));
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
 }
