@@ -46,21 +46,39 @@ public class ChampionshipService
 			throw new ApplicationException(Resource.GenericErrorMessage);
 	}
 
-	public async Task<List<Championship>> GetByFilterValidationAsync(string name)
-		=> await GetByFilterSendAsync(name);
+	public async Task<List<Championship>> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish)
+	{
+		finish = finish == DateTime.MinValue ? DateTime.MaxValue : finish;
+		return await GetByFilterSendAsync(name, sport, start, finish);
+	}
 
-	private async Task<List<Championship>> GetByFilterSendAsync(string name)
+	private async Task<List<Championship>> GetByFilterSendAsync(string name, Sports sport, DateTime start, DateTime finish)
 		=> await _elasticService.SearchAsync<Championship>(el =>
 		{
 			el.Index(INDEX).From(0).Size(999);
-			if (!string.IsNullOrWhiteSpace(name))
-			{
-				el.Query(q => q
-					.MatchPhrasePrefix(m => m
-						.Query(name)
-						.Field(f => f.Name)
+			el.Query(q => q
+				.Bool(b => b
+					.Must(
+						must =>
+						{
+							if (string.IsNullOrEmpty(name)) return;
+							must.MatchPhrasePrefix(mpp => mpp
+								.Field(f => f.Name)
+								.Query(name)
+							);
+						},
+						must2 => must2
+							.Range(r => r
+								.DateRange(d => d.Field(f => f.InitialDate).Gte(start).Lte(finish))
+							)
 					)
-				);
-			}
+					.Filter(fi =>
+						{
+							if (sport == Sports.All) return;
+							fi.Term(t => t.Field(f => f.SportsId).Value((int)sport));
+						}
+					)
+				)
+			);
 		});
 }

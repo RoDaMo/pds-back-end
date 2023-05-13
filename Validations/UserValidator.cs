@@ -16,7 +16,7 @@ public partial class UserValidator : AbstractValidator<User>
                 .WithMessage("Informe seu nome de usuário, ele será utilizado para permitir que outros usuários o identifiquem sem revelar seu nome");
 
             RuleFor(rule => rule.Username)
-                .Matches(PasswordRegex())
+                .Matches(UsernameRegex())
                 .WithMessage(@"Nome de usuário inválido, seu nome de usuário deve conter apenas letras maíusculas, minúsculas, números e opcionalmente ""-"",""_"". Assim como deve possuir pelo menos 4 caracteres e no máximo 100.");
         });
         
@@ -60,4 +60,7 @@ public partial class UserValidator : AbstractValidator<User>
     // as it is generated at compile time
     [GeneratedRegex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)([-\\w]{4,100})$")]
     private static partial Regex PasswordRegex();
+
+    [GeneratedRegex("^[A-Za-z0-9_-]*$")]
+    private static partial Regex UsernameRegex();
 }

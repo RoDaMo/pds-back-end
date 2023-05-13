@@ -44,7 +44,7 @@ public class ChampionshipController : ApiBaseController
 
 
   [HttpGet(Name = "index")]
-  public async Task<IActionResult> Index([FromQuery] string name = "")
+  public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new DateTime(), DateTime finish = new DateTime())
   {
     try
     {
@@ -52,11 +52,11 @@ public class ChampionshipController : ApiBaseController
       await using var redisDb = await _redisService.GetDatabase();
       var cachePagina = await redisDb.GetAsync<string>(name);
 
-      if (!string.IsNullOrEmpty(cachePagina))
+      if (!string.IsNullOrEmpty(cachePagina) && sport == Sports.All && start == DateTime.MinValue && finish == DateTime.MinValue)
         result = JsonSerializer.Deserialize<List<Championship>>(cachePagina);
       else
       {
-        result = await _championshipService.GetByFilterValidationAsync(name);
+        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish);
         await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
       }
 
