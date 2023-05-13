@@ -12,4 +12,5 @@ public class User
 	public bool Deleted { get; set; }
 	public DateTime Birthday { get; set; }
 	public string Cpf { get; set; }
+	public int TeamManagementId  { get; set; }
 }

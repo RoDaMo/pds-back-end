@@ -29,9 +29,8 @@ public class TeamController : ApiBaseController
         try
         {
             var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            teamDto.ManagersId = userId;
 
-            result = await _teamService.CreateValidationAsync(teamDto);
+            result = await _teamService.CreateValidationAsync(teamDto, userId);
             if (result.Any())
             {
                 return ApiOk(result, false);

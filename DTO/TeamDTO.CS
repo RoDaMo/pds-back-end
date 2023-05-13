@@ -8,5 +8,4 @@ public class TeamDTO
     public int SportsId { get; set; }
     public string Name { get; set; }
     public string Cpf { get; set; }
-    public Guid ManagersId { get; set; }
 }

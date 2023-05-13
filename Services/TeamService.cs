@@ -17,7 +17,7 @@ public class TeamService
         _elasticService = elasticService;
 	}
 
-    public async Task<List<string>> CreateValidationAsync(TeamDTO teamDto)
+    public async Task<List<string>> CreateValidationAsync(TeamDTO teamDto, Guid userId)
 	{
 		var errorMessages = new List<string>();
 
@@ -31,25 +31,22 @@ public class TeamService
 			return errorMessages;
 		}
 
-		if(await IsAlreadyTechOfAnotherTeam(teamDto.ManagersId))
+		if(await IsAlreadyTechOfAnotherTeam(userId))
 		{
 			throw new ApplicationException("Usuário passado já é técnico de um time.");
 		}
 
 		var team = ToTeam(teamDto);
 
-		await CreateSendAsync(team);
-		await UpdateUser(teamDto.Cpf, teamDto.ManagersId);
+		var teamId =  await CreateSendAsync(team);
+		await UpdateUser(teamDto.Cpf, userId, teamId);
 
 		return errorMessages;
 	}
 
-	public async Task CreateSendAsync(Team team)
-	{
-		var teamId = await _dbService.EditData(
-			"INSERT INTO teams (emblem, uniformHome, uniformWay, deleted, sportsid, name, managersId) VALUES (@Emblem, @UniformHome, @UniformWay, @Deleted, @SportsId, @Name, @ManagersId) RETURNING Id;",
+	public async Task<int> CreateSendAsync(Team team) => await _dbService.EditData(
+			"INSERT INTO teams (emblem, uniformHome, uniformWay, deleted, sportsid, name, numberofplayers) VALUES (@Emblem, @UniformHome, @UniformWay, @Deleted, @SportsId, @Name, 0) RETURNING Id;",
 			team);
-	}
 
 	public async Task<List<Team>> GetAllValidationAsync() => await GetAllSendAsync();
 
@@ -59,13 +56,13 @@ public class TeamService
 
 	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id", new {id});
 
-	public async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT ManagersId FROM teams WHERE ManagersId = @userId);", new {userId});
+	public async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NOT NULL);", new {userId});
 
-	private async Task UpdateUser(string cpf, Guid userId)
+	private async Task UpdateUser(string cpf, Guid userId, int teamId)
 	{
-		await _dbService.EditData("UPDATE users SET Cpf = @cpf WHERE id = @userid;", new {cpf, userId});
+		await _dbService.EditData("UPDATE users SET cpf = @cpf, teammanagementid = @teamId  WHERE id = @userid;", new {cpf,teamId, userId });
 	}
 
-	private Team ToTeam(TeamDTO teamDTO) => new Team(teamDTO.Emblem, teamDTO.UniformHome, teamDTO.UniformWay, teamDTO.SportsId, teamDTO.Name, teamDTO.ManagersId);
+	private Team ToTeam(TeamDTO teamDTO) => new Team(teamDTO.Emblem, teamDTO.UniformHome, teamDTO.UniformWay, teamDTO.SportsId, teamDTO.Name);
 	
 }

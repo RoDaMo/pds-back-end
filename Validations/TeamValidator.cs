@@ -39,6 +39,9 @@ public class TeamValidator : AbstractValidator<TeamDTO>
 		RuleFor(t => t.Cpf)
 			.Length(11, 11)
 			.WithMessage("Campo CPF deve ter 11 caracteres.");
+		RuleFor(t => t.Cpf)
+			.Matches(@"^\d+$")
+			.WithMessage("Campos CPF deve conter apenas números");
 		
 	}
 }
