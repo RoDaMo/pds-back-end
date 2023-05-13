@@ -44,7 +44,7 @@ public class ChampionshipController : ApiBaseController
 
 
   [HttpGet(Name = "index")]
-  public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new DateTime(), DateTime finish = new DateTime())
+  public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new(), DateTime finish = new(), [FromHeader]string pitId = "", [FromHeader]string[] sort = null)
   {
     try
     {
@@ -56,11 +56,11 @@ public class ChampionshipController : ApiBaseController
         result = JsonSerializer.Deserialize<List<Championship>>(cachePagina);
       else
       {
-        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish);
+        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sort);
         await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
       }
 
-      return ApiOk(result);
+      return ApiOk(result, message: result.Last().PitId);
     }
     catch (ApplicationException ex)
     {

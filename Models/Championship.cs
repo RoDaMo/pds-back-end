@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using Elastic.Clients.Elasticsearch;
+
 namespace PlayOffsApi.Models;
 
 public class Championship
@@ -18,4 +21,7 @@ public class Championship
 	}
 
 	public Championship() { }
+	public string PitId { get; set; }
+	
+	public IReadOnlyCollection<FieldValue> Sort { get; set; }
 }
