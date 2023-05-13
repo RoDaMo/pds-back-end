@@ -99,6 +99,9 @@ public class AuthService
 	public async Task<User> VerifyCredentials(User user)
 	{
 		var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash FROM users WHERE Username=@Username;", user);
+		if (actualUser == null)
+			return new();
+		
 		if (VerifyEncryptedPassword(user.Password, actualUser.PasswordHash))
 			user.Id = actualUser.Id;
 
