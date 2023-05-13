@@ -24,7 +24,7 @@ if (builder.Environment.IsProduction())
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(con =>
 {
-	con.TokenValidationParameters = new TokenValidationParameters
+	con.TokenValidationParameters = new()
 	{
 		ValidIssuer = ISSUER,
 		ValidAudience = AUDIENCE,
@@ -33,6 +33,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 		ValidateAudience = true,
 		ValidateLifetime = true,
 		ValidateIssuerSigningKey = true
+	};
+
+	con.Events = new JwtBearerEvents
+	{
+		OnMessageReceived = context =>
+		{
+			context.Token = context.Request.Cookies["playoffs-token"];
+			return Task.CompletedTask;
+		}
 	};
 });
 
@@ -54,14 +63,14 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
 	var supportedCultures = new[] { new CultureInfo("en"), new CultureInfo("pt-BR") };
 
-	options.DefaultRequestCulture = new RequestCulture("pt-BR");
+	options.DefaultRequestCulture = new("pt-BR");
 	options.SupportedCultures = supportedCultures;
 	options.SupportedUICultures = supportedCultures;
-	options.AddInitialRequestCultureProvider(new CustomRequestCultureProvider(async context =>
+	options.AddInitialRequestCultureProvider(new CustomRequestCultureProvider(context =>
 	{
 		var acceptLanguageHeader = context.Request.Headers["Accept-Language"].ToString();
 		var culture = GetTrueLanguage(acceptLanguageHeader);
-		return new ProviderCultureResult(culture);
+		return Task.FromResult(new ProviderCultureResult(culture));
 	}));
 });
 

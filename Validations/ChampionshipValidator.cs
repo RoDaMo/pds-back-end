@@ -2,7 +2,7 @@ using FluentValidation;
 using PlayOffsApi.Models;
 using Resource = PlayOffsApi.Resources.Championship;
 
-namespace PlayOffsApi.Controllers.Validations;
+namespace PlayOffsApi.Validations;
 
 public class ChampionshipValidator : AbstractValidator<Championship>
 {

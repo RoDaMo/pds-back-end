@@ -22,7 +22,7 @@ public class TeamService
 
 		var teamValidator = new TeamValidator();
 
-		var result = teamValidator.Validate(team);
+		var result = await teamValidator.ValidateAsync(team);
 
 		if (!result.IsValid)
 		{
@@ -35,7 +35,7 @@ public class TeamService
 		return errorMessages;
 	}
 
-	public async Task CreateSendAsync(Team team)
+    private async Task CreateSendAsync(Team team)
 	{
 		team.Id = await _dbService.EditData(
 			"INSERT INTO teams (emblem, uniformHome, uniformWay, deleted, sportsid, name) VALUES (@Emblem, @UniformHome, @UniformWay, @Deleted, @SportsId, @Name) RETURNING Id;",
@@ -44,9 +44,9 @@ public class TeamService
 
 	public async Task<List<Team>> GetAllValidationAsync() => await GetAllSendAsync();
 
-	public async Task<List<Team>> GetAllSendAsync() => await _dbService.GetAll<Team>("SELECT * FROM teams", new { });
+	private async Task<List<Team>> GetAllSendAsync() => await _dbService.GetAll<Team>("SELECT * FROM teams", new { });
 
 	public async Task<Team> GetByIdValidationAsync(int id) => await GetByIdSendAsync(id);
 
-	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id", new {id});
+	private async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id", new {id});
 }

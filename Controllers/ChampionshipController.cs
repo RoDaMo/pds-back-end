@@ -30,9 +30,7 @@ public class ChampionshipController : ApiBaseController
     {
       result = await _championshipService.CreateValidationAsync(championship);
       if (result.Any())
-      {
         return ApiOk(result, false);
-      }
 
       result.Add(Resource.ChampionshipAdded);
       return ApiOk(result);
@@ -55,7 +53,7 @@ public class ChampionshipController : ApiBaseController
       var cachePagina = await redisDb.GetAsync<string>(name);
 
       if (!string.IsNullOrEmpty(cachePagina))
-        result = JsonSerializer.Deserialize<List<Championship>>(cachePagina.ToString());
+        result = JsonSerializer.Deserialize<List<Championship>>(cachePagina);
       else
       {
         result = await _championshipService.GetByFilterValidationAsync(name);

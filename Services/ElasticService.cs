@@ -25,8 +25,8 @@ public class ElasticService
 		else
 		{
 			settings = new ElasticsearchClientSettings(new Uri(configuration.GetValue<string>("ElasticURI")))
-				.CertificateFingerprint(configuration.GetValue<string>("Fingerprint"))
-				.Authentication(new BasicAuthentication("elastic", configuration.GetValue<string>("Password")))
+				//.CertificateFingerprint(configuration.GetValue<string>("Fingerprint"))
+				//.Authentication(new BasicAuthentication("elastic", configuration.GetValue<string>("Password")))
 				.EnableDebugMode()
 				.PrettyJson();
 		}

@@ -2,8 +2,9 @@
 using PlayOffsApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
+using PlayOffsApi.Validations;
+using FluentValidation;
 
 namespace PlayOffsApi.Services;
 
@@ -13,6 +14,7 @@ public class AuthService
 	private readonly string _issuer;
 	private readonly string _audience;
 	private readonly DbService _dbService;
+
 	// private readonly byte[] _criptKey;
 	public AuthService(string secretKey, string issuer, string audience, DbService dbService) // , byte[] criptKey
 	{
@@ -23,24 +25,24 @@ public class AuthService
 		// _criptKey = criptKey;
 	}
 
-	public string GenerateJwtToken(Guid userId, string username)
+	public string GenerateJwtToken(Guid userId, string email)
 	{
 		var tokenHandler = new JwtSecurityTokenHandler();
 
 		var claims = new[]
 		{
-				new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-				new Claim(JwtRegisteredClaimNames.UniqueName, username),
-				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+			new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+			new Claim(JwtRegisteredClaimNames.UniqueName, email),
+			new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 		};
 
 		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-		var expires = DateTime.UtcNow.AddHours(48);
+		var expires = DateTime.UtcNow.AddMinutes(10);
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
-			Subject = new ClaimsIdentity(claims),
+			Subject = new(claims),
 			Expires = expires,
 			Issuer = _issuer,
 			Audience = _audience,
@@ -50,56 +52,49 @@ public class AuthService
 		return tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
 	}
 
+	// exists so that if refresh token implementation changes, it changes globaly
+	public static RefreshToken GenerateRefreshToken(Guid userId) => new()
+		{
+			UserId = userId,
+			Token = Guid.NewGuid(),
+			ExpirationDate = DateTime.UtcNow.AddMonths(12)
+		};
+
 	private static string EncryptPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password);
 
 	private static bool VerifyEncryptedPassword(string password, string encryptedPassword) => BCrypt.Net.BCrypt.Verify(password, encryptedPassword);
 
-	public async Task RegisterUser(User newUser)
+	public async Task<List<string>> RegisterValidationAsync(User newUser)
 	{
-		newUser.PasswordHash = EncryptPassword(newUser.Password);
-		// TODO: remove
-		newUser.EmailHash = newUser.Email;
+		var result = await new UserValidator().ValidateAsync(newUser, options => options.IncludeRuleSets("IdentificadorUsername", "IdentificadorEmail", "Dados"));
 
-		await _dbService.EditData("INSERT INTO users (Name, Username, PasswordHash, EmailHash, Deleted, Birthday) VALUES (@Name, @Username, @PasswordHash, @EmailHash, @Deleted, @Birthday)", newUser);
+		if (!result.IsValid)
+			return result.Errors.Select(x => x.ErrorMessage).ToList();
+
+		if (await UserAlreadyExists(newUser))
+			return new() { "Email ou nome de usuário já cadastrado no sistema" };
+		
+		await RegisterUserAsync(newUser);
+		return new();
 	}
 
-	// private string EncryptEmail(string plainText)
-	// {
-	// 	using Aes aes = Aes.Create();
-	// 	aes.Key = _criptKey;
-	// 	aes.GenerateIV();
+	public async Task<bool> UserAlreadyExists(User user)
+	{
+		var userValidator = new UserValidator();
+		var result = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorUsername"));
+		var result2 = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorEmail"));
 
-	// 	using MemoryStream memoryStream = new MemoryStream();
-	// 	// Write the IV to the beginning of the MemoryStream
-	// 	memoryStream.Write(aes.IV, 0, aes.IV.Length);
+		if (result.IsValid || result2.IsValid)
+			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE username = @Username OR email = @Email", user);
 
-	// 	using CryptoStream cryptoStream = new CryptoStream(memoryStream, aes.CreateEncryptor(), CryptoStreamMode.Write);
-	// 	using StreamWriter streamWriter = new StreamWriter(cryptoStream);
+		throw new ApplicationException("Nome de usuário ou email inválido!");
+	}
 
-	// 	streamWriter.Write(plainText);
-	// 	streamWriter.Flush();
-	// 	cryptoStream.FlushFinalBlock();
-
-	// 	return Convert.ToBase64String(memoryStream.ToArray());
-	// }
-
-	// private string DecryptEmail(string cipherText)
-	// {
-	// 	byte[] cipherData = Convert.FromBase64String(cipherText);
-
-	// 	using Aes aes = Aes.Create();
-	// 	aes.Key = _criptKey;
-
-	// 	using MemoryStream memoryStream = new MemoryStream(cipherData);
-	// 	byte[] iv = new byte[aes.IV.Length];
-	// 	memoryStream.Read(iv, 0, iv.Length);
-	// 	aes.IV = iv;
-
-	// 	using CryptoStream cryptoStream = new CryptoStream(memoryStream, aes.CreateDecryptor(), CryptoStreamMode.Read);
-	// 	using StreamReader streamReader = new StreamReader(cryptoStream);
-
-	// 	return streamReader.ReadToEnd();
-	// }
+	private async Task RegisterUserAsync(User newUser)
+	{
+		newUser.PasswordHash = EncryptPassword(newUser.Password);
+		await _dbService.EditData("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday)", newUser);
+	}
 
 	public async Task<User> VerifyCredentials(User user)
 	{
@@ -109,4 +104,7 @@ public class AuthService
 
 		return user;
 	}
+
+	public async Task<User> GetUserByIdAsync(Guid userId) 
+		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday FROM users WHERE id = @Id", new User { Id = userId});
 }
