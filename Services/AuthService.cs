@@ -14,6 +14,7 @@ public class AuthService
 	private readonly string _issuer;
 	private readonly string _audience;
 	private readonly DbService _dbService;
+
 	// private readonly byte[] _criptKey;
 	public AuthService(string secretKey, string issuer, string audience, DbService dbService) // , byte[] criptKey
 	{
@@ -24,20 +25,20 @@ public class AuthService
 		// _criptKey = criptKey;
 	}
 
-	public string GenerateJwtToken(Guid userId, string username)
+	public string GenerateJwtToken(Guid userId, string email)
 	{
 		var tokenHandler = new JwtSecurityTokenHandler();
 
 		var claims = new[]
 		{
-				new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-				new Claim(JwtRegisteredClaimNames.UniqueName, username),
-				new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+			new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+			new Claim(JwtRegisteredClaimNames.UniqueName, email),
+			new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 		};
 
 		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-		var expires = DateTime.UtcNow.AddHours(48);
+		var expires = DateTime.UtcNow.AddMinutes(10);
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
@@ -50,6 +51,14 @@ public class AuthService
 
 		return tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
 	}
+
+	// exists so that if refresh token implementation changes, it changes globaly
+	public static RefreshToken GenerateRefreshToken(Guid userId) => new()
+		{
+			UserId = userId,
+			Token = Guid.NewGuid(),
+			ExpirationDate = DateTime.UtcNow.AddMonths(12)
+		};
 
 	private static string EncryptPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password);
 
@@ -95,4 +104,7 @@ public class AuthService
 
 		return user;
 	}
+
+	public async Task<User> GetUserByIdAsync(Guid userId) 
+		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday FROM users WHERE id = @Id", new User { Id = userId});
 }

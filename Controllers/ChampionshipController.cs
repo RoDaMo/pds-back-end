@@ -53,7 +53,7 @@ public class ChampionshipController : ApiBaseController
       var cachePagina = await redisDb.GetAsync<string>(name);
 
       if (!string.IsNullOrEmpty(cachePagina))
-        result = JsonSerializer.Deserialize<List<Championship>>(cachePagina.ToString());
+        result = JsonSerializer.Deserialize<List<Championship>>(cachePagina);
       else
       {
         result = await _championshipService.GetByFilterValidationAsync(name);
