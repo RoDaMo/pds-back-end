@@ -1,6 +1,7 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 using System.Collections.Specialized;
+using Elastic.Clients.Elasticsearch.Core.Search;
 using Resource = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Services;
@@ -40,13 +41,32 @@ public class ElasticService
 		return resultado.IsSuccess().ToString();
 	}
 
-	public async Task<List<T>> SearchAsync<T>(Action<SearchRequestDescriptor<T>> request)
+	public async Task<SearchResponse<T>> SearchAsync<T>(Action<SearchRequestDescriptor<T>> request)
 	{
-		var resposta = await _client.SearchAsync(request);
+		var response = await _client.SearchAsync(request);
 
-		if (!resposta.IsValidResponse)
+		if (!response.IsValidResponse)
 			throw new ApplicationException(Resource.GenericErrorMessage);
 
-		return resposta.Documents.ToList();
+		return response;
+	}
+
+	public async Task<PointInTimeReference> OpenPointInTimeAsync(Indices index)
+	{
+		var response = await _client.OpenPointInTimeAsync(index, config => config.KeepAlive(12000));
+		
+		if (!response.IsValidResponse)
+			throw new ApplicationException(Resource.GenericErrorMessage);
+
+		return new() { Id = response.Id, KeepAlive = 12000 };
+	}
+	public PointInTimeReference OpenPointInTime(Indices index)
+	{
+		var response = _client.OpenPointInTime(index, config => config.KeepAlive(2));
+		
+		if (!response.IsValidResponse)
+			throw new ApplicationException(Resource.GenericErrorMessage);
+
+		return new() { Id = response.Id, KeepAlive = 2 };
 	}
 }

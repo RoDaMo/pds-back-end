@@ -1,3 +1,5 @@
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.Search;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
 using Resource = PlayOffsApi.Resources.Generic;
@@ -46,16 +48,32 @@ public class ChampionshipService
 			throw new ApplicationException(Resource.GenericErrorMessage);
 	}
 
-	public async Task<List<Championship>> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish)
+	public async Task<List<Championship>> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort)
 	{
 		finish = finish == DateTime.MinValue ? DateTime.MaxValue : finish;
-		return await GetByFilterSendAsync(name, sport, start, finish);
+		var pit = string.IsNullOrEmpty(pitId)
+			? await _elasticService.OpenPointInTimeAsync(Indices.Index(INDEX))
+			: new() { Id = pitId, KeepAlive = 120000 };
+
+		var listSort = new List<FieldValue>();
+		if (sort is not null && sort.Any())
+			listSort = sort.Select(FieldValue.String).ToList();
+		
+		var response = await GetByFilterSendAsync(name, sport, start, finish, pit, listSort);
+		var documents = response.Documents.ToList();
+		documents.Last().PitId = response.PitId;
+		documents.Last().Sort = response.Hits.Last().Sort;
+		
+		return documents;
 	}
 
-	private async Task<List<Championship>> GetByFilterSendAsync(string name, Sports sport, DateTime start, DateTime finish)
+	private async Task<SearchResponse<Championship>> GetByFilterSendAsync(string name, Sports sport, DateTime start, DateTime finish, PointInTimeReference pitId, ICollection<FieldValue> sort)
 		=> await _elasticService.SearchAsync<Championship>(el =>
 		{
-			el.Index(INDEX).From(0).Size(999);
+			el.Index(INDEX).From(0).Size(15).Pit(pitId).Sort(config => config.Score(new ScoreSort { Order = SortOrder.Desc }));
+			
+			if (sort.Any()) el.SearchAfter(sort);
+			
 			el.Query(q => q
 				.Bool(b => b
 					.Must(
