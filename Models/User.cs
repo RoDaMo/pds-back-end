@@ -13,4 +13,10 @@ public class User
 	public DateTime Birthday { get; set; }
 	public string Cpf { get; set; }
 	public int TeamManagementId  { get; set; }
+	public int PlayerTeamId  { get; set; }
+	public int SoccerPositionId { get; set; }
+	public int VolleyballPositionId { get; set; }
+	public string ArtisticName { get; set; }
+    public int Number { get; set; }
+	public bool IsCaptain { get; set; }
 }

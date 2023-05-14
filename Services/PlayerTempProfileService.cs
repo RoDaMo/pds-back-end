@@ -21,8 +21,23 @@ public class PlayerTempProfileService
     public async Task<List<string>> CreateValidationAsync(PlayerTempProfile playerTempProfile, Guid userId)
 	{
 		var errorMessages = new List<string>();
+
+		if(!await ChecksIfTeamExists(playerTempProfile.TeamsId))
+        {
+			throw new ApplicationException("Time passado não existe.");
+        }
 		
 		var team = await _teamService.GetByIdSendAsync(playerTempProfile.TeamsId);
+
+		if(team.SportsId == 1 && team.NumberOfPlayers > 24)
+		{
+			throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
+		}
+
+		if(team.SportsId == 2 && team.NumberOfPlayers > 14)
+		{
+			throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
+		}
 
 		var playerTempProfileValidator = new PlayerTempProfileValidator();
 
@@ -56,10 +71,14 @@ public class PlayerTempProfileService
 			throw new ApplicationException("Já exite jogador temporário com o número de camisa passado.");
 		}
 
-		//Não pode ter 2 capitães (olhar nos usuários também)
-		//Não pode ter jogador com o mesmo número (olhar nos usuários também)
+		if(await ChecksIfNumberAlreadyExistsInUser(playerTempProfile.Number))
+		{
+			throw new ApplicationException("Já exite jogador com o número de camisa passado.");
+		}
 
 		await CreateSendAsync(playerTempProfile);
+		team.NumberOfPlayers++;
+		await _teamService.IncrementNumberOfPlayers(team.Id, team.NumberOfPlayers);
 
 		return errorMessages;
 	}
@@ -74,4 +93,7 @@ public class PlayerTempProfileService
 	private async Task<bool> ChecksIfEmailAlreadyExistsInPlayerTempProfiles(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT email FROM playertempprofiles WHERE email = @email);", new {email});
 	private async Task<bool> ChecksIfEmailAlreadyExistsInUsers(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT emailhash FROM users WHERE emailhash = @email);", new {email});
 	private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number);", new {number});
+	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number);", new {number});
+    private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
+
 }
