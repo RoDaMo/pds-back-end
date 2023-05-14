@@ -44,13 +44,14 @@ public class TeamService
 		return errorMessages;
 	}
 
+
 	public async Task<int> CreateSendAsync(Team team) => await _dbService.EditData(
 			"INSERT INTO teams (emblem, uniformHome, uniformWay, deleted, sportsid, name, numberofplayers) VALUES (@Emblem, @UniformHome, @UniformWay, @Deleted, @SportsId, @Name, 0) RETURNING Id;",
 			team);
 
 	public async Task<List<Team>> GetAllValidationAsync() => await GetAllSendAsync();
 
-	public async Task<List<Team>> GetAllSendAsync() => await _dbService.GetAll<Team>("SELECT * FROM teams", new { });
+	private async Task<List<Team>> GetAllSendAsync() => await _dbService.GetAll<Team>("SELECT * FROM teams", new { });
 
 	public async Task<Team> GetByIdValidationAsync(int id) => await GetByIdSendAsync(id);
 

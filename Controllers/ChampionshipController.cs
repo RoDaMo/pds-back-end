@@ -30,9 +30,7 @@ public class ChampionshipController : ApiBaseController
     {
       result = await _championshipService.CreateValidationAsync(championship);
       if (result.Any())
-      {
         return ApiOk(result, false);
-      }
 
       result.Add(Resource.ChampionshipAdded);
       return ApiOk(result);
@@ -46,7 +44,7 @@ public class ChampionshipController : ApiBaseController
 
 
   [HttpGet(Name = "index")]
-  public async Task<IActionResult> Index([FromQuery] string name = "")
+  public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new(), DateTime finish = new(), [FromHeader]string pitId = "", [FromHeader]string[] sort = null)
   {
     try
     {
@@ -54,15 +52,15 @@ public class ChampionshipController : ApiBaseController
       await using var redisDb = await _redisService.GetDatabase();
       var cachePagina = await redisDb.GetAsync<string>(name);
 
-      if (!string.IsNullOrEmpty(cachePagina))
-        result = JsonSerializer.Deserialize<List<Championship>>(cachePagina.ToString());
+      if (!string.IsNullOrEmpty(cachePagina) && sport == Sports.All && start == DateTime.MinValue && finish == DateTime.MinValue)
+        result = JsonSerializer.Deserialize<List<Championship>>(cachePagina);
       else
       {
-        result = await _championshipService.GetByFilterValidationAsync(name);
+        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sort);
         await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
       }
 
-      return ApiOk(result);
+      return ApiOk(result, message: result.Last().PitId);
     }
     catch (ApplicationException ex)
     {

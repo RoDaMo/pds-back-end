@@ -13,5 +13,5 @@ public class SportService
 
   public async Task<List<Sport>> GetAllValidationAsync() => await GetAllSendAsync();
 
-  public async Task<List<Sport>> GetAllSendAsync() => await _dbService.GetAll<Sport>("SELECT * FROM sports", new { });
+  private async Task<List<Sport>> GetAllSendAsync() => await _dbService.GetAll<Sport>("SELECT * FROM sports", new { });
 }

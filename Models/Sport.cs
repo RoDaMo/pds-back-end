@@ -1,5 +1,6 @@
 namespace PlayOffsApi.Models;
 
+[Obsolete("Replace with Sports enum")]
 public class Sport
 {
 	public int Id { get; set; }

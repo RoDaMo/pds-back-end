@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
@@ -10,9 +11,11 @@ namespace PlayOffsApi.Controllers;
 public class AuthController : ApiBaseController
 {
 	private readonly AuthService _authService;
-	public AuthController(AuthService authService)
+	private readonly RedisService _redisService;
+	public AuthController(AuthService authService, RedisService redisService)
 	{
 		_authService = authService;
+		_redisService = redisService;
 	}
 
 	[HttpPost]
@@ -20,17 +23,85 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
+			var redis = await _redisService.GetDatabase();
 			user = await _authService.VerifyCredentials(user);
+			
+			if (user.Id == Guid.Empty)
+				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
 
-			if (user.Id != Guid.Empty)
-				return ApiOk<string>(_authService.GenerateJwtToken(user.Id, user.Username));
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
+			var cookieOptions = new CookieOptions
+			{
+				HttpOnly = true,
+				Secure = true,
+				SameSite = SameSiteMode.Strict,
+				Expires = DateTime.UtcNow.AddMinutes(10)
+			};
+			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
+			
+			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
+			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
+			cookieOptions.Expires = refreshToken.ExpirationDate;
+			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), cookieOptions);
 
-			return ApiUnathorizedRequest("Nome de usuário ou senha incorreta.");
+			return ApiOk<string>("Autenticado com sucesso");
 		}
 		catch (ApplicationException ex)
 		{
 			return ApiBadRequest(ex.Message, "Erro");
 		}
+	}
+
+	[HttpPut]
+	public async Task<IActionResult> UpdateAccesToken()
+	{
+		try
+		{
+			var oldToken = Request.Cookies["playoffs-refresh-token"];
+			if (string.IsNullOrEmpty(oldToken))
+				return ApiUnauthorizedRequest("Usuário não autenticado");
+			
+			var redis = await _redisService.GetDatabase();
+			var token = await redis.GetAsync<RefreshToken>(oldToken);
+			
+			if (token is null || token.ExpirationDate < DateTime.Now)
+				return ApiUnauthorizedRequest("Refresh token expirado");
+
+			var user = await _authService.GetUserByIdAsync(token.UserId);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Username);
+				
+			var cookieOptions = new CookieOptions
+			{
+				HttpOnly = true,
+				Secure = true,
+				SameSite = SameSiteMode.Strict,
+				Expires = DateTime.UtcNow.AddHours(2)
+			};
+			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
+
+			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
+			
+			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
+			await redis.RemoveAsync(token.Token.ToString());
+			
+			cookieOptions.Expires = refreshToken.ExpirationDate;
+			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), cookieOptions);
+			
+			return ApiOk("Token atualizado");
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	} 
+
+	[HttpDelete]
+	[Authorize]
+	public IActionResult LogoutUser()
+	{
+		Response.Cookies.Delete("playoffs-token");
+		Response.Cookies.Delete("playoffs-refresh-token");
+		return ApiOk<string>("Usuário deslogado com sucesso");
 	}
 
 	[HttpPost]
@@ -39,8 +110,9 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			await _authService.RegisterUser(user);
-			return ApiOk("Usuário cadastrado com sucesso");
+			var errors = await _authService.RegisterValidationAsync(user);
+
+			return errors.Any() ? ApiOk(errors, false) : ApiOk("Usuário cadastrado com sucesso");
 		}
 		catch (ApplicationException ex)
 		{
@@ -48,5 +120,17 @@ public class AuthController : ApiBaseController
 		}
 	}
 
-	
+	[HttpPost]
+	[Route("/auth/exists")]
+	public async Task<IActionResult> UserAlreadyExists(User user)
+	{
+		try
+		{
+			return ApiOk(await _authService.UserAlreadyExists(user));
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
 }

@@ -61,12 +61,12 @@ public class PlayerService
 			throw new ApplicationException("Usuário passado não existe.");
 		}
 
-		if(await ChecksIfNumberAlreadyExistsInPlayerTemp(user.Number))
+		if(await ChecksIfNumberAlreadyExistsInPlayerTemp(user.Number, user.PlayerTeamId))
 		{
 			throw new ApplicationException("Já exite jogador temporário com o número de camisa passado.");
 		}
 
-        if(await ChecksIfNumberAlreadyExistsInUser(user.Number))
+        if(await ChecksIfNumberAlreadyExistsInUser(user.Number, user.PlayerTeamId))
 		{
 			throw new ApplicationException("Já exite jogador com o número de camisa passado.");
 		}
@@ -96,8 +96,8 @@ public class PlayerService
 	}
 
     private async Task<bool> ChecksIfUserIsManager(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NULL);", new {userId});
-	private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number);", new {number});
-	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number);", new {number});
+	private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number, int teamsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number AND teamsid = @teamsId);", new {number, teamsId});
+	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number, int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number AND playerteamid = @teamId);", new {number, teamId});
     private async Task<bool> ChecksIfTeamAlreadyHasCaptain() => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE iscaptain = true);", new {});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
     private async Task<bool> ChecksIfUserPassedExists(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @userId);", new {userId});

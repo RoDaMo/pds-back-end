@@ -1,5 +1,7 @@
-using PlayOffsApi.Controllers.Validations;
+using Elastic.Clients.Elasticsearch;
+using Elastic.Clients.Elasticsearch.Core.Search;
 using PlayOffsApi.Models;
+using PlayOffsApi.Validations;
 using Resource = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Services;
@@ -34,7 +36,7 @@ public class ChampionshipService
 		return errorMessages;
 	}
 
-	public async Task CreateSendAsync(Championship championship)
+	private async Task CreateSendAsync(Championship championship)
 	{
 		championship.Id = await _dbService.EditData(
 			"INSERT INTO championships (name, prize, sportsid, initialdate, finaldate) VALUES (@Name, @Prize, @SportsId, @Initialdate, @Finaldate) RETURNING Id;",
@@ -46,21 +48,55 @@ public class ChampionshipService
 			throw new ApplicationException(Resource.GenericErrorMessage);
 	}
 
-	public async Task<List<Championship>> GetByFilterValidationAsync(string name)
-		=> await GetByFilterSendAsync(name);
+	public async Task<List<Championship>> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort)
+	{
+		finish = finish == DateTime.MinValue ? DateTime.MaxValue : finish;
+		var pit = string.IsNullOrEmpty(pitId)
+			? await _elasticService.OpenPointInTimeAsync(Indices.Index(INDEX))
+			: new() { Id = pitId, KeepAlive = 120000 };
 
-	public async Task<List<Championship>> GetByFilterSendAsync(string name)
+		var listSort = new List<FieldValue>();
+		if (sort is not null && sort.Any())
+			listSort = sort.Select(FieldValue.String).ToList();
+		
+		var response = await GetByFilterSendAsync(name, sport, start, finish, pit, listSort);
+		var documents = response.Documents.ToList();
+		documents.Last().PitId = response.PitId;
+		documents.Last().Sort = response.Hits.Last().Sort;
+		
+		return documents;
+	}
+
+	private async Task<SearchResponse<Championship>> GetByFilterSendAsync(string name, Sports sport, DateTime start, DateTime finish, PointInTimeReference pitId, ICollection<FieldValue> sort)
 		=> await _elasticService.SearchAsync<Championship>(el =>
 		{
-			el.Index(INDEX).From(0).Size(999);
-			if (!string.IsNullOrWhiteSpace(name))
-			{
-				el.Query(q => q
-					.MatchPhrasePrefix(m => m
-						.Query(name)
-						.Field(f => f.Name)
+			el.Index(INDEX).From(0).Size(15).Pit(pitId).Sort(config => config.Score(new ScoreSort { Order = SortOrder.Desc }));
+			
+			if (sort.Any()) el.SearchAfter(sort);
+			
+			el.Query(q => q
+				.Bool(b => b
+					.Must(
+						must =>
+						{
+							if (string.IsNullOrEmpty(name)) return;
+							must.MatchPhrasePrefix(mpp => mpp
+								.Field(f => f.Name)
+								.Query(name)
+							);
+						},
+						must2 => must2
+							.Range(r => r
+								.DateRange(d => d.Field(f => f.InitialDate).Gte(start).Lte(finish))
+							)
 					)
-				);
-			}
+					.Filter(fi =>
+						{
+							if (sport == Sports.All) return;
+							fi.Term(t => t.Field(f => f.SportsId).Value((int)sport));
+						}
+					)
+				)
+			);
 		});
 }

@@ -68,11 +68,7 @@ public class TeamController : ApiBaseController
         {
             var result = await _teamService.GetByIdValidationAsync(id);
 
-            if(result is null)
-            {
-                return ApiOk(result, false);
-            }
-            return ApiOk(result);
+            return result is null ? ApiOk(result, false) : ApiOk(result);
         }
 
         catch (ApplicationException ex)
