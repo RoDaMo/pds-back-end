@@ -1,3 +1,5 @@
+using PlayOffsApi.ENUM;
+
 namespace PlayOffsApi.Models;
 
 public class PlayerTempProfile
@@ -8,25 +10,24 @@ public class PlayerTempProfile
     public int Number { get; set; }
     public string Email { get; set; }
 	public int TeamsId { get; set; }
-	public bool IsCaptain { get; set; }
+	public int SoccerPositionId { get; set; }
+	public int VolleyballPositionId { get; set; }
 
-	public PlayerTempProfile(string name, string artisticName, int number, string email, bool isCaptain)
+	public PlayerTempProfile(string name, string artisticName, int number, string email)
 	{
 		Name = name;
 		ArtisticName = artisticName;
 		Number = number;
 		Email = email;
-		IsCaptain = isCaptain;
 	}
 
-	public PlayerTempProfile(string name, string artisticName, int number, string email,  bool isCaptain, int teamsId)
+	public PlayerTempProfile(string name, string artisticName, int number, string email, int teamsId)
 	{
 		Name = name;
 		ArtisticName = artisticName;
 		Number = number;
 		Email = email;
 		TeamsId = teamsId;
-		IsCaptain = isCaptain;
 	}
 
 	public PlayerTempProfile() { }

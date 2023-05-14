@@ -56,11 +56,6 @@ public class PlayerTempProfileService
 			throw new ApplicationException("Já exite jogador temporário com o número de camisa passado.");
 		}
 
-		if(await ChecksIfTeamAlreadyHasCaptain())
-		{
-			throw new ApplicationException("Time já possui capitão.");
-		}
-
 		//Não pode ter 2 capitães (olhar nos usuários também)
 		//Não pode ter jogador com o mesmo número (olhar nos usuários também)
 
@@ -72,12 +67,11 @@ public class PlayerTempProfileService
 	public async Task CreateSendAsync(PlayerTempProfile playerTempProfile)
 	{
 		await _dbService.EditData(
-			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, iscaptain) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @IsCaptain)", playerTempProfile);
+			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, soccerpositionid, volleyballpositionid) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @SoccerPositionId, @VolleyballPositionId)", playerTempProfile);
 	}
 
 	private async Task<bool> ChecksIfUserIsManager(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NULL);", new {userId});
 	private async Task<bool> ChecksIfEmailAlreadyExistsInPlayerTempProfiles(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT email FROM playertempprofiles WHERE email = @email);", new {email});
 	private async Task<bool> ChecksIfEmailAlreadyExistsInUsers(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT emailhash FROM users WHERE emailhash = @email);", new {email});
 	private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number);", new {number});
-	private async Task<bool> ChecksIfTeamAlreadyHasCaptain() => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE iscaptain = true);", new {});
 }

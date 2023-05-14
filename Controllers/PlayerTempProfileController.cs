@@ -29,10 +29,6 @@ public class PlayerTempProfileController : ApiBaseController
         {
             var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
-		    Console.WriteLine(userId);
-
-           
-
             result = await _playerTempProfileService.CreateValidationAsync(playerTempProfile, userId);
             if (result.Any())
             {

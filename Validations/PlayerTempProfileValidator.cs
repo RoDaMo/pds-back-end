@@ -37,6 +37,13 @@ public class PlayerTempProfileValidator : AbstractValidator<PlayerTempProfile>
 			RuleFor(p => p.TeamsId)
 				.NotEmpty()
 				.WithMessage("Campo Time não pode ser vazio.");
+			
+			RuleFor(p => p.SoccerPositionId)
+				.NotEmpty()
+				.WithMessage("Campo Posição não pode ser vazio.");
+			RuleFor(p => p.SoccerPositionId)
+				.InclusiveBetween(1, 7)
+				.WithMessage("Posição inválida para o esporte selecionado.");
 		});
 
 		RuleSet("ValidationVolleyBall", () => {
@@ -68,6 +75,13 @@ public class PlayerTempProfileValidator : AbstractValidator<PlayerTempProfile>
 			RuleFor(p => p.TeamsId)
 				.NotEmpty()
 				.WithMessage("Campo Time não pode ser vazio.");
+			
+			RuleFor(p => p.VolleyballPositionId)
+				.NotEmpty()
+				.WithMessage("Campo Posição não pode ser vazio.");
+			RuleFor(p => p.VolleyballPositionId)
+				.InclusiveBetween(8, 12)
+				.WithMessage("Posição inválida para o esporte selecionado.");
 		});
 		
 	}
