@@ -76,6 +76,11 @@ public class PlayerService
 			throw new ApplicationException("Já exite capitão no time atual.");
 		}
 
+		if(await ChecksIfUserPassedAlreadHasTeam(user.Id))
+		{
+			throw new ApplicationException("Jogador passado já pertence a um time.");
+		}
+
 		await CreateSendAsync(user);
         team.NumberOfPlayers++;
 		await _teamService.IncrementNumberOfPlayers(team.Id, team.NumberOfPlayers);
@@ -95,5 +100,7 @@ public class PlayerService
 	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number);", new {number});
     private async Task<bool> ChecksIfTeamAlreadyHasCaptain() => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE iscaptain = true);", new {});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
-    private async Task<bool> ChecksIfUserPassedExists(Guid teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @teamId);", new {teamId});
+    private async Task<bool> ChecksIfUserPassedExists(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @userId);", new {userId});
+    private async Task<bool> ChecksIfUserPassedAlreadHasTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @userId AND playerteamid IS NOT NULL);", new {userId});
+
 }
