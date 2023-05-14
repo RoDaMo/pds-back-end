@@ -21,8 +21,8 @@ public class PlayerController : ApiBaseController
         _playerService = playerService;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> CreateAsync([FromBody] User user)
+    [HttpPut]
+    public async Task<IActionResult> Update([FromBody] User user)
     {
         var result = new List<string>();
 
