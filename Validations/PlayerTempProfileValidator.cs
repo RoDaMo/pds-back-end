@@ -25,7 +25,8 @@ public class PlayerTempProfileValidator : AbstractValidator<PlayerTempProfile>
 			
 			RuleFor(p => p.Email)
 				.NotEmpty()
-				.WithMessage("Campo Email não pode ser vazio.");
+				.EmailAddress()
+				.WithMessage("Endereço de email inválido.");
 
 			RuleFor(p => p.Number)
 				.NotEmpty()
