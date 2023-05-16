@@ -1,4 +1,4 @@
-using PlayOffsApi.ENUM;
+using PlayOffsApi.Enum;
 
 namespace PlayOffsApi.Models;
 

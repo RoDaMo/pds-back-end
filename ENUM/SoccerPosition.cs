@@ -1,4 +1,4 @@
-namespace PlayOffsApi.ENUM;
+namespace PlayOffsApi.Enum;
 
 public enum SoccerPosition
 {
