@@ -58,6 +58,7 @@ public class DbService
 
 	public async Task<int> EditData(string command, object parms)
 	{
+
 		try
 		{
 			var result = await _db.ExecuteScalarAsync<int>(command, parms);
