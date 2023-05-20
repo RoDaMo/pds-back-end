@@ -30,12 +30,7 @@ public class PlayerTempProfileController : ApiBaseController
             var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
 
             result = await _playerTempProfileService.CreateValidationAsync(playerTempProfile, userId);
-            if (result.Any())
-            {
-                return ApiOk(result, false);
-            }
-
-            return ApiOk(result);
+            return result.Any() ? ApiOk(result, false) : ApiOk(result);
         }
 
         catch (ApplicationException ex)

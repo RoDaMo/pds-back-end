@@ -29,21 +29,19 @@ public class PlayerService
 		
 		var team = await _teamService.GetByIdSendAsync(user.PlayerTeamId);
 
-        if(team.SportsId == 1 && team.NumberOfPlayers > 24)
-		{
-			throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-		}
+        switch (team.SportsId)
+        {
+	        case 1 when team.NumberOfPlayers > 24:
+		        throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
+	        case 2 when team.NumberOfPlayers > 14:
+		        throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
+        }
 
-		if(team.SportsId == 2 && team.NumberOfPlayers > 14)
-		{
-			throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-		}
-
-		var PlayerValidator = new PlayerValidator();
+        var playerValidator = new PlayerValidator();
 
 		var result = (team.SportsId == 1) 
-		? PlayerValidator.Validate(user, options => options.IncludeRuleSets("ValidationSoccer"))
-		: PlayerValidator.Validate(user, options => options.IncludeRuleSets("ValidationVolleyBall"));
+		? await playerValidator.ValidateAsync(user, options => options.IncludeRuleSets("ValidationSoccer"))
+		: await playerValidator.ValidateAsync(user, options => options.IncludeRuleSets("ValidationVolleyBall"));
 
 		if (!result.IsValid)
 		{
@@ -88,7 +86,7 @@ public class PlayerService
 		return errorMessages;
 	}
 
-	public async Task CreateSendAsync(User user)
+    private async Task CreateSendAsync(User user)
 	{
 		await _dbService.EditData(
             "UPDATE users SET artisticname = @ArtisticName, number = @Number, soccerpositionid = @SoccerPositionId, volleyballpositionid = @VolleyballPositionId, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE id = @Id;", user

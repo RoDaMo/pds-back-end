@@ -29,21 +29,19 @@ public class PlayerTempProfileService
 		
 		var team = await _teamService.GetByIdSendAsync(playerTempProfile.TeamsId);
 
-		if(team.SportsId == 1 && team.NumberOfPlayers > 24)
+		switch (team.SportsId)
 		{
-			throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-		}
-
-		if(team.SportsId == 2 && team.NumberOfPlayers > 14)
-		{
-			throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
+			case 1 when team.NumberOfPlayers > 24:
+				throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
+			case 2 when team.NumberOfPlayers > 14:
+				throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
 		}
 
 		var playerTempProfileValidator = new PlayerTempProfileValidator();
 
 		var result = (team.SportsId == 1) 
-		? playerTempProfileValidator.Validate(playerTempProfile, options => options.IncludeRuleSets("ValidationSoccer"))
-		: playerTempProfileValidator.Validate(playerTempProfile, options => options.IncludeRuleSets("ValidationVolleyBall"));
+		? await playerTempProfileValidator.ValidateAsync(playerTempProfile, options => options.IncludeRuleSets("ValidationSoccer"))
+		: await playerTempProfileValidator.ValidateAsync(playerTempProfile, options => options.IncludeRuleSets("ValidationVolleyBall"));
 
 		if (!result.IsValid)
 		{
@@ -83,7 +81,7 @@ public class PlayerTempProfileService
 		return errorMessages;
 	}
 
-	public async Task CreateSendAsync(PlayerTempProfile playerTempProfile)
+    private async Task CreateSendAsync(PlayerTempProfile playerTempProfile)
 	{
 		await _dbService.EditData(
 			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, soccerpositionid, volleyballpositionid) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @SoccerPositionId, @VolleyballPositionId)", playerTempProfile);

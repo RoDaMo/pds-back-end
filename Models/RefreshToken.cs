@@ -2,8 +2,8 @@
 
 public class RefreshToken
 {
-    public Guid Token { get; set; }
-    public Guid UserId { get; set; }
+    public Guid Token { get; init; }
+    public Guid UserId { get; init; }
 
-    public DateTime ExpirationDate { get; set; }
+    public DateTime ExpirationDate { get; init; }
 }
