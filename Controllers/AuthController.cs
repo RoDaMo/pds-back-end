@@ -35,7 +35,7 @@ public class AuthController : ApiBaseController
 				// The request came from the production frontend.
 				!Request.Headers.ContainsKey("IsLocalhost") ? "playoffs.netlify.app" :
 				// The request came from the local frontend.
-				"localhost:5173";
+				string.Empty;
 			
 			var cookieOptions = new CookieOptions
 			{
