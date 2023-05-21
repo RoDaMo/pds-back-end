@@ -82,9 +82,10 @@ builder.Services.AddCors(options =>
 {
 	options.AddDefaultPolicy(policy =>
 	{
-		policy.AllowAnyOrigin();
+		policy.WithOrigins("https://localhost:5173", "https://playoffs.netlify.app");
 		policy.AllowAnyHeader();
 		policy.AllowAnyMethod();
+		policy.AllowCredentials();
 	});
 });
 
