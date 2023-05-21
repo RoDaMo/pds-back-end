@@ -23,7 +23,7 @@ public class ChampionshipService
 
 		var championshipValidator = new ChampionshipValidator();
 
-		var result = championshipValidator.Validate(championship);
+		var result = await championshipValidator.ValidateAsync(championship);
 
 		if (!result.IsValid)
 		{
@@ -40,8 +40,8 @@ public class ChampionshipService
 	{
 		championship.Id = await _dbService.EditData(
 			@"
-			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood) 
-			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood) RETURNING Id;",
+			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId) 
+			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId) RETURNING Id;",
 			championship);
 
 		var resultado = await _elasticService._client.IndexAsync(championship, INDEX);
@@ -105,5 +105,5 @@ public class ChampionshipService
 	public async Task<Championship> GetByIdValidation(int id) => await GetByIdSend(id);
 
 	private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood FROM championships WHERE id = @id", id);
+		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid FROM championships WHERE id = @id", id);
 }
