@@ -23,4 +23,5 @@ public class User
 	public string ArtisticName { get; set; }
     public int Number { get; set; }
 	public bool IsCaptain { get; set; }
+	public bool RememberMe { get; set; }
 }
