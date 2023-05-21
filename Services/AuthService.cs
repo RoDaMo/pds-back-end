@@ -109,5 +109,5 @@ public class AuthService
 	}
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
-		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday FROM users WHERE id = @Id", new User { Id = userId});
+		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf FROM users WHERE id = @Id", new User { Id = userId});
 }

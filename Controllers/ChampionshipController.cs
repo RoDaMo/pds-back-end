@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
@@ -14,10 +15,12 @@ public class ChampionshipController : ApiBaseController
 {
   private readonly ChampionshipService _championshipService;
   private readonly RedisService _redisService;
-  public ChampionshipController(ChampionshipService championshipService, RedisService redisService)
+  private readonly AuthService _authService;
+  public ChampionshipController(ChampionshipService championshipService, RedisService redisService, AuthService authService)
   {
     _championshipService = championshipService;
     _redisService = redisService;
+    _authService = authService;
   }
 
   [Authorize]
@@ -28,6 +31,10 @@ public class ChampionshipController : ApiBaseController
 
     try
     {
+      var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+      var user = await _authService.GetUserByIdAsync(userId);
+      championship.Organizer = user;
+      
       result = await _championshipService.CreateValidationAsync(championship);
       if (result.Any())
         return ApiOk(result, false);
@@ -70,7 +77,7 @@ public class ChampionshipController : ApiBaseController
 
   [HttpGet]
   [Route("/championships/{id:int}")]
-  public async Task<IActionResult> GetChampionship(int id)
+  public async Task<IActionResult> Show(int id)
   {
     try
     {
