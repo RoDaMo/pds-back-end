@@ -22,12 +22,14 @@ if (builder.Environment.IsProduction())
 	// CRYPT_KEY = Environment.GetEnvironmentVariable("CRYPT_KEY").ToUtf8Bytes();
 }
 
+var audience = new string[] { AUDIENCE, "https://localhost:5173", "https://127.0.0.1:5173" };
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(con =>
 {
 	con.TokenValidationParameters = new()
 	{
 		ValidIssuer = ISSUER,
-		ValidAudience = AUDIENCE,
+		ValidAudiences = audience,
 		IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(KEY)),
 		ValidateIssuer = true,
 		ValidateAudience = true,
@@ -80,7 +82,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(options =>
 {
-	options.AddDefaultPolicy(policy =>
+	options.AddPolicy("cors", policy =>
 	{
 		policy.WithOrigins("https://localhost:5173", "https://127.0.0.1:5173", "https://playoffs.netlify.app");
 		policy.AllowAnyHeader();
@@ -96,9 +98,12 @@ if (app.Environment.IsDevelopment())
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
+	app.UseHsts();
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("cors");
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -107,7 +112,6 @@ app.UseRequestLocalization(app.Services.GetRequiredService<Microsoft.Extensions.
 
 app.MapControllers();
 
-app.UseCors();
 app.Run();
 
 static string GetTrueLanguage(string falseLanguage) => falseLanguage switch
