@@ -32,10 +32,10 @@ public class AuthController : ApiBaseController
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
 
 			var cookieDomain =
-				// The request came from the local frontend.
-				!Request.Headers.ContainsKey("IsLocalhost") ? "playoffs.netlify.app" :
 				// The request came from the production frontend.
-				"localhost";
+				!Request.Headers.ContainsKey("IsLocalhost") ? "playoffs.netlify.app" :
+				// The request came from the local frontend.
+				"localhost:5173";
 			
 			var cookieOptions = new CookieOptions
 			{
