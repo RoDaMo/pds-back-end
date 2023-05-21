@@ -30,12 +30,20 @@ public class AuthController : ApiBaseController
 				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
 
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
+
+			var cookieDomain =
+				// The request came from the local frontend.
+				Request.Host.Value.StartsWith("localhost") ? "localhost" :
+				// The request came from the production frontend.
+				"playoffs.netlify.app";
+			
 			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
 				Secure = true,
 				SameSite = SameSiteMode.None,
-				Expires = DateTime.UtcNow.AddMinutes(10)
+				Expires = DateTime.UtcNow.AddMinutes(10),
+				Domain = cookieDomain
 			};
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 			
