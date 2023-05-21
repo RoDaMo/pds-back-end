@@ -67,5 +67,19 @@ public class ChampionshipController : ApiBaseController
       return ApiBadRequest(ex.Message);
     }
   }
+
+  [HttpGet]
+  [Route("/championships/{id:int}")]
+  public async Task<IActionResult> GetChampionship(int id)
+  {
+    try
+    {
+      return ApiOk(await _championshipService.GetByIdValidation(id));
+    }
+    catch (ApplicationException ex)
+    {
+      return ApiBadRequest("Campeonato com esse ID não existe");
+    }
+  }
 }
 
