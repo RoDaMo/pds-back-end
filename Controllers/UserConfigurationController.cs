@@ -29,16 +29,9 @@ public class UserConfigurationController : ApiBaseController
 
         try
         {
-
-            Console.WriteLine(Request.Cookies["playoffs-token"]);
-            Console.WriteLine("OIIIIIIIIIIIIIIIIIII");
-            // var cookieValue = Request.Cookies["playoffs-refresh-token"];
-            // var tokenHandler = new JwtSecurityTokenHandler();
-            // var token = tokenHandler.ReadToken(cookieValue) as JwtSecurityToken;
-            // var userId = Guid.Parse(token.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value);
-            // var userId =  User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            // Console.WriteLine(userId);
-            result = await _authService.UpdateProfileValidationAsync(user);
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            
+            result = await _authService.UpdateProfileValidationAsync(user, userId);
             return result.Any() ? ApiOk(result, false) : ApiOk(result);
         }
 

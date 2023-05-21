@@ -114,7 +114,7 @@ public class AuthService
 	public async Task<User> GetUserByIdAsync(Guid userId) 
 		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday FROM users WHERE id = @Id", new User { Id = userId});
 
-	public async Task<List<string>> UpdateProfileValidationAsync(User user)
+	public async Task<List<string>> UpdateProfileValidationAsync(User user, Guid userId)
 	{
 		var errorMessages = new List<string>();
 
@@ -128,10 +128,10 @@ public class AuthService
 			return errorMessages;
 		}
 
-		// if(await checkIfUserIsPlayerAsync(userId) && user.ArtisticName is null)
-		// {
-		// 	throw new ApplicationException("Apenas jogadores podem alterar o nome artístico");
-		// }
+		if(await checkIfUserIsPlayerAsync(userId) && user.ArtisticName is null)
+		{
+			throw new ApplicationException("Apenas jogadores podem alterar o nome artístico");
+		}
 
         await UserAlreadyExists(user);
 
