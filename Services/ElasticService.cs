@@ -2,6 +2,7 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
 using System.Collections.Specialized;
 using Elastic.Clients.Elasticsearch.Core.Search;
+using Elastic.Clients.Elasticsearch.Serialization;
 using Resource = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Services;
@@ -26,15 +27,11 @@ public class ElasticService
 		else
 		{
 			settings = new ElasticsearchClientSettings(new Uri(configuration.GetValue<string>("ElasticURI")))
-				//.CertificateFingerprint(configuration.GetValue<string>("Fingerprint"))
-				//.Authentication(new BasicAuthentication("elastic", configuration.GetValue<string>("Password")))
 				.EnableDebugMode()
 				.PrettyJson();
 		}
-
 		_client = new ElasticsearchClient(settings);
 	}
-
 	public async Task<string> GetClusterHealth()
 	{
 		var resultado = await _client.Cluster.HealthAsync();
