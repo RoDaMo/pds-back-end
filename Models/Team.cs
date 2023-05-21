@@ -9,6 +9,8 @@ public class Team
     public bool Deleted{ get; set; }
     public int SportsId { get; set; }
     public string Name { get; set; }
+    public int NumberOfPlayers { get; set; }
+   
 
 	public Team(string emblem, string uniformHome, string uniformWay, string name)
 	{
@@ -17,7 +19,22 @@ public class Team
         UniformWay = uniformWay;
         Deleted = false;
         Name = name;
+        NumberOfPlayers = 0;
 	}
 
-	public Team() { }
+    public Team(string emblem, string uniformHome, string uniformWay, int sportsId, string name)
+	{
+		Emblem = emblem;
+        UniformHome = uniformHome;
+        UniformWay = uniformWay;
+        Deleted = false;
+        SportsId = sportsId;
+        Name = name;
+        NumberOfPlayers = 0;
+	}
+
+	public Team() 
+    { 
+        NumberOfPlayers = 0;
+    }
 }

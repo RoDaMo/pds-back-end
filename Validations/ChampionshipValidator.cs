@@ -15,13 +15,6 @@ public class ChampionshipValidator : AbstractValidator<Championship>
 			 .Length(4, 50)
 			 .WithMessage(Resource.NameCharRange);
 
-		RuleFor(c => c.Prize)
-			.NotEmpty()
-			.WithMessage(Resource.PrizeNotNull);
-		RuleFor(c => c.Prize)
-			 .Length(3, 20)
-			 .WithMessage(Resource.PrizeCharRange);
-
 		RuleFor(c => c.InitialDate)
 			.NotEmpty()
 			.WithMessage(Resource.InitialDateNotNull);
@@ -39,8 +32,44 @@ public class ChampionshipValidator : AbstractValidator<Championship>
 		RuleFor(c => c.SportsId)
 			.NotEmpty()
 			.WithMessage("Campo Esporte não pode ser vazio.");
+		
 		RuleFor(c => c.SportsId)
-			.Must(c => c.Equals(1) || c.Equals(2))
+			.Must(c => c.Equals(Sports.Football) || c.Equals(Sports.Volleyball))
 			.WithMessage("Campo Esporte deve ser preenchido com Vôlei ou futebol.");
+
+		RuleFor(c => c.TeamQuantity)
+			.Must(IsPowerOfTwo)
+			.WithMessage("Quantidade de times deve ser um quadrado de 2, como 4, 16, 32, 64, etc.");
+
+		RuleFor(c => c.TeamQuantity)
+			.LessThanOrEqualTo(128)
+			.WithMessage("Quantidade de times não pode exceder 128 times.");
+
+		RuleFor(c => c.TeamQuantity)
+			.GreaterThanOrEqualTo(2)
+			.WithMessage("Deve haver pelo menos 2 times no campeonato.");
+
+		RuleFor(c => c.Description)
+			.Length(10, 10000)
+			.WithMessage("Deve haver pelo menos 10 caracteres na descrição, e no máximo 10 mil caracteres.");
+
+		RuleFor(c => c.Nation)
+			.NotEmpty()
+			.WithMessage("Campo País não pode estar vazio.");
+
+		RuleFor(c => c.State)
+			.NotEmpty()
+			.WithMessage("Campo Estado não pode estar vazio.");
+		
+		RuleFor(c => c.City)
+			.NotEmpty()
+			.WithMessage("Campo Cidade não pode estar vazia.");
+
+		RuleFor(c => c.Neighborhood)
+			.NotEmpty()
+			.WithMessage("Campo Bairro não pode estar vazio.");
+
 	}
+
+	private static bool IsPowerOfTwo(int x) => x is not 0 && (x & (x - 1)) == 0;
 }
