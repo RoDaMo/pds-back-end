@@ -34,7 +34,7 @@ public class AuthController : ApiBaseController
 			{
 				HttpOnly = true,
 				Secure = true,
-				SameSite = SameSiteMode.Strict,
+				SameSite = SameSiteMode.None,
 				Expires = DateTime.UtcNow.AddMinutes(10)
 			};
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
