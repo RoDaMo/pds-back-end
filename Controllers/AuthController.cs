@@ -19,7 +19,7 @@ public class AuthController : ApiBaseController
 	}
 
 	[HttpPost]
-	public async Task<IActionResult> GenerateToken(User user)
+	public async Task<IActionResult> GenerateToken([FromBody]User user)
 	{
 		try
 		{
@@ -37,14 +37,15 @@ public class AuthController : ApiBaseController
 				HttpOnly = true,
 				Secure = true,
 				SameSite = SameSiteMode.None,
-				Expires = DateTime.UtcNow.AddMinutes(10),
+				Expires = DateTime.UtcNow.AddHours(2)
 			};
 			
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				cookieOptions.Domain = "playoffs.netlify.app";
 
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
-			
+
+			if (!user.RememberMe) return ApiOk<string>("Autenticado com sucesso");
 			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
 			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
 			cookieOptions.Expires = refreshToken.ExpirationDate;
@@ -138,5 +139,12 @@ public class AuthController : ApiBaseController
 		{
 			return ApiBadRequest(ex.Message, "Erro");
 		}
+	}
+
+	[Authorize]
+	[HttpGet]
+	public IActionResult IsLoggedIn()
+	{
+		return ApiOk(true);
 	}
 }
