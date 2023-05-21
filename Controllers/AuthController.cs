@@ -33,9 +33,9 @@ public class AuthController : ApiBaseController
 
 			var cookieDomain =
 				// The request came from the local frontend.
-				Request.Host.Value.StartsWith("localhost") ? "localhost" :
+				Request.Host.Value.Contains("netlify") || Request.Host.Value.Contains("playoffs") ? "playoffs.netlify.app" :
 				// The request came from the production frontend.
-				"playoffs.netlify.app";
+				"localhost";
 			
 			var cookieOptions = new CookieOptions
 			{
