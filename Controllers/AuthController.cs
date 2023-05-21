@@ -31,11 +31,6 @@ public class AuthController : ApiBaseController
 
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
 
-			var cookieDomain =
-				// The request came from the production frontend.
-				!Request.Headers.ContainsKey("IsLocalhost") ? "playoffs.netlify.app" :
-				// The request came from the local frontend.
-				string.Empty;
 			
 			var cookieOptions = new CookieOptions
 			{
@@ -43,8 +38,11 @@ public class AuthController : ApiBaseController
 				Secure = true,
 				SameSite = SameSiteMode.None,
 				Expires = DateTime.UtcNow.AddMinutes(10),
-				Domain = cookieDomain
 			};
+			
+			if (!Request.Headers.ContainsKey("IsLocalhost"))
+				cookieOptions.Domain = "playoffs.netlify.app";
+
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 			
 			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
