@@ -23,4 +23,6 @@ public class User
 	public string ArtisticName { get; set; }
     public int Number { get; set; }
 	public bool IsCaptain { get; set; }
+	public string Bio { get; set; }
+	public string Picture { get; set; }
 }
