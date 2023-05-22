@@ -164,7 +164,7 @@ public class AuthService
 			return errorMessages;
 		}
 
-        var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash FROM users WHERE id=@userId;", userId);
+        var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash FROM users WHERE id = @userId;", new {userId});
 
         if (!VerifyEncryptedPassword(updatePasswordDTO.CurrentPassword, actualUser.PasswordHash))
         {
@@ -181,7 +181,7 @@ public class AuthService
     private async Task UpdatePasswordSendAsync(User user)
 	{
 		await _dbService.EditData(
-            "UPDATE users SET password = @Password WHERE id = @Id;", user
+            "UPDATE users SET passwordhash = @Password WHERE id = @Id;", user
             );
 	}
 
