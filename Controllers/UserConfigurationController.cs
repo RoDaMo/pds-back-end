@@ -1,12 +1,9 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using PlayOffsApi.API;
 using PlayOffsApi.DTO;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
 
 namespace PlayOffsApi.Controllers;

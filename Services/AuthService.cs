@@ -120,7 +120,7 @@ public class AuthService
 
 		var userValidator = new UserValidator();
 
-		var result = await new UserValidator().ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorUsername", "IdentificadorEmail"));
+		var result = await new UserValidator().ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorUsername", "IdentificadorEmail", "Update"));
 
 		if (!result.IsValid)
 		{
@@ -128,12 +128,17 @@ public class AuthService
 			return errorMessages;
 		}
 
-		if(await checkIfUserIsPlayerAsync(userId) && user.ArtisticName is null)
+		if(await checkIfUserIsPlayerAsync(userId) && user.ArtisticName is not null)
 		{
 			throw new ApplicationException("Apenas jogadores podem alterar o nome artístico");
 		}
 
-        await UserAlreadyExists(user);
+		user.Id = userId;
+
+        if(await OtherUserAlreadyExists(user))
+		{
+			throw new ApplicationException("Nome de usuário ou email inválido!");
+		}
 
 		await UpdateProfileSendAsync(user);
 
@@ -143,7 +148,7 @@ public class AuthService
     private async Task UpdateProfileSendAsync(User user)
 	{
 		await _dbService.EditData(
-            "UPDATE users SET name = @Name, username = @UserName, artisticname = @ArtisticName, bio = @Bio, picture = @Picture, WHERE id = @Id;", user
+            "UPDATE users SET name = @Name, username = @UserName, email = @Email, artisticname = @ArtisticName, bio = @Bio, picture = @Picture WHERE id = @Id;", user
             );
 	}
 
@@ -181,4 +186,6 @@ public class AuthService
 	}
 
 	private async Task<bool> checkIfUserIsPlayerAsync(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT playerteamid FROM users WHERE id = @userId AND playerteamid is null);", new {userId});
+
+	public async Task<bool> OtherUserAlreadyExists(User user) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE id <> @Id AND (username = @Username OR email = @Email))", user);	
 }
