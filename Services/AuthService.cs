@@ -75,7 +75,7 @@ public class AuthService
 		if (await UserAlreadyExists(newUser))
 			return new() { "Email ou nome de usuário já cadastrado no sistema" };
 		
-		newUser.Picture = "../image/default-img.jpg";
+		newUser.Picture = "https://cdn-icons-png.flaticon.com/512/17/17004.png";
 		
 		await RegisterUserAsync(newUser);
 		return new();
