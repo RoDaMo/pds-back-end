@@ -29,16 +29,16 @@ public class DbService
 
 	public async Task<T> GetAsync<T>(string command, object parms)
 	{
-		try
-		{
+		// try
+		// {
 			var result = (await _db.QueryAsync<T>(command, parms).ConfigureAwait(false)).FirstOrDefault();
 
 			return result;
-		}
-		catch (Exception)
-		{
-			throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
-		}
+		// }
+		// catch (Exception)
+		// {
+		// 	throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+		// }
 	}
 
 	public async Task<List<T>> GetAll<T>(string command, object parms)
@@ -62,6 +62,22 @@ public class DbService
 		try
 		{
 			var result = await _db.ExecuteScalarAsync<int>(command, parms);
+
+			return result;
+		}
+		catch (Exception)
+		{
+			throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+		}
+
+	}
+
+	public async Task<Guid> EditData2(string command, object parms)
+	{
+
+		try
+		{
+			var result = await _db.ExecuteScalarAsync<Guid>(command, parms);
 
 			return result;
 		}

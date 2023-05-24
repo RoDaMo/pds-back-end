@@ -119,7 +119,7 @@ public class AuthController : ApiBaseController
 		{
 			var errors = await _authService.RegisterValidationAsync(user);
 
-			return errors.Any() ? ApiOk(errors, false) : ApiOk("Usuário cadastrado com sucesso");
+			return errors.Any() ? ApiOk(errors, false) : ApiOk("Verifique o seu e-mail e confirme a sua conta para poder acessá-la.");
 		}
 		catch (ApplicationException ex)
 		{
@@ -146,5 +146,19 @@ public class AuthController : ApiBaseController
 	public IActionResult IsLoggedIn()
 	{
 		return ApiOk(true);
+	}
+
+	[HttpGet]
+	[Route("/auth/register")] 
+	public async Task<IActionResult> ConfirmEmail(string token)
+	{
+		try
+		{
+			return ApiOk(await _authService.ConfirmEmail(token));
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
 	}
 }

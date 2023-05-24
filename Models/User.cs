@@ -24,4 +24,5 @@ public class User
     public int Number { get; set; }
 	public bool IsCaptain { get; set; }
 	public bool RememberMe { get; set; }
+	public bool ConfirmEmail{ get; set; }
 }

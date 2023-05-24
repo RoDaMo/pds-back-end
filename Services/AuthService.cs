@@ -14,15 +14,19 @@ public class AuthService
 	private readonly string _issuer;
 	private readonly string _audience;
 	private readonly DbService _dbService;
+	private readonly EmailService _emailService;
+	private readonly IHttpContextAccessor _httpContextAccessor;
 
 	// private readonly byte[] _criptKey;
-	public AuthService(string secretKey, string issuer, string audience, DbService dbService) // , byte[] criptKey
+	public AuthService(string secretKey, string issuer, string audience, DbService dbService, EmailService emailService, IHttpContextAccessor httpContextAccessor) // , byte[] criptKey
 	{
 		_secretKey = secretKey;
 		_issuer = issuer;
 		_audience = audience;
 		_dbService = dbService;
 		// _criptKey = criptKey;
+        _emailService = emailService;
+        _httpContextAccessor = httpContextAccessor;
 	}
 
 	public string GenerateJwtToken(Guid userId, string email)
@@ -74,9 +78,26 @@ public class AuthService
 		if (await UserAlreadyExists(newUser))
 			return new() { "Email ou nome de usuário já cadastrado no sistema" };
 		
-		await RegisterUserAsync(newUser);
+		var userId =  await RegisterUserAsync(newUser);
+        var token = GenerateJwtToken(userId, newUser.Email);
+		
+		var httpContext = _httpContextAccessor.HttpContext;
+        var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}{httpContext.Request.Path}{httpContext.Request.QueryString}";
+        var url = $"{baseUrl}?token={token}";
+    
+        var emailResponse = _emailService.SendConfirmationEmail(newUser.Email, newUser.Username, url);
+
+        if(!emailResponse)
+        {
+            await DeleteUserByIdAsync(userId);
+            throw new ApplicationException("Não foi possível enviar o e-mail, verifique se ele está correto ou tente novamente mais tarde.");
+        }
+
 		return new();
 	}
+
+	private async Task DeleteUserByIdAsync(Guid userId) 
+		=> await _dbService.GetAsync<User>("DELETE FROM users WHERE id = @userId;", new {userId});
 
 	public async Task<bool> UserAlreadyExists(User user)
 	{
@@ -90,10 +111,10 @@ public class AuthService
 		throw new ApplicationException("Nome de usuário ou email inválido!");
 	}
 
-	private async Task RegisterUserAsync(User newUser)
+	private async Task<Guid> RegisterUserAsync(User newUser)
 	{
 		newUser.PasswordHash = EncryptPassword(newUser.Password);
-		await _dbService.EditData("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday)", newUser);
+		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, 'false') RETURNING Id;", newUser);
 	}
 
 	public async Task<User> VerifyCredentials(User user)
@@ -110,4 +131,60 @@ public class AuthService
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
 		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf FROM users WHERE id = @Id", new User { Id = userId});
+	
+	public async Task<List<string>> ConfirmEmail(string token)
+	{
+        var errorMessages = new List<string>();
+
+		var jwtSecurityToken = new JwtSecurityToken();
+		try
+		{
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
+
+			var tokenDescriptor = new TokenValidationParameters
+			{
+				ValidateIssuerSigningKey = true,
+				IssuerSigningKey = key,
+				ValidateIssuer = false,
+				ValidateAudience = false,
+				ClockSkew = TimeSpan.Zero
+			};
+			SecurityToken securityToken;
+			var principal = tokenHandler.ValidateToken(token, tokenDescriptor, out securityToken);
+			jwtSecurityToken = securityToken as JwtSecurityToken;
+			
+		}
+		catch (Exception)
+		{
+			
+			throw new ApplicationException("Token de confirmação de e-mail inválido.");;
+		}
+
+		var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
+		var user = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = email;", email);
+		
+
+        if(user == null)
+        {
+           throw new ApplicationException("Tente se cadastrar novamente.");
+        }
+
+        if(user.ConfirmEmail)
+        {
+           return errorMessages;
+        } 
+
+        user.ConfirmEmail = true;
+
+        await UpdateConfirmEmailAsync(user);
+
+        return errorMessages;
+	}
+
+    private async Task UpdateConfirmEmailAsync(User user)
+	{
+		await _dbService.EditData("UPDATE users SET ConfirmEmail = @ConfirmEmail WHERE id = @Id;", user);
+        
+	}
 }
