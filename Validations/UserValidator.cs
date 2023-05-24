@@ -53,6 +53,27 @@ public partial class UserValidator : AbstractValidator<User>
                 .Matches(PasswordRegex())
                 .WithMessage("Senha inválida");
         });
+
+        RuleSet("Update", () =>
+        {
+            RuleFor(rule => rule.Bio)
+                .Length(0, 300) 
+                .WithMessage("Campo Bio pode ter no máximo 300 caracteres.");
+            
+            RuleFor(rule => rule.Name.ToLower())
+                .NotEmpty()
+                .Length(4, 200)
+                .NotEqual("null")
+                .WithMessage("Informe o seu nome");
+            
+        });
+
+        RuleSet("UpdatePassword", () =>
+        {
+            RuleFor(rule => rule.Password)
+                .NotEmpty()
+                .WithMessage("Insira sua senha");
+        });
         
     }
     
