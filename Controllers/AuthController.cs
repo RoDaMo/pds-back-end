@@ -19,7 +19,7 @@ public class AuthController : ApiBaseController
 	}
 
 	[HttpPost]
-	public async Task<IActionResult> GenerateToken(User user)
+	public async Task<IActionResult> GenerateToken([FromBody]User user)
 	{
 		try
 		{
@@ -30,15 +30,22 @@ public class AuthController : ApiBaseController
 				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
 
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
+
+			
 			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
 				Secure = true,
-				SameSite = SameSiteMode.Strict,
-				Expires = DateTime.UtcNow.AddMinutes(10)
+				SameSite = SameSiteMode.None,
+				Expires = DateTime.UtcNow.AddHours(2)
 			};
-			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 			
+			if (!Request.Headers.ContainsKey("IsLocalhost"))
+				cookieOptions.Domain = "playoffs.netlify.app";
+
+			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
+
+			if (!user.RememberMe) return ApiOk<string>("Autenticado com sucesso");
 			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
 			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
 			cookieOptions.Expires = refreshToken.ExpirationDate;
@@ -132,5 +139,12 @@ public class AuthController : ApiBaseController
 		{
 			return ApiBadRequest(ex.Message, "Erro");
 		}
+	}
+
+	[Authorize]
+	[HttpGet]
+	public IActionResult IsLoggedIn()
+	{
+		return ApiOk(true);
 	}
 }

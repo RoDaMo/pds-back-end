@@ -39,7 +39,7 @@ public class AuthService
 
 		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-		var expires = DateTime.UtcNow.AddMinutes(10);
+		var expires = DateTime.UtcNow.AddHours(2);
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{

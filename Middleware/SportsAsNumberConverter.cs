@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization;
 using PlayOffsApi.Models;
 
-namespace PlayOffsApi.CustomJsonConverters;
+namespace PlayOffsApi.Middleware;
 
 public class SportsAsNumberConverter : JsonConverter<Sports>
 {
