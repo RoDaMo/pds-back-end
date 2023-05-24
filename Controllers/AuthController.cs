@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
@@ -12,6 +13,7 @@ public class AuthController : ApiBaseController
 {
 	private readonly AuthService _authService;
 	private readonly RedisService _redisService;
+
 	public AuthController(AuthService authService, RedisService redisService)
 	{
 		_authService = authService;
@@ -19,19 +21,19 @@ public class AuthController : ApiBaseController
 	}
 
 	[HttpPost]
-	public async Task<IActionResult> GenerateToken([FromBody]User user)
+	public async Task<IActionResult> GenerateToken([FromBody] User user)
 	{
 		try
 		{
 			var redis = await _redisService.GetDatabase();
 			user = await _authService.VerifyCredentials(user);
-			
+
 			if (user.Id == Guid.Empty)
 				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
 
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
 
-			
+
 			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
@@ -39,7 +41,7 @@ public class AuthController : ApiBaseController
 				SameSite = SameSiteMode.None,
 				Expires = DateTime.UtcNow.AddHours(2)
 			};
-			
+
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				cookieOptions.Domain = "playoffs.netlify.app";
 
@@ -67,16 +69,16 @@ public class AuthController : ApiBaseController
 			var oldToken = Request.Cookies["playoffs-refresh-token"];
 			if (string.IsNullOrEmpty(oldToken))
 				return ApiUnauthorizedRequest("Usuário não autenticado");
-			
+
 			var redis = await _redisService.GetDatabase();
 			var token = await redis.GetAsync<RefreshToken>(oldToken);
-			
+
 			if (token is null || token.ExpirationDate < DateTime.Now)
 				return ApiUnauthorizedRequest("Refresh token expirado");
 
 			var user = await _authService.GetUserByIdAsync(token.UserId);
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Username);
-				
+
 			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
@@ -87,20 +89,20 @@ public class AuthController : ApiBaseController
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
 			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
-			
+
 			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
 			await redis.RemoveAsync(token.Token.ToString());
-			
+
 			cookieOptions.Expires = refreshToken.ExpirationDate;
 			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), cookieOptions);
-			
+
 			return ApiOk("Token atualizado");
 		}
 		catch (Exception ex)
 		{
 			return ApiBadRequest(ex.Message, "Erro");
 		}
-	} 
+	}
 
 	[HttpDelete]
 	[Authorize]
@@ -146,5 +148,27 @@ public class AuthController : ApiBaseController
 	public IActionResult IsLoggedIn()
 	{
 		return ApiOk(true);
+	}
+
+	[Authorize]
+	[HttpGet]
+	[Route("/auth/user")]
+	public async Task<IActionResult> GetCurrentUser()
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			var user = await _authService.GetUserByIdAsync(userId);
+			return ApiOk(new
+			{
+				profileImg = user.Picture,
+				name = user.Name,
+				id = user.Id
+			});
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message);
+		}
 	}
 }
