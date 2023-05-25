@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using PlayOffsApi.Validations;
 
 namespace PlayOffsApi.Controllers;
 
@@ -12,6 +14,7 @@ public class AuthController : ApiBaseController
 {
 	private readonly AuthService _authService;
 	private readonly RedisService _redisService;
+
 	public AuthController(AuthService authService, RedisService redisService)
 	{
 		_authService = authService;
@@ -19,19 +22,19 @@ public class AuthController : ApiBaseController
 	}
 
 	[HttpPost]
-	public async Task<IActionResult> GenerateToken([FromBody]User user)
+	public async Task<IActionResult> GenerateToken([FromBody] User user)
 	{
 		try
 		{
 			var redis = await _redisService.GetDatabase();
 			user = await _authService.VerifyCredentials(user);
-			
+
 			if (user.Id == Guid.Empty)
 				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
 
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
 
-			
+
 			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
@@ -39,7 +42,7 @@ public class AuthController : ApiBaseController
 				SameSite = SameSiteMode.None,
 				Expires = DateTime.UtcNow.AddHours(2)
 			};
-			
+
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				cookieOptions.Domain = "playoffs.netlify.app";
 
@@ -67,40 +70,40 @@ public class AuthController : ApiBaseController
 			var oldToken = Request.Cookies["playoffs-refresh-token"];
 			if (string.IsNullOrEmpty(oldToken))
 				return ApiUnauthorizedRequest("Usuário não autenticado");
-			
+
 			var redis = await _redisService.GetDatabase();
 			var token = await redis.GetAsync<RefreshToken>(oldToken);
-			
+
 			if (token is null || token.ExpirationDate < DateTime.Now)
 				return ApiUnauthorizedRequest("Refresh token expirado");
 
 			var user = await _authService.GetUserByIdAsync(token.UserId);
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Username);
-				
+
 			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
 				Secure = true,
 				SameSite = SameSiteMode.Strict,
-				Expires = DateTime.UtcNow.AddHours(2)
+				Expires = DateTime.UtcNow.AddDays(1)
 			};
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
 			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
-			
+
 			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
 			await redis.RemoveAsync(token.Token.ToString());
-			
+
 			cookieOptions.Expires = refreshToken.ExpirationDate;
 			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), cookieOptions);
-			
+
 			return ApiOk("Token atualizado");
 		}
 		catch (Exception ex)
 		{
 			return ApiBadRequest(ex.Message, "Erro");
 		}
-	} 
+	}
 
 	[HttpDelete]
 	[Authorize]
@@ -119,7 +122,7 @@ public class AuthController : ApiBaseController
 		{
 			var errors = await _authService.RegisterValidationAsync(user);
 
-			return errors.Any() ? ApiOk(errors, false) : ApiOk("Usuário cadastrado com sucesso");
+			return errors.Any() ? ApiBadRequest(errors) : ApiOk("Usuário cadastrado com sucesso");
 		}
 		catch (ApplicationException ex)
 		{
@@ -146,5 +149,65 @@ public class AuthController : ApiBaseController
 	public IActionResult IsLoggedIn()
 	{
 		return ApiOk(true);
+	}
+
+	[Authorize]
+	[HttpGet]
+	[Route("/auth/user")]
+	public async Task<IActionResult> GetCurrentUser()
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			var user = await _authService.GetUserByIdAsync(userId);
+			return ApiOk(new
+			{
+				profileImg = user.Picture,
+				name = user.Name,
+				id = user.Id
+			});
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message);
+		}
+	}
+
+	[HttpGet]
+	[Authorize]
+	[Route("/auth/cpf")]
+	public async Task<IActionResult> CurrentUserHasCpf()
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			var hasCpf = await _authService.UserHasCpfValidationAsync(userId);
+			return ApiOk(hasCpf);
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message);
+		}
+	}
+
+	[Authorize]
+	[HttpPost]
+	[Route("/auth/cpf")]
+	public async Task<IActionResult> AddCpf([FromBody] string cpf)
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			var resultados = await _authService.AddCpfUserValidationAsync(userId, cpf);
+			
+			if (resultados.Any())
+				return ApiBadRequest(resultados);
+			
+			return ApiOk("CPF vinculado com sucesso");
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message);
+		}
 	}
 }
