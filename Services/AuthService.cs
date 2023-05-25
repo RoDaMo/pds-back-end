@@ -39,7 +39,7 @@ public class AuthService
 
 		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-		var expires = DateTime.UtcNow.AddHours(2);
+		var expires = DateTime.UtcNow.AddDays(1);
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
@@ -187,5 +187,49 @@ public class AuthService
 
 	private async Task<bool> checkIfUserIsPlayerAsync(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT playerteamid FROM users WHERE id = @userId AND playerteamid is null);", new {userId});
 
-	public async Task<bool> OtherUserAlreadyExists(User user) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE id <> @Id AND (username = @Username OR email = @Email))", user);	
+	private async Task<bool> OtherUserAlreadyExists(User user) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE id <> @Id AND (username = @Username OR email = @Email))", user);
+
+	public async Task<bool> UserHasCpfValidationAsync(Guid userId) => await UserHasCpfSendAsync(userId);
+
+	private async Task<bool> UserHasCpfSendAsync(Guid userId) =>
+		await _dbService.GetAsync<bool>("SELECT CASE WHEN COALESCE(TRIM(cpf), '') = '' THEN false ELSE true END FROM users WHERE id = @userId", new { userId });
+
+	public async Task<List<string>> AddCpfUserValidationAsync(Guid userId, string cpf)
+	{
+		if (await UserHasCpfValidationAsync(userId)) throw new ApplicationException("Usuário já possui CPF");
+		
+		var userValidator = new UserValidator();
+		var results = await userValidator.ValidateAsync(new User { Cpf = cpf }, option => option.IncludeRuleSets("Cpf"));
+		
+		if (!results.IsValid) return results.Errors.Select(x => x.ErrorMessage).ToList();
+
+		var numberCpf = new int[11];
+		for (var i = 0; i < 11; i++)
+			numberCpf[i] = int.Parse(cpf[i].ToString());
+		
+		var sum = 0;
+		for (var i = 0; i < 9; i++)
+			sum += numberCpf[i] * (10 - i);
+		
+
+		var firstVerifierDigit = (sum * 10) % 11;
+		firstVerifierDigit = firstVerifierDigit == 10 ? 0 : firstVerifierDigit;
+		
+		sum = 0;
+		var arrayNova = numberCpf;
+		arrayNova[9] = firstVerifierDigit; 
+		for (var i = 0; i < 10; i++)
+			sum += arrayNova[i] * (11 - i);
+		
+		var secondVerifierDigit = (sum * 10) % 11;
+		secondVerifierDigit = secondVerifierDigit == 10 ? 0 : secondVerifierDigit;
+
+		if (firstVerifierDigit != numberCpf[9] || secondVerifierDigit != numberCpf[10]) throw new ApplicationException("CPF inválido");
+
+		await AddCpfUserSend(new() { Id = userId, Cpf = cpf });
+		return new();
+	}
+
+	private async Task AddCpfUserSend(User user) 
+		=> await _dbService.EditData("UPDATE users SET cpf = @cpf WHERE id = @id", user);
 }

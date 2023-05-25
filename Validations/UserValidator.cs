@@ -62,10 +62,13 @@ public partial class UserValidator : AbstractValidator<User>
             
             RuleFor(rule => rule.Name.ToLower())
                 .NotEmpty()
-                .Length(4, 200)
+                .WithMessage("Informe o seu nome")
                 .NotEqual("null")
                 .WithMessage("Informe o seu nome");
-            
+
+            RuleFor(rule => rule.Name.ToLower())
+                .Length(4, 200)
+                .WithMessage("Nome deve possuir pelo menos 4 caracteres e no máximo 200.");
         });
 
         RuleSet("UpdatePassword", () =>
@@ -75,6 +78,18 @@ public partial class UserValidator : AbstractValidator<User>
                 .WithMessage("Insira sua senha");
         });
         
+        RuleSet("Cpf", () =>
+        {
+            RuleFor(t => t.Cpf)
+                .NotEmpty()
+                .WithMessage("Campo CPF não pode ser vazio.");
+            RuleFor(t => t.Cpf)
+                .Length(11, 11)
+                .WithMessage("Campo CPF deve ter 11 caracteres.");
+            RuleFor(t => t.Cpf)
+                .Matches(@"^\d+$")
+                .WithMessage("Campos CPF deve conter apenas números");
+        });
     }
     
     // used to improve validation performance,
