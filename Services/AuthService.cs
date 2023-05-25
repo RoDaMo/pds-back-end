@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Text;
 using PlayOffsApi.Validations;
 using FluentValidation;
+using PlayOffsApi.DTO;
 
 namespace PlayOffsApi.Services;
 
@@ -82,12 +83,12 @@ public class AuthService
 		if (await UserAlreadyExistsInPlayerTemp(newUser.Email))
 		{
 			var id = await CreateAccountAndAddPlayer(newUser);
-			await SendEmail(id); //remove this after adding temporary player consent check functionality
+			await SendEmailToConfirmAccount(id); //remove this after adding temporary player consent check functionality
 			resultId.Add(id.ToString());
 			return resultId;
 		}		
 		newUser.Id = await RegisterUserAsync(newUser);
-		await SendEmail(newUser.Id);
+		await SendEmailToConfirmAccount(newUser.Id);
 		resultId.Add(newUser.Id.ToString());
 
 		return resultId;
@@ -116,7 +117,7 @@ public class AuthService
 
 	public async Task<User> VerifyCredentials(User user)
 	{
-		var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash FROM users WHERE Username=@Username;", user);
+		var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash, ConfirmEmail FROM users WHERE Username=@Username;", user);
 		if (actualUser == null)
 			return new();
 		
@@ -129,7 +130,7 @@ public class AuthService
 	public async Task<User> GetUserByIdAsync(Guid userId) 
 		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf FROM users WHERE id = @Id", new User { Id = userId});
 
-	public async Task<List<string>> SendEmail(Guid userId)
+	public async Task<List<string>> SendEmailToConfirmAccount(Guid userId)
 	{
 
 		var user = await GetUserByIdAsync(userId);
@@ -227,5 +228,95 @@ public class AuthService
 	private async Task DeletePlayerTempProfile(Guid id)
 	{
 		await _dbService.EditData("DELETE FROM playertempprofiles WHERE Id = id;", id);
+	}
+
+	public async Task<List<string>> ForgotPassword(User user)
+	{
+		var errorMessages = new List<string>();
+		var result = await new UserValidator().ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorEmail"));
+
+		if (!result.IsValid)
+			return result.Errors.Select(x => x.ErrorMessage).ToList();
+		
+		var actualUser = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = email;", user.Email);
+
+		if (!actualUser.ConfirmEmail)
+				throw new ApplicationException("Confirme seu email para poder acessar sua conta.");
+		
+		await SendEmailToResetPassword(actualUser.Id);
+		return errorMessages;
+	}
+
+	public async Task<List<string>> SendEmailToResetPassword(Guid userId)
+	{
+
+		var user = await GetUserByIdAsync(userId);
+        var errorMessages = new List<string>();
+		var token = GenerateJwtToken(user.Id, user.Email);
+		var httpContext = _httpContextAccessor.HttpContext;
+		var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/auth/reset-password";
+        var url = $"{baseUrl}?token={token}";
+    
+        var emailResponse = _emailService.SendEmailPasswordReset(user.Email, user.Username, url);
+
+        if(!emailResponse)
+        {
+            await DeleteUserByIdAsync(userId);
+            throw new ApplicationException("Não foi possível enviar o email, verifique se ele está correto ou tente novamente mais tarde.");
+        }
+
+		return errorMessages;
+	}
+
+	public void ConfirmResetPassword(string token)
+	{
+		var errorMessages = new List<string>();
+		var jwtSecurityToken = new JwtSecurityToken();
+
+		try
+		{
+			var tokenHandler = new JwtSecurityTokenHandler();
+			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
+
+			var tokenDescriptor = new TokenValidationParameters
+			{
+				ValidateIssuerSigningKey = true,
+				IssuerSigningKey = key,
+				ValidateIssuer = false,
+				ValidateAudience = false,
+				ClockSkew = TimeSpan.Zero
+			};
+			SecurityToken securityToken;
+			var principal = tokenHandler.ValidateToken(token, tokenDescriptor, out securityToken);
+			jwtSecurityToken = securityToken as JwtSecurityToken;
+			
+		}
+		catch (Exception)
+		{
+			throw new ApplicationException("Token de redefinição de senha inválido.");;
+		}
+	}
+
+	public async Task<List<string>> ResetPassword(User user)
+	{
+		var errorMessages = new List<string>();
+		var result = await new UserValidator().ValidateAsync(user, options => options.IncludeRuleSets("Password"));
+
+		if (!result.IsValid)
+			return result.Errors.Select(x => x.ErrorMessage).ToList();
+		
+		var actualUser = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = email;", user.Email);
+		
+		actualUser.PasswordHash = EncryptPassword(user.Password);
+
+		await UpdatePasswordSendAsync(actualUser);
+		return errorMessages;
+	}
+
+	private async Task UpdatePasswordSendAsync(User user)
+	{
+		await _dbService.EditData(
+            "UPDATE users SET passwordhash = @PasswordHash WHERE id = @Id;", user
+            );
 	}
 }

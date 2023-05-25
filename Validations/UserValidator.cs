@@ -53,6 +53,17 @@ public partial class UserValidator : AbstractValidator<User>
                 .Matches(PasswordRegex())
                 .WithMessage("Senha inválida");
         });
+
+        RuleSet("Password", () =>
+        {
+            RuleFor(rule => rule.Password)
+                .NotEmpty()
+                .WithMessage("Insira sua senha");
+
+            RuleFor(rule => rule.Password)
+                .Matches(PasswordRegex())
+                .WithMessage("Senha inválida");
+        });
         
     }
     

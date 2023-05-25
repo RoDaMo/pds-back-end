@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using PlayOffsApi.DTO;
 
 namespace PlayOffsApi.Controllers;
 
@@ -28,6 +29,9 @@ public class AuthController : ApiBaseController
 			
 			if (user.Id == Guid.Empty)
 				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
+			
+			if (!user.ConfirmEmail)
+				return ApiUnauthorizedRequest("Confirme seu email para poder acessar sua conta.");
 
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
 
@@ -175,7 +179,50 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			return ApiOk(await _authService.SendEmail(id));
+			return ApiOk(await _authService.SendEmailToConfirmAccount(id));
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpPost]
+	[Route("/auth/forgot-password")] 
+	public async Task<IActionResult> ForgotPassword(User user)
+	{
+		try
+		{
+			return ApiOk(await _authService.ForgotPassword(user));
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpGet]
+	[Route("/auth/reset-password")] 
+	public IActionResult ResetPassword(string token)
+	{
+		try
+		{
+			_authService.ConfirmResetPassword(token);
+			return ApiOk();
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpPost]
+	[Route("/auth/reset-password")] 
+	public async Task<IActionResult> ResetPassword(User user)
+	{
+		try
+		{
+			return ApiOk(await _authService.ResetPassword(user));
 		}
 		catch (ApplicationException ex)
 		{

@@ -7,6 +7,7 @@ public class EmailService
 {
     private string Email { get => Environment.GetEnvironmentVariable("EMAILCLIENT"); }
     private string Senha { get => Environment.GetEnvironmentVariable("EMAILPASSWORD"); }
+    
 
     public bool SendEmailPasswordReset(string userEmail, string userName, string link)
     {
@@ -25,7 +26,7 @@ public class EmailService
             "<p>Caso n&atilde;o consiga utilizar o bot&atilde;o, copie e cole o seguinte link no seu navegador:</p>\n" +
             "<p>"+ link + "</p>\n" +
             "<p>Atenciosamente,</p>\n" +
-            "<p>Astromedia</p></div></div>";
+            "<p>PlayOffs</p></div></div>";
 
         SmtpClient client = new SmtpClient("smtp-mail.outlook.com");
         client.Port = 587;
