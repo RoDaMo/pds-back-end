@@ -71,17 +71,24 @@ public class AuthService
 	public async Task<List<string>> RegisterValidationAsync(User newUser)
 	{
 		var result = await new UserValidator().ValidateAsync(newUser, options => options.IncludeRuleSets("IdentificadorUsername", "IdentificadorEmail", "Dados"));
+		var resultId = new List<string>();
 
 		if (!result.IsValid)
 			return result.Errors.Select(x => x.ErrorMessage).ToList();
 
 		if (await UserAlreadyExists(newUser))
 			return new() { "Email ou nome de usuário já cadastrado no sistema" };
-		
-		var userId =  await RegisterUserAsync(newUser);
-		await SendEmail(userId);
-		var resultId = new List<string>();
-		resultId.Add(userId.ToString());
+
+		if (await UserAlreadyExistsInPlayerTemp(newUser.Email))
+		{
+			var id = await CreateAccountAndAddPlayer(newUser);
+			await SendEmail(id); //remove this after adding temporary player consent check functionality
+			resultId.Add(id.ToString());
+			return resultId;
+		}		
+		newUser.Id = await RegisterUserAsync(newUser);
+		await SendEmail(newUser.Id);
+		resultId.Add(newUser.Id.ToString());
 
 		return resultId;
 	}
@@ -124,6 +131,7 @@ public class AuthService
 
 	public async Task<List<string>> SendEmail(Guid userId)
 	{
+
 		var user = await GetUserByIdAsync(userId);
         var errorMessages = new List<string>();
 		var token = GenerateJwtToken(user.Id, user.Email);
@@ -136,7 +144,7 @@ public class AuthService
         if(!emailResponse)
         {
             await DeleteUserByIdAsync(userId);
-            throw new ApplicationException("Não foi possível enviar o e-mail, verifique se ele está correto ou tente novamente mais tarde.");
+            throw new ApplicationException("Não foi possível enviar o email, verifique se ele está correto ou tente novamente mais tarde.");
         }
 
 		return errorMessages;
@@ -167,7 +175,7 @@ public class AuthService
 		}
 		catch (Exception)
 		{
-			throw new ApplicationException("Token de confirmação de e-mail inválido.");;
+			throw new ApplicationException("Token de confirmação de email inválido.");;
 		}
 
 		var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
@@ -177,7 +185,6 @@ public class AuthService
         {
            throw new ApplicationException("Tente se cadastrar novamente.");
         }
-
         if(user.ConfirmEmail)
         {
            return errorMessages;
@@ -186,11 +193,39 @@ public class AuthService
         user.ConfirmEmail = true;
         await UpdateConfirmEmailAsync(user);
 
+		if (user.PlayerTeamId != 0)
+		{
+			await DeletePlayerTempProfile(user.Id);
+		}
+
         return errorMessages;
 	}
 
     private async Task UpdateConfirmEmailAsync(User user)
 	{
 		await _dbService.EditData("UPDATE users SET ConfirmEmail = @ConfirmEmail WHERE id = @Id;", user);
+	}
+
+	private async Task<bool> UserAlreadyExistsInPlayerTemp(string email)
+	{
+		return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM playertempprofiles WHERE Email = email", email);
+	}
+
+	private async Task<Guid> CreateAccountAndAddPlayer(User user)
+	{
+		var player = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Email = email", user.Email);
+		user.ArtisticName = player.ArtisticName;
+		user.Number = player.Number;
+		user.SoccerPositionId = player.SoccerPositionId;
+		user.VolleyballPositionId = player.VolleyballPositionId;
+		user.PlayerTeamId = player.TeamsId;
+		user.PasswordHash = EncryptPassword(user.Password);
+
+		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, ArtisticName, Number, SoccerPositionId, VolleyballPositionId, PlayerTeamId) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, 'false', @ArtisticName, @Number, @SoccerPositionId, @VolleyballPositionId, @PlayerTeamId) RETURNING Id;", user);
+	}
+
+	private async Task DeletePlayerTempProfile(Guid id)
+	{
+		await _dbService.EditData("DELETE FROM playertempprofiles WHERE Id = id;", id);
 	}
 }

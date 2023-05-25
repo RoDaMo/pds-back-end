@@ -55,12 +55,12 @@ public class EmailService
         mailMessage.To.Add(new MailAddress(userEmail));
         mailMessage.Subject = "Confirmação de E-mail";
         mailMessage.IsBodyHtml = true;
-        mailMessage.Body =  "<div style=\"text-align: center;\"><div style=\"padding: 10px; text-align: left\"><h1>Confirme seu e-mail</h1>\n" +
+        mailMessage.Body =  "<div style=\"text-align: center;\"><div style=\"padding: 10px; text-align: left\"><h1>Confirme seu email</h1>\n" +
                 "<p>Ol&aacute;, "+ userName + ".</p>\n" +
                 "<p>Voc&ecirc; se cadastrou na plataforma PlayOffs.</p>\n" +
-                "<p>Utilize o bot&atilde;o abaixo para confirmar o seu e-mail.</p>\n" +
+                "<p>Utilize o bot&atilde;o abaixo para confirmar o seu email.</p>\n" +
                 "<a href=\"" + link +"\" target=\"_blank\" style=\"max-width: 280px; text-decoration: none; display: inline-block; background-color: #4caf50; color: #ffffff; height: 36px; border-radius: 5px; font-weight: bold; font-size: 18px; margin: 20px 0; width: 100%; text-align: center; padding-top: 10px; \">" +
-                "  Confirmar e-mail" +
+                "  Confirmar email" +
                 "</a>" +
                 "<p>Caso n&atilde;o consiga utilizar o bot&atilde;o, copie e cole o seguinte link no seu navegador:</p>\n" +
                 "<p>"+ link + "</p>\n" +
