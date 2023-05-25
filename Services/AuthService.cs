@@ -79,21 +79,11 @@ public class AuthService
 			return new() { "Email ou nome de usuário já cadastrado no sistema" };
 		
 		var userId =  await RegisterUserAsync(newUser);
-        var token = GenerateJwtToken(userId, newUser.Email);
-		
-		var httpContext = _httpContextAccessor.HttpContext;
-        var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}{httpContext.Request.Path}{httpContext.Request.QueryString}";
-        var url = $"{baseUrl}?token={token}";
-    
-        var emailResponse = _emailService.SendConfirmationEmail(newUser.Email, newUser.Username, url);
+		await SendEmail(userId);
+		var resultId = new List<string>();
+		resultId.Add(userId.ToString());
 
-        if(!emailResponse)
-        {
-            await DeleteUserByIdAsync(userId);
-            throw new ApplicationException("Não foi possível enviar o e-mail, verifique se ele está correto ou tente novamente mais tarde.");
-        }
-
-		return new();
+		return resultId;
 	}
 
 	private async Task DeleteUserByIdAsync(Guid userId) 
@@ -131,12 +121,32 @@ public class AuthService
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
 		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf FROM users WHERE id = @Id", new User { Id = userId});
+
+	public async Task<List<string>> SendEmail(Guid userId)
+	{
+		var user = await GetUserByIdAsync(userId);
+        var errorMessages = new List<string>();
+		var token = GenerateJwtToken(user.Id, user.Email);
+		var httpContext = _httpContextAccessor.HttpContext;
+		var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/auth/confirm-email";
+        var url = $"{baseUrl}?token={token}";
+    
+        var emailResponse = _emailService.SendConfirmationEmail(user.Email, user.Username, url);
+
+        if(!emailResponse)
+        {
+            await DeleteUserByIdAsync(userId);
+            throw new ApplicationException("Não foi possível enviar o e-mail, verifique se ele está correto ou tente novamente mais tarde.");
+        }
+
+		return errorMessages;
+	}
 	
 	public async Task<List<string>> ConfirmEmail(string token)
 	{
         var errorMessages = new List<string>();
-
 		var jwtSecurityToken = new JwtSecurityToken();
+
 		try
 		{
 			var tokenHandler = new JwtSecurityTokenHandler();
@@ -157,13 +167,11 @@ public class AuthService
 		}
 		catch (Exception)
 		{
-			
 			throw new ApplicationException("Token de confirmação de e-mail inválido.");;
 		}
 
 		var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
 		var user = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = email;", email);
-		
 
         if(user == null)
         {
@@ -176,7 +184,6 @@ public class AuthService
         } 
 
         user.ConfirmEmail = true;
-
         await UpdateConfirmEmailAsync(user);
 
         return errorMessages;
@@ -185,6 +192,5 @@ public class AuthService
     private async Task UpdateConfirmEmailAsync(User user)
 	{
 		await _dbService.EditData("UPDATE users SET ConfirmEmail = @ConfirmEmail WHERE id = @Id;", user);
-        
 	}
 }

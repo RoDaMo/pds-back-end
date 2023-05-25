@@ -5,10 +5,8 @@ namespace PlayOffsApi.Services;
 
 public class EmailService
 {
-    // private string Email { get => Environment.GetEnvironmentVariable("EMAILCLIENT"); }
-    // private string Senha { get => Environment.GetEnvironmentVariable("EMAILPASSWORD"); }
-    
-
+    private string Email { get => Environment.GetEnvironmentVariable("EMAILCLIENT"); }
+    private string Senha { get => Environment.GetEnvironmentVariable("EMAILPASSWORD"); }
 
     public bool SendEmailPasswordReset(string userEmail, string userName, string link)
     {
@@ -62,7 +60,7 @@ public class EmailService
                 "<p>Voc&ecirc; se cadastrou na plataforma PlayOffs.</p>\n" +
                 "<p>Utilize o bot&atilde;o abaixo para confirmar o seu e-mail.</p>\n" +
                 "<a href=\"" + link +"\" target=\"_blank\" style=\"max-width: 280px; text-decoration: none; display: inline-block; background-color: #4caf50; color: #ffffff; height: 36px; border-radius: 5px; font-weight: bold; font-size: 18px; margin: 20px 0; width: 100%; text-align: center; padding-top: 10px; \">" +
-                "  Verificar E-mail" +
+                "  Confirmar e-mail" +
                 "</a>" +
                 "<p>Caso n&atilde;o consiga utilizar o bot&atilde;o, copie e cole o seguinte link no seu navegador:</p>\n" +
                 "<p>"+ link + "</p>\n" +
