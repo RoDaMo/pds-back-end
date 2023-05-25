@@ -26,10 +26,10 @@ public class UserConfigurationController : ApiBaseController
 
         try
         {
-            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
             
             result = await _authService.UpdateProfileValidationAsync(user, userId);
-            return result.Any() ? ApiOk(result, false) : ApiOk(result);
+            return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }
 
         catch (ApplicationException ex)
@@ -47,9 +47,9 @@ public class UserConfigurationController : ApiBaseController
 
         try
         {
-            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
             result = await _authService.UpdatePasswordValidationAsync(updatePasswordDTO, userId);
-            return result.Any() ? ApiOk(result, false) : ApiOk(result);
+            return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }
 
         catch (ApplicationException ex)

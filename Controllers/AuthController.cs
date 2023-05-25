@@ -122,7 +122,7 @@ public class AuthController : ApiBaseController
 		{
 			var errors = await _authService.RegisterValidationAsync(user);
 
-			return errors.Any() ? ApiOk(errors, false) : ApiOk("Usuário cadastrado com sucesso");
+			return errors.Any() ? ApiBadRequest(errors) : ApiOk("Usuário cadastrado com sucesso");
 		}
 		catch (ApplicationException ex)
 		{

@@ -31,9 +31,8 @@ public class TeamController : ApiBaseController
             var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 
             result = await _teamService.CreateValidationAsync(teamDto, userId);
-            return result.Any() ? ApiOk(result, false) : ApiOk(result);
+            return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }
-
         catch (ApplicationException ex)
         {
             result.Add(ex.Message);
@@ -49,7 +48,6 @@ public class TeamController : ApiBaseController
             var result = await _teamService.GetAllValidationAsync();
             return ApiOk(result);
         }
-
         catch (ApplicationException ex)
         {
             return ApiBadRequest(ex.Message);
@@ -63,9 +61,8 @@ public class TeamController : ApiBaseController
         {
             var result = await _teamService.GetByIdValidationAsync(id);
 
-            return result is null ? ApiOk(result, false) : ApiOk(result);
+            return result is null ? ApiBadRequest("Time não existente") : ApiOk(result);
         }
-
         catch (ApplicationException ex)
         {
             return ApiBadRequest(ex.Message);
