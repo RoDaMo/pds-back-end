@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using PlayOffsApi.Validations;
 
 namespace PlayOffsApi.Controllers;
 
@@ -84,7 +85,7 @@ public class AuthController : ApiBaseController
 				HttpOnly = true,
 				Secure = true,
 				SameSite = SameSiteMode.Strict,
-				Expires = DateTime.UtcNow.AddHours(2)
+				Expires = DateTime.UtcNow.AddDays(1)
 			};
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
@@ -165,6 +166,44 @@ public class AuthController : ApiBaseController
 				name = user.Name,
 				id = user.Id
 			});
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message);
+		}
+	}
+
+	[HttpGet]
+	[Authorize]
+	[Route("/auth/cpf")]
+	public async Task<IActionResult> CurrentUserHasCpf()
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			var hasCpf = await _authService.UserHasCpfValidationAsync(userId);
+			return ApiOk(hasCpf);
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message);
+		}
+	}
+
+	[Authorize]
+	[HttpPost]
+	[Route("/auth/cpf")]
+	public async Task<IActionResult> AddCpf([FromBody] string cpf)
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			var resultados = await _authService.AddCpfUserValidationAsync(userId, cpf);
+			
+			if (resultados.Any())
+				return ApiBadRequest(resultados);
+			
+			return ApiOk("CPF vinculado com sucesso");
 		}
 		catch (Exception ex)
 		{
