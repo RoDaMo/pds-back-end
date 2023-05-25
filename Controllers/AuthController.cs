@@ -127,10 +127,9 @@ public class AuthController : ApiBaseController
 			{
 				return ApiOk(errors[0], true, "Verifique o seu e-mail e confirme a sua conta para poder acessá-la.");
 			}
-			else 
-			{
-				return ApiOk(errors, false);
-			}
+			
+			return ApiBadRequest(errors);
+			
 		}
 		catch (ApplicationException ex)
 		{
@@ -174,12 +173,13 @@ public class AuthController : ApiBaseController
 	}
 
 	[HttpGet]
-	[Route("/auth/resend-email")] 
+	[Route("/auth/resend-confirm-email")] 
 	public async Task<IActionResult> ResendConfirmEmail(Guid id)
 	{
 		try
 		{
-			return ApiOk(await _authService.SendEmailToConfirmAccount(id));
+			await _authService.SendEmailToConfirmAccount(id);
+			return ApiOk();
 		}
 		catch (ApplicationException ex)
 		{
@@ -193,7 +193,29 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			return ApiOk(await _authService.ForgotPassword(user));
+			var result = await _authService.ForgotPassword(user);
+
+			if(result[0].Length == 36)
+			{
+				return ApiOk(result[0], true, "Verifique o seu e-mail para redefinir sua senha.");
+			}
+			
+			return ApiBadRequest(result);
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpGet]
+	[Route("/auth/resend-forgot-password")] 
+	public async Task<IActionResult> ResendForgotPassword(Guid id)
+	{
+		try
+		{
+			await _authService.SendEmailToResetPassword(id);
+			return ApiOk();
 		}
 		catch (ApplicationException ex)
 		{
@@ -222,7 +244,8 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			return ApiOk(await _authService.ResetPassword(user));
+			var result = await _authService.ResetPassword(user);
+			return result.Any() ? ApiBadRequest(result) : ApiOk(result);
 		}
 		catch (ApplicationException ex)
 		{

@@ -21,7 +21,7 @@ public class EmailService
             "<p>Ol&aacute;, "+ userName + ".</p>\n" +
             "<p>Utilize o bot&atilde;o abaixo para alterar a sua senha.</p>\n" +
             "<a href=\"" + link +"\" target=\"_blank\" style=\"max-width: 280px; text-decoration: none; display: inline-block; background-color: #4caf50; color: #ffffff; height: 36px; border-radius: 5px; font-weight: bold; font-size: 18px; margin: 20px 0; width: 100%; text-align: center; padding-top: 10px; \">" +
-            "  Alterar Senha" +
+            "  Alterar senha" +
             "</a>" +
             "<p>Caso n&atilde;o consiga utilizar o bot&atilde;o, copie e cole o seguinte link no seu navegador:</p>\n" +
             "<p>"+ link + "</p>\n" +

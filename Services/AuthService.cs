@@ -130,11 +130,10 @@ public class AuthService
 	public async Task<User> GetUserByIdAsync(Guid userId) 
 		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf FROM users WHERE id = @Id", new User { Id = userId});
 
-	public async Task<List<string>> SendEmailToConfirmAccount(Guid userId)
+	public async Task SendEmailToConfirmAccount(Guid userId)
 	{
 
 		var user = await GetUserByIdAsync(userId);
-        var errorMessages = new List<string>();
 		var token = GenerateJwtToken(user.Id, user.Email);
 		var httpContext = _httpContextAccessor.HttpContext;
 		var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/auth/confirm-email";
@@ -148,7 +147,6 @@ public class AuthService
             throw new ApplicationException("Não foi possível enviar o email, verifique se ele está correto ou tente novamente mais tarde.");
         }
 
-		return errorMessages;
 	}
 	
 	public async Task<List<string>> ConfirmEmail(string token)
@@ -244,14 +242,14 @@ public class AuthService
 				throw new ApplicationException("Confirme seu email para poder acessar sua conta.");
 		
 		await SendEmailToResetPassword(actualUser.Id);
+		errorMessages.Add(actualUser.Id.ToString());
 		return errorMessages;
 	}
 
-	public async Task<List<string>> SendEmailToResetPassword(Guid userId)
+	public async Task SendEmailToResetPassword(Guid userId)
 	{
 
 		var user = await GetUserByIdAsync(userId);
-        var errorMessages = new List<string>();
 		var token = GenerateJwtToken(user.Id, user.Email);
 		var httpContext = _httpContextAccessor.HttpContext;
 		var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/auth/reset-password";
@@ -265,7 +263,6 @@ public class AuthService
             throw new ApplicationException("Não foi possível enviar o email, verifique se ele está correto ou tente novamente mais tarde.");
         }
 
-		return errorMessages;
 	}
 
 	public void ConfirmResetPassword(string token)
