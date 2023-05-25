@@ -28,10 +28,10 @@ public class PlayerController : ApiBaseController
 
         try
         {
-            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 
             result = await _playerService.CreateValidationAsync(user, userId);
-            return result.Any() ? ApiOk(result, false) : ApiOk(result);
+            return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }
 
         catch (ApplicationException ex)

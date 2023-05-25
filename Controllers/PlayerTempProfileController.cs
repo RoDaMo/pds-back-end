@@ -27,10 +27,10 @@ public class PlayerTempProfileController : ApiBaseController
 
         try
         {
-            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 
             result = await _playerTempProfileService.CreateValidationAsync(playerTempProfile, userId);
-            return result.Any() ? ApiOk(result, false) : ApiOk(result);
+            return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }
 
         catch (ApplicationException ex)
