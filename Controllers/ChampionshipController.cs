@@ -56,25 +56,25 @@ public class ChampionshipController : ApiBaseController
     try
     {
       List<Championship> result;
-      await using var redisDb = await _redisService.GetDatabase();
-      var cachePagina = await redisDb.GetAsync<string>(name);
+      // await using var redisDb = await _redisService.GetDatabase();
+      // var cachePagina = await redisDb.GetAsync<string>(name);
 
-      if (!string.IsNullOrEmpty(cachePagina) && sport == Sports.All && start == DateTime.MinValue && finish == DateTime.MinValue)
-        result = JsonSerializer.Deserialize<List<Championship>>(cachePagina);
-      else
+      // if (!string.IsNullOrEmpty(cachePagina) && sport == Sports.All && start == DateTime.MinValue && finish == DateTime.MinValue)
+      //   result = JsonSerializer.Deserialize<List<Championship>>(cachePagina);
+      // else
+      // {
+      var sortArray = string.IsNullOrEmpty(sort) ? null : sort.Split(',');
+      try
       {
-        var sortArray = string.IsNullOrEmpty(sort) ? null : sort.Split(',');
-        try
-        {
-          result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
-        }
-        catch (Exception)
-        {
-          pitId = string.Empty;
-          result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
-        }
-        await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
+        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
       }
+      catch (Exception)
+      {
+        pitId = string.Empty;
+        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
+      }
+        // await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
+      // }
 
       return ApiOk(result, message: result is null || !result.Any() ? string.Empty : result.Last().PitId);
     }
