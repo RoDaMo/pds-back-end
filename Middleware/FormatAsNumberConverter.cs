@@ -1,9 +1,8 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using PlayOffsApi.Enum;
-using PlayOffsApi.Models;
 
-namespace PlayOffsApi.CustomJsonConverters;
+namespace PlayOffsApi.Middleware;
 
 public class FormatAsNumberConverter : JsonConverter<Format>
 {

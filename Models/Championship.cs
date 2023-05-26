@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 using Elastic.Clients.Elasticsearch;
-using PlayOffsApi.CustomJsonConverters;
 using PlayOffsApi.Enum;
+using PlayOffsApi.Middleware;
 
 namespace PlayOffsApi.Models;
 

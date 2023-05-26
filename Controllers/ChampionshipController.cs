@@ -37,7 +37,7 @@ public class ChampionshipController : ApiBaseController
       
       result = await _championshipService.CreateValidationAsync(championship);
       if (result.Any())
-        return ApiOk(result, false);
+        return ApiBadRequest(result);
 
       result.Add(Resource.ChampionshipAdded);
       return ApiOk(result);
@@ -64,11 +64,19 @@ public class ChampionshipController : ApiBaseController
       else
       {
         var sortArray = string.IsNullOrEmpty(sort) ? null : sort.Split(',');
-        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
+        try
+        {
+          result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sort);
+        }
+        catch (Exception)
+        {
+          pitId = string.Empty;
+          result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sort);
+        }
         await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
       }
 
-      return ApiOk(result, message: result.Last().PitId);
+      return ApiOk(result, message: result is null || !result.Any() ? string.Empty : result.Last().PitId);
     }
     catch (ApplicationException ex)
     {
@@ -84,7 +92,7 @@ public class ChampionshipController : ApiBaseController
     {
       return ApiOk(await _championshipService.GetByIdValidation(id));
     }
-    catch (ApplicationException ex)
+    catch (ApplicationException)
     {
       return ApiBadRequest("Campeonato com esse ID não existe");
     }
