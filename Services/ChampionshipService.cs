@@ -63,9 +63,11 @@ public class ChampionshipService
 		
 		var response = await GetByFilterSendAsync(name, sport, start, finish, pit, listSort);
 		var documents = response.Documents.ToList();
+		if (!documents.Any()) return documents;
+		
 		documents.Last().PitId = response.PitId;
 		documents.Last().Sort = response.Hits.Last().Sort;
-		
+
 		return documents;
 	}
 
