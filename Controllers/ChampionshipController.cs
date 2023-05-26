@@ -66,12 +66,12 @@ public class ChampionshipController : ApiBaseController
         var sortArray = string.IsNullOrEmpty(sort) ? null : sort.Split(',');
         try
         {
-          result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sort);
+          result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
         }
         catch (Exception)
         {
           pitId = string.Empty;
-          result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sort);
+          result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
         }
         await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
       }
