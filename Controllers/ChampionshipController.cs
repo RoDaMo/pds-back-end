@@ -55,29 +55,20 @@ public class ChampionshipController : ApiBaseController
   {
     try
     {
-      (List<Championship> result, long total) = (new List<Championship>(), 0);
-      // await using var redisDb = await _redisService.GetDatabase();
-      // var cachePagina = await redisDb.GetAsync<string>(name);
-
-      // if (!string.IsNullOrEmpty(cachePagina) && sport == Sports.All && start == DateTime.MinValue && finish == DateTime.MinValue)
-      //   result = JsonSerializer.Deserialize<List<Championship>>(cachePagina);
-      // else
-      // {
+      (List<Championship> result, long total) results;
       var sortArray = string.IsNullOrEmpty(sort) ? null : sort.Split(',');
       try
       {
-        (result, total) = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
+        results = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
       }
       catch (Exception)
       {
         pitId = string.Empty;
-        (result, total) = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
+        results = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
       }
-        // await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
-      // }
-      var totalPaginas = Math.Ceiling(total / 15m);
+      var totalPaginas = Math.Ceiling(results.total / 15m);
 
-      return ApiOk(result, message: totalPaginas.ToString("N0"));
+      return ApiOk(results.result, message: totalPaginas.ToString("N0"));
     }
     catch (ApplicationException ex)
     {
