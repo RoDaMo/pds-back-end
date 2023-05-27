@@ -50,7 +50,7 @@ public class ChampionshipService
 			throw new ApplicationException(Resource.GenericErrorMessage);
 	}
 
-	public async Task<List<Championship>> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort)
+	public async Task<(List<Championship> campionships, long total)> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort)
 	{
 		finish = finish == DateTime.MinValue ? DateTime.MaxValue : finish;
 		var pit = string.IsNullOrEmpty(pitId)
@@ -63,12 +63,12 @@ public class ChampionshipService
 		
 		var response = await GetByFilterSendAsync(name, sport, start, finish, pit, listSort);
 		var documents = response.Documents.ToList();
-		if (!documents.Any()) return documents;
+		if (!documents.Any()) return (documents, 0);
 		
 		documents.Last().PitId = response.PitId;
 		documents.Last().Sort = response.Hits.Last().Sort;
 
-		return documents;
+		return (documents, response.Total);
 	}
 
 	private async Task<SearchResponse<Championship>> GetByFilterSendAsync(string name, Sports sport, DateTime start, DateTime finish, PointInTimeReference pitId, ICollection<FieldValue> sort)

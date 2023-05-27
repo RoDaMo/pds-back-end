@@ -55,7 +55,7 @@ public class ChampionshipController : ApiBaseController
   {
     try
     {
-      List<Championship> result;
+      (List<Championship> result, long total) = (new List<Championship>(), 0);
       // await using var redisDb = await _redisService.GetDatabase();
       // var cachePagina = await redisDb.GetAsync<string>(name);
 
@@ -66,17 +66,18 @@ public class ChampionshipController : ApiBaseController
       var sortArray = string.IsNullOrEmpty(sort) ? null : sort.Split(',');
       try
       {
-        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
+        (result, total) = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
       }
       catch (Exception)
       {
         pitId = string.Empty;
-        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
+        (result, total) = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
       }
         // await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
       // }
+      var totalPaginas = Math.Ceiling(total / 15m);
 
-      return ApiOk(result, message: result is null || !result.Any() ? string.Empty : result.Last().PitId);
+      return ApiOk(result, message: totalPaginas.ToString("N0"));
     }
     catch (ApplicationException ex)
     {
