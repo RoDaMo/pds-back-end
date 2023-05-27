@@ -32,7 +32,8 @@ public class AuthController : ApiBaseController
 			if (user.Id == Guid.Empty)
 				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
 
-			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
+			var expires = DateTime.UtcNow.AddMinutes(15);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, expires);
 
 
 			var cookieOptions = new CookieOptions
@@ -40,7 +41,7 @@ public class AuthController : ApiBaseController
 				HttpOnly = true,
 				Secure = true,
 				SameSite = SameSiteMode.None,
-				Expires = DateTime.UtcNow.AddHours(2)
+				Expires = expires
 			};
 
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
@@ -48,8 +49,9 @@ public class AuthController : ApiBaseController
 
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
-			if (!user.RememberMe) return ApiOk<string>("Autenticado com sucesso");
-			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
+			var expirationDate = user.RememberMe ? DateTime.UtcNow.AddDays(14) : DateTime.UtcNow.AddDays(1);
+
+			var refreshToken = AuthService.GenerateRefreshToken(user.Id, expirationDate);
 			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
 			cookieOptions.Expires = refreshToken.ExpirationDate;
 			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), cookieOptions);
@@ -78,30 +80,23 @@ public class AuthController : ApiBaseController
 				return ApiUnauthorizedRequest("Refresh token expirado");
 
 			var user = await _authService.GetUserByIdAsync(token.UserId);
-			var jwt = _authService.GenerateJwtToken(user.Id, user.Username);
+			var expires = DateTime.UtcNow.AddMinutes(15);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, expires);
 
 			var cookieOptions = new CookieOptions
 			{
 				HttpOnly = true,
 				Secure = true,
 				SameSite = SameSiteMode.Strict,
-				Expires = DateTime.UtcNow.AddDays(1)
+				Expires = expires
 			};
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
-			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
-
-			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
-			await redis.RemoveAsync(token.Token.ToString());
-
-			cookieOptions.Expires = refreshToken.ExpirationDate;
-			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), cookieOptions);
-
 			return ApiOk("Token atualizado");
 		}
-		catch (Exception ex)
+		catch (Exception)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			return ApiBadRequest("Houve um erro autenticando o usuário.");
 		}
 	}
 
