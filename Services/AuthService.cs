@@ -26,7 +26,7 @@ public class AuthService
 		// _criptKey = criptKey;
 	}
 
-	public string GenerateJwtToken(Guid userId, string email)
+	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate)
 	{
 		var tokenHandler = new JwtSecurityTokenHandler();
 
@@ -39,12 +39,11 @@ public class AuthService
 
 		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-		var expires = DateTime.UtcNow.AddDays(1);
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
 			Subject = new(claims),
-			Expires = expires,
+			Expires = expirationDate,
 			Issuer = _issuer,
 			Audience = _audience,
 			SigningCredentials = creds
@@ -54,11 +53,11 @@ public class AuthService
 	}
 
 	// exists so that if refresh token implementation changes, it changes globaly
-	public static RefreshToken GenerateRefreshToken(Guid userId) => new()
+	public static RefreshToken GenerateRefreshToken(Guid userId, DateTime expiration) => new()
 		{
 			UserId = userId,
 			Token = Guid.NewGuid(),
-			ExpirationDate = DateTime.UtcNow.AddMonths(12)
+			ExpirationDate = expiration
 		};
 
 	private static string EncryptPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password);
