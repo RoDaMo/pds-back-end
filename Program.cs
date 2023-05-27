@@ -22,7 +22,7 @@ if (builder.Environment.IsProduction())
 	// CRYPT_KEY = Environment.GetEnvironmentVariable("CRYPT_KEY").ToUtf8Bytes();
 }
 
-var audience = new string[] { AUDIENCE, "https://localhost:5173", "https://127.0.0.1:5173" };
+var audience = new[] { AUDIENCE, "https://localhost:5173", "https://127.0.0.1:5173" };
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(con =>
 {
@@ -56,7 +56,6 @@ builder.Services.AddSingleton<DbService>();
 builder.Services.AddScoped<ChampionshipService>();
 builder.Services.AddSingleton<RedisService>();
 builder.Services.AddSingleton<ElasticService>();
-builder.Services.AddScoped<SportService>();
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<PlayerTempProfileService>();
 builder.Services.AddScoped<PlayerService>();
