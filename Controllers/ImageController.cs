@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
@@ -29,6 +29,7 @@ public class ImageController : ApiBaseController
 
     [HttpPost]
     [Authorize]
+
     public async Task<IActionResult> SendImage(IFormFile file, TypeUpload type)
     {
         try
