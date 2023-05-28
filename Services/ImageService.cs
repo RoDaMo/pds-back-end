@@ -44,6 +44,8 @@ public partial class ImageService
         switch (type)
         {
             case TypeUpload.ChampionshipLogo:
+            case TypeUpload.TeamLogo:
+            case TypeUpload.TeamUniform:
             case TypeUpload.UserLogo:
             {
                 if (ConvertBytesToMegabytes(file.Stream.Length) > 5)

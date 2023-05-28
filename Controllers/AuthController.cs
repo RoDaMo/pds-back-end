@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
-using PlayOffsApi.Validations;
 
 namespace PlayOffsApi.Controllers;
 

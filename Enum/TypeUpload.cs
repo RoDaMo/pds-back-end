@@ -4,5 +4,7 @@ public enum TypeUpload
 {
     ChampionshipLogo = 0,
     UserLogo = 1,
-    ChampionshipRule = 2
+    ChampionshipRule = 2,
+    TeamUniform = 3,
+    TeamLogo = 4
 }
