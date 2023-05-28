@@ -14,11 +14,20 @@ public class AuthController : ApiBaseController
 {
 	private readonly AuthService _authService;
 	private readonly RedisService _redisService;
+	private readonly CookieOptions cookieOptions;
+	private readonly DateTime _expires = DateTime.UtcNow.AddMinutes(15);
 
 	public AuthController(AuthService authService, RedisService redisService)
 	{
 		_authService = authService;
 		_redisService = redisService;
+		cookieOptions = new CookieOptions
+		{
+			HttpOnly = true,
+			Secure = true,
+			SameSite = SameSiteMode.None,
+			Expires = _expires
+		};
 	}
 
 	[HttpPost]
@@ -34,15 +43,6 @@ public class AuthController : ApiBaseController
 
 			var expires = DateTime.UtcNow.AddMinutes(15);
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, expires);
-
-
-			var cookieOptions = new CookieOptions
-			{
-				HttpOnly = true,
-				Secure = true,
-				SameSite = SameSiteMode.None,
-				Expires = expires
-			};
 
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				cookieOptions.Domain = "playoffs.netlify.app";
@@ -82,14 +82,10 @@ public class AuthController : ApiBaseController
 			var user = await _authService.GetUserByIdAsync(token.UserId);
 			var expires = DateTime.UtcNow.AddMinutes(15);
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, expires);
-
-			var cookieOptions = new CookieOptions
-			{
-				HttpOnly = true,
-				Secure = true,
-				SameSite = SameSiteMode.Strict,
-				Expires = expires
-			};
+			
+			if (!Request.Headers.ContainsKey("IsLocalhost"))
+				cookieOptions.Domain = "playoffs.netlify.app";
+			
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
 			return ApiOk("Token atualizado");

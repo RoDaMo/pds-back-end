@@ -22,7 +22,7 @@ public class TeamValidator : AbstractValidator<TeamDTO>
 			.NotEmpty()
 			.WithMessage("Campo Uniforme de Casa não pode ser vazio.");
 
-		RuleFor(t => t.UniformWay)
+		RuleFor(t => t.UniformAway)
 			.NotEmpty()
 			.WithMessage("Campo Uniforme de Fora de Casa não pode ser vazio.");
 
@@ -32,16 +32,5 @@ public class TeamValidator : AbstractValidator<TeamDTO>
 		RuleFor(t => t.SportsId)
 			.Must(t => t.Equals(1) || t.Equals(2))
 			.WithMessage("Campo Esporte deve ser preenchido com vôlei ou futebol.");
-		
-		RuleFor(t => t.Cpf)
-			.NotEmpty()
-			.WithMessage("Campo CPF não pode ser vazio.");
-		RuleFor(t => t.Cpf)
-			.Length(11, 11)
-			.WithMessage("Campo CPF deve ter 11 caracteres.");
-		RuleFor(t => t.Cpf)
-			.Matches(@"^\d+$")
-			.WithMessage("Campos CPF deve conter apenas números");
-		
 	}
 }
