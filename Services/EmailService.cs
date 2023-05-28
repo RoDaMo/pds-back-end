@@ -5,8 +5,10 @@ namespace PlayOffsApi.Services;
 
 public class EmailService
 {
-    private string Email { get => Environment.GetEnvironmentVariable("EMAILCLIENT"); }
-    private string Senha { get => Environment.GetEnvironmentVariable("EMAILPASSWORD"); }
+    // private string Email { get => Environment.GetEnvironmentVariable("EMAILCLIENT"); }
+    // private string Senha { get => Environment.GetEnvironmentVariable("EMAILPASSWORD"); }
+    private string Email = "astromedia@outlook.com.br";
+    private string Senha = "astro2022_";
     
 
     public bool SendEmailPasswordReset(string userEmail, string userName, string link)
@@ -54,7 +56,7 @@ public class EmailService
         MailMessage mailMessage = new MailMessage();
         mailMessage.From = new MailAddress(Email);
         mailMessage.To.Add(new MailAddress(userEmail));
-        mailMessage.Subject = "Confirmação de E-mail";
+        mailMessage.Subject = "Confirmação de Email";
         mailMessage.IsBodyHtml = true;
         mailMessage.Body =  "<div style=\"text-align: center;\"><div style=\"padding: 10px; text-align: left\"><h1>Confirme seu email</h1>\n" +
                 "<p>Ol&aacute;, "+ userName + ".</p>\n" +

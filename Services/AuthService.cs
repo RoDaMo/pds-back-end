@@ -16,10 +16,9 @@ public class AuthService
 	private readonly string _audience;
 	private readonly DbService _dbService;
 	private readonly EmailService _emailService;
-	private readonly IHttpContextAccessor _httpContextAccessor;
 
 	// private readonly byte[] _criptKey;
-	public AuthService(string secretKey, string issuer, string audience, DbService dbService, EmailService emailService, IHttpContextAccessor httpContextAccessor) // , byte[] criptKey
+	public AuthService(string secretKey, string issuer, string audience, DbService dbService, EmailService emailService) // , byte[] criptKey
 	{
 		_secretKey = secretKey;
 		_issuer = issuer;
@@ -27,7 +26,6 @@ public class AuthService
 		_dbService = dbService;
 		// _criptKey = criptKey;
         _emailService = emailService;
-        _httpContextAccessor = httpContextAccessor;
 	}
 
 	public string GenerateJwtToken(Guid userId, string email)
@@ -135,16 +133,15 @@ public class AuthService
 
 		var user = await GetUserByIdAsync(userId);
 		var token = GenerateJwtToken(user.Id, user.Email);
-		var httpContext = _httpContextAccessor.HttpContext;
-		var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/auth/confirm-email";
+		var baseUrl = "https://playoffs.netlify.app/pages/confirmacao-cadastro.html";
         var url = $"{baseUrl}?token={token}";
-    
+		
         var emailResponse = _emailService.SendConfirmationEmail(user.Email, user.Username, url);
 
         if(!emailResponse)
         {
             await DeleteUserByIdAsync(userId);
-            throw new ApplicationException("Não foi possível enviar o email, verifique se ele está correto ou tente novamente mais tarde.");
+            throw new ApplicationException("Erro ao enviar o email de confirmação.");
         }
 
 	}
@@ -174,7 +171,11 @@ public class AuthService
 		}
 		catch (Exception)
 		{
-			throw new ApplicationException("Token de confirmação de email inválido.");;
+			var email2 = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
+			var user2 = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = email;", email2);
+			errorMessages.Add(user2.Id.ToString());
+			errorMessages.Add("Token de confirmação de email inválido.");
+			return errorMessages;
 		}
 
 		var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
@@ -197,6 +198,7 @@ public class AuthService
 			await DeletePlayerTempProfile(user.Id);
 		}
 
+		errorMessages.Add(user.Username);
         return errorMessages;
 	}
 
@@ -236,7 +238,10 @@ public class AuthService
 		if (!result.IsValid)
 			return result.Errors.Select(x => x.ErrorMessage).ToList();
 		
-		var actualUser = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = email;", user.Email);
+		var actualUser = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @Email;", new { Email = user.Email });
+
+		if(actualUser is null)
+			throw new ApplicationException("Email inválido.");
 
 		if (!actualUser.ConfirmEmail)
 				throw new ApplicationException("Confirme seu email para poder acessar sua conta.");
@@ -251,8 +256,7 @@ public class AuthService
 
 		var user = await GetUserByIdAsync(userId);
 		var token = GenerateJwtToken(user.Id, user.Email);
-		var httpContext = _httpContextAccessor.HttpContext;
-		var baseUrl = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/auth/reset-password";
+		var baseUrl = "https://playoffs.netlify.app/pages/redefinir-senha.html";
         var url = $"{baseUrl}?token={token}";
     
         var emailResponse = _emailService.SendEmailPasswordReset(user.Email, user.Username, url);
@@ -260,7 +264,7 @@ public class AuthService
         if(!emailResponse)
         {
             await DeleteUserByIdAsync(userId);
-            throw new ApplicationException("Não foi possível enviar o email, verifique se ele está correto ou tente novamente mais tarde.");
+            throw new ApplicationException("Erro ao enviar o email de confirmação.");
         }
 
 	}

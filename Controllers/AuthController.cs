@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
-using PlayOffsApi.DTO;
 
 namespace PlayOffsApi.Controllers;
 
@@ -125,9 +124,9 @@ public class AuthController : ApiBaseController
 
 			if(errors[0].Length == 36)
 			{
-				return ApiOk(errors[0], true, "Verifique o seu e-mail e confirme a sua conta para poder acessá-la.");
+				return ApiOk(errors[0], true, "Cadastro realizado com sucesso.");
 			}
-			
+
 			return ApiBadRequest(errors);
 			
 		}
@@ -179,7 +178,7 @@ public class AuthController : ApiBaseController
 		try
 		{
 			await _authService.SendEmailToConfirmAccount(id);
-			return ApiOk();
+			return ApiOk("Email de confirmação reenviado");
 		}
 		catch (ApplicationException ex)
 		{
@@ -197,7 +196,7 @@ public class AuthController : ApiBaseController
 
 			if(result[0].Length == 36)
 			{
-				return ApiOk(result[0], true, "Verifique o seu e-mail para redefinir sua senha.");
+				return ApiOk(result[0], true, "Pedido de redefinição de senha realizado.");
 			}
 			
 			return ApiBadRequest(result);
@@ -215,7 +214,7 @@ public class AuthController : ApiBaseController
 		try
 		{
 			await _authService.SendEmailToResetPassword(id);
-			return ApiOk();
+			return ApiOk("Email de confirmação reenviado");
 		}
 		catch (ApplicationException ex)
 		{
