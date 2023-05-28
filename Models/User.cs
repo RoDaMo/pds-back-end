@@ -21,8 +21,10 @@ public class User
 	public int SoccerPositionId { get; set; }
 	public int VolleyballPositionId { get; set; }
 	public string ArtisticName { get; set; }
-    public int Number { get; set; }
+	public int Number { get; set; }
 	public bool IsCaptain { get; set; }
+	public string Bio { get; set; }
+	public string Picture { get; set; }
 	public bool RememberMe { get; set; }
 	public bool ConfirmEmail{ get; set; }
 }

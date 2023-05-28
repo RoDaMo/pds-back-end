@@ -22,7 +22,7 @@ if (builder.Environment.IsProduction())
 	// CRYPT_KEY = Environment.GetEnvironmentVariable("CRYPT_KEY").ToUtf8Bytes();
 }
 
-var audience = new string[] { AUDIENCE, "https://localhost:5173", "https://127.0.0.1:5173" };
+var audience = new[] { AUDIENCE, "https://localhost:5173", "https://127.0.0.1:5173" };
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(con =>
 {
@@ -56,16 +56,14 @@ builder.Services.AddSingleton<DbService>();
 builder.Services.AddScoped<ChampionshipService>();
 builder.Services.AddSingleton<RedisService>();
 builder.Services.AddSingleton<ElasticService>();
-builder.Services.AddScoped<SportService>();
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<PlayerTempProfileService>();
 builder.Services.AddScoped<PlayerService>();
+builder.Services.AddScoped<ImageService>();
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddSingleton(sp =>
-{
-    return new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<EmailService>());
-});
+builder.Services.AddSingleton(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<EmailService>()));
+
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.Configure<RequestLocalizationOptions>(options =>
@@ -107,9 +105,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors("cors");
-
 app.UseAuthentication();
 app.UseAuthorization();
 

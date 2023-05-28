@@ -37,7 +37,7 @@ public class ChampionshipController : ApiBaseController
       
       result = await _championshipService.CreateValidationAsync(championship);
       if (result.Any())
-        return ApiOk(result, false);
+        return ApiBadRequest(result);
 
       result.Add(Resource.ChampionshipAdded);
       return ApiOk(result);
@@ -51,23 +51,24 @@ public class ChampionshipController : ApiBaseController
 
 
   [HttpGet(Name = "index")]
-  public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new(), DateTime finish = new(), [FromHeader]string pitId = "", [FromHeader]string[] sort = null)
+  public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new(), DateTime finish = new(), [FromHeader]string pitId = "", [FromHeader]string sort = "")
   {
     try
     {
-      List<Championship> result;
-      await using var redisDb = await _redisService.GetDatabase();
-      var cachePagina = await redisDb.GetAsync<string>(name);
-
-      if (!string.IsNullOrEmpty(cachePagina) && sport == Sports.All && start == DateTime.MinValue && finish == DateTime.MinValue)
-        result = JsonSerializer.Deserialize<List<Championship>>(cachePagina);
-      else
+      (List<Championship> result, long total) results;
+      var sortArray = string.IsNullOrEmpty(sort) ? null : sort.Split(',');
+      try
       {
-        result = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sort);
-        await redisDb.SetAsync(name, JsonSerializer.Serialize(result), TimeSpan.FromMinutes(20));
+        results = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
       }
+      catch (Exception)
+      {
+        pitId = string.Empty;
+        results = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
+      }
+      var totalPaginas = Math.Ceiling(results.total / 15m);
 
-      return ApiOk(result, message: result.Last().PitId);
+      return ApiOk(results.result, message: totalPaginas.ToString("N0"));
     }
     catch (ApplicationException ex)
     {
@@ -83,7 +84,7 @@ public class ChampionshipController : ApiBaseController
     {
       return ApiOk(await _championshipService.GetByIdValidation(id));
     }
-    catch (ApplicationException ex)
+    catch (ApplicationException)
     {
       return ApiBadRequest("Campeonato com esse ID não existe");
     }

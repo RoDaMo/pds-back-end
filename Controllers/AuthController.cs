@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
@@ -12,44 +13,47 @@ public class AuthController : ApiBaseController
 {
 	private readonly AuthService _authService;
 	private readonly RedisService _redisService;
+	private readonly CookieOptions cookieOptions;
+	private readonly DateTime _expires = DateTime.UtcNow.AddMinutes(15);
+
 	public AuthController(AuthService authService, RedisService redisService)
 	{
 		_authService = authService;
 		_redisService = redisService;
+		cookieOptions = new CookieOptions
+		{
+			HttpOnly = true,
+			Secure = true,
+			SameSite = SameSiteMode.None,
+			Expires = _expires
+		};
 	}
 
 	[HttpPost]
-	public async Task<IActionResult> GenerateToken([FromBody]User user)
+	public async Task<IActionResult> GenerateToken([FromBody] User user)
 	{
 		try
 		{
 			var redis = await _redisService.GetDatabase();
 			user = await _authService.VerifyCredentials(user);
-			
+
 			if (user.Id == Guid.Empty)
 				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
 			
 			if (!user.ConfirmEmail)
 				return ApiUnauthorizedRequest("Confirme seu email para poder acessar sua conta.");
 
-			var jwt = _authService.GenerateJwtToken(user.Id, user.Email);
+			var expires = DateTime.UtcNow.AddMinutes(15);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, expires);
 
-			
-			var cookieOptions = new CookieOptions
-			{
-				HttpOnly = true,
-				Secure = true,
-				SameSite = SameSiteMode.None,
-				Expires = DateTime.UtcNow.AddHours(2)
-			};
-			
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				cookieOptions.Domain = "playoffs.netlify.app";
 
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
-			if (!user.RememberMe) return ApiOk<string>("Autenticado com sucesso");
-			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
+			var expirationDate = user.RememberMe ? DateTime.UtcNow.AddDays(14) : DateTime.UtcNow.AddDays(1);
+
+			var refreshToken = AuthService.GenerateRefreshToken(user.Id, expirationDate);
 			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
 			cookieOptions.Expires = refreshToken.ExpirationDate;
 			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), cookieOptions);
@@ -70,40 +74,29 @@ public class AuthController : ApiBaseController
 			var oldToken = Request.Cookies["playoffs-refresh-token"];
 			if (string.IsNullOrEmpty(oldToken))
 				return ApiUnauthorizedRequest("Usuário não autenticado");
-			
+
 			var redis = await _redisService.GetDatabase();
 			var token = await redis.GetAsync<RefreshToken>(oldToken);
-			
+
 			if (token is null || token.ExpirationDate < DateTime.Now)
 				return ApiUnauthorizedRequest("Refresh token expirado");
 
 			var user = await _authService.GetUserByIdAsync(token.UserId);
-			var jwt = _authService.GenerateJwtToken(user.Id, user.Username);
-				
-			var cookieOptions = new CookieOptions
-			{
-				HttpOnly = true,
-				Secure = true,
-				SameSite = SameSiteMode.Strict,
-				Expires = DateTime.UtcNow.AddHours(2)
-			};
+			var expires = DateTime.UtcNow.AddMinutes(15);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, expires);
+			
+			if (!Request.Headers.ContainsKey("IsLocalhost"))
+				cookieOptions.Domain = "playoffs.netlify.app";
+			
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
-			var refreshToken = AuthService.GenerateRefreshToken(user.Id);
-			
-			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
-			await redis.RemoveAsync(token.Token.ToString());
-			
-			cookieOptions.Expires = refreshToken.ExpirationDate;
-			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), cookieOptions);
-			
 			return ApiOk("Token atualizado");
 		}
-		catch (Exception ex)
+		catch (Exception)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			return ApiBadRequest("Houve um erro autenticando o usuário.");
 		}
-	} 
+	}
 
 	[HttpDelete]
 	[Authorize]
@@ -121,7 +114,6 @@ public class AuthController : ApiBaseController
 		try
 		{
 			var errors = await _authService.RegisterValidationAsync(user);
-
 			if(errors[0].Length == 36)
 			{
 				return ApiOk(errors[0], true, "Cadastro realizado com sucesso.");
@@ -207,6 +199,28 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+	[Authorize]
+	[HttpGet]
+	[Route("/auth/user")]
+	public async Task<IActionResult> GetCurrentUser()
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			var user = await _authService.GetUserByIdAsync(userId);
+			return ApiOk(new
+			{
+				profileImg = user.Picture,
+				name = user.Name,
+				id = user.Id
+			});
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message);
+		}
+	}
+
 	[HttpGet]
 	[Route("/auth/resend-forgot-password")] 
 	public async Task<IActionResult> ResendForgotPassword(Guid id)
@@ -228,8 +242,7 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			_authService.ConfirmResetPassword(token);
-			return ApiOk();
+			return ApiOk(_authService.ConfirmResetPassword(token));
 		}
 		catch (ApplicationException ex)
 		{
@@ -249,6 +262,43 @@ public class AuthController : ApiBaseController
 		catch (ApplicationException ex)
 		{
 			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[Authorize]
+	[Route("/auth/cpf")]
+	public async Task<IActionResult> CurrentUserHasCpf()
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			var hasCpf = await _authService.UserHasCpfValidationAsync(userId);
+			return ApiOk(hasCpf);
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message);
+		}
+	}
+
+	[Authorize]
+	[HttpPost]
+	[Route("/auth/cpf")]
+	public async Task<IActionResult> AddCpf([FromBody] string cpf)
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			var resultados = await _authService.AddCpfUserValidationAsync(userId, cpf);
+			
+			if (resultados.Any())
+				return ApiBadRequest(resultados);
+			
+			return ApiOk("CPF vinculado com sucesso");
+		}
+		catch (Exception ex)
+		{
+			return ApiBadRequest(ex.Message);
 		}
 	}
 }

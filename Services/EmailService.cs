@@ -7,7 +7,6 @@ public class EmailService
 {
     private string Email { get => Environment.GetEnvironmentVariable("EMAILCLIENT"); }
     private string Senha { get => Environment.GetEnvironmentVariable("EMAILPASSWORD"); }
-    
 
     public bool SendEmailPasswordReset(string userEmail, string userName, string link)
     {

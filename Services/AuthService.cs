@@ -28,7 +28,7 @@ public class AuthService
         _emailService = emailService;
 	}
 
-	public string GenerateJwtToken(Guid userId, string email)
+	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate)
 	{
 		var tokenHandler = new JwtSecurityTokenHandler();
 
@@ -41,12 +41,11 @@ public class AuthService
 
 		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 		var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-		var expires = DateTime.UtcNow.AddHours(2);
 
 		var tokenDescriptor = new SecurityTokenDescriptor
 		{
 			Subject = new(claims),
-			Expires = expires,
+			Expires = expirationDate,
 			Issuer = _issuer,
 			Audience = _audience,
 			SigningCredentials = creds
@@ -56,11 +55,11 @@ public class AuthService
 	}
 
 	// exists so that if refresh token implementation changes, it changes globaly
-	public static RefreshToken GenerateRefreshToken(Guid userId) => new()
+	public static RefreshToken GenerateRefreshToken(Guid userId, DateTime expiration) => new()
 		{
 			UserId = userId,
 			Token = Guid.NewGuid(),
-			ExpirationDate = DateTime.UtcNow.AddMonths(12)
+			ExpirationDate = expiration
 		};
 
 	private static string EncryptPassword(string password) => BCrypt.Net.BCrypt.HashPassword(password);
@@ -77,6 +76,8 @@ public class AuthService
 
 		if (await UserAlreadyExists(newUser))
 			return new() { "Email ou nome de usuário já cadastrado no sistema" };
+
+		newUser.Picture = "https://cdn-icons-png.flaticon.com/512/17/17004.png";
 
 		if (await UserAlreadyExistsInPlayerTemp(newUser.Email))
 		{
@@ -132,7 +133,7 @@ public class AuthService
 	{
 
 		var user = await GetUserByIdAsync(userId);
-		var token = GenerateJwtToken(user.Id, user.Email);
+		var token = GenerateJwtToken(user.Id, user.Email, DateTime.UtcNow.AddHours(2));
 		var baseUrl = "https://playoffs.netlify.app/pages/confirmacao-cadastro.html";
         var url = $"{baseUrl}?token={token}";
 		
@@ -255,7 +256,7 @@ public class AuthService
 	{
 
 		var user = await GetUserByIdAsync(userId);
-		var token = GenerateJwtToken(user.Id, user.Email);
+		var token = GenerateJwtToken(user.Id, user.Email, DateTime.UtcNow.AddHours(2));
 		var baseUrl = "https://playoffs.netlify.app/pages/redefinir-senha.html";
         var url = $"{baseUrl}?token={token}";
     
@@ -263,13 +264,12 @@ public class AuthService
 
         if(!emailResponse)
         {
-            await DeleteUserByIdAsync(userId);
             throw new ApplicationException("Erro ao enviar o email de confirmação.");
         }
 
 	}
 
-	public void ConfirmResetPassword(string token)
+	public List<string> ConfirmResetPassword(string token)
 	{
 		var errorMessages = new List<string>();
 		var jwtSecurityToken = new JwtSecurityToken();
@@ -290,11 +290,13 @@ public class AuthService
 			SecurityToken securityToken;
 			var principal = tokenHandler.ValidateToken(token, tokenDescriptor, out securityToken);
 			jwtSecurityToken = securityToken as JwtSecurityToken;
-			
+			var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
+			errorMessages.Add(email);
+			return errorMessages;
 		}
 		catch (Exception)
 		{
-			throw new ApplicationException("Token de redefinição de senha inválido.");;
+			throw new ApplicationException("Token de redefinição de senha inválido.");
 		}
 	}
 
@@ -306,7 +308,7 @@ public class AuthService
 		if (!result.IsValid)
 			return result.Errors.Select(x => x.ErrorMessage).ToList();
 		
-		var actualUser = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = email;", user.Email);
+		var actualUser = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @Email;", new { Email = user.Email });
 		
 		actualUser.PasswordHash = EncryptPassword(user.Password);
 
@@ -320,4 +322,115 @@ public class AuthService
             "UPDATE users SET passwordhash = @PasswordHash WHERE id = @Id;", user
             );
 	}
+	public async Task<List<string>> UpdateProfileValidationAsync(User user, Guid userId)
+	{
+		var errorMessages = new List<string>();
+
+		var userValidator = new UserValidator();
+
+		var result = await new UserValidator().ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorUsername", "IdentificadorEmail", "Update"));
+
+		if (!result.IsValid)
+		{
+			errorMessages = result.Errors.Select(x => x.ErrorMessage).ToList();
+			return errorMessages;
+		}
+
+		if(await checkIfUserIsPlayerAsync(userId) && user.ArtisticName is not null)
+		{
+			throw new ApplicationException("Apenas jogadores podem alterar o nome artístico");
+		}
+
+		user.Id = userId;
+
+        if(await OtherUserAlreadyExists(user))
+		{
+			throw new ApplicationException("Nome de usuário ou email inválido!");
+		}
+
+		await UpdateProfileSendAsync(user);
+
+		return errorMessages;
+	}
+
+    private async Task UpdateProfileSendAsync(User user)
+	{
+		await _dbService.EditData(
+            "UPDATE users SET name = @Name, username = @UserName, email = @Email, artisticname = @ArtisticName, bio = @Bio, picture = @Picture WHERE id = @Id;", user
+            );
+	}
+
+    public async Task<List<string>> UpdatePasswordValidationAsync(UpdatePasswordDTO updatePasswordDTO, Guid userId)
+	{
+		var errorMessages = new List<string>();
+
+		var result = await new UpdatePasswordValidator().ValidateAsync(updatePasswordDTO);
+
+		if (!result.IsValid)
+		{
+			errorMessages = result.Errors.Select(x => x.ErrorMessage).ToList();
+			return errorMessages;
+		}
+
+        var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash FROM users WHERE id = @userId;", new {userId});
+
+        if (!VerifyEncryptedPassword(updatePasswordDTO.CurrentPassword, actualUser.PasswordHash))
+        {
+            throw new ApplicationException("Senha atual incorreta");
+        }
+
+		actualUser.PasswordHash = EncryptPassword(updatePasswordDTO.NewPassword);
+
+		await UpdatePasswordSendAsync(actualUser);
+
+		return errorMessages;
+	}
+
+	private async Task<bool> checkIfUserIsPlayerAsync(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT playerteamid FROM users WHERE id = @userId AND playerteamid is null);", new {userId});
+
+	private async Task<bool> OtherUserAlreadyExists(User user) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE id <> @Id AND (username = @Username OR email = @Email))", user);
+
+	public async Task<bool> UserHasCpfValidationAsync(Guid userId) => await UserHasCpfSendAsync(userId);
+
+	private async Task<bool> UserHasCpfSendAsync(Guid userId) =>
+		await _dbService.GetAsync<bool>("SELECT CASE WHEN COALESCE(TRIM(cpf), '') = '' THEN false ELSE true END FROM users WHERE id = @userId", new { userId });
+
+	public async Task<List<string>> AddCpfUserValidationAsync(Guid userId, string cpf)
+	{
+		if (await UserHasCpfValidationAsync(userId)) throw new ApplicationException("Usuário já possui CPF");
+		
+		var userValidator = new UserValidator();
+		var results = await userValidator.ValidateAsync(new User { Cpf = cpf }, option => option.IncludeRuleSets("Cpf"));
+		
+		if (!results.IsValid) return results.Errors.Select(x => x.ErrorMessage).ToList();
+
+		var numberCpf = new int[11];
+		for (var i = 0; i < 11; i++)
+			numberCpf[i] = int.Parse(cpf[i].ToString());
+		
+		var sum = 0;
+		for (var i = 0; i < 9; i++)
+			sum += numberCpf[i] * (10 - i);
+		
+
+		var firstVerifierDigit = (sum * 10) % 11;
+		firstVerifierDigit = firstVerifierDigit == 10 ? 0 : firstVerifierDigit;
+		
+		sum = 0;
+		var arrayNova = numberCpf;
+		arrayNova[9] = firstVerifierDigit; 
+		for (var i = 0; i < 10; i++)
+			sum += arrayNova[i] * (11 - i);
+		
+		var secondVerifierDigit = (sum * 10) % 11;
+		secondVerifierDigit = secondVerifierDigit == 10 ? 0 : secondVerifierDigit;
+
+		if (firstVerifierDigit != numberCpf[9] || secondVerifierDigit != numberCpf[10]) throw new ApplicationException("CPF inválido");
+
+		await AddCpfUserSend(new() { Id = userId, Cpf = cpf });
+		return new();
+	}
+
+	private async Task AddCpfUserSend(User user) 
+		=> await _dbService.EditData("UPDATE users SET cpf = @cpf WHERE id = @id", user);
 }
