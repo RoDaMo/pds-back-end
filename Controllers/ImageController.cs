@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
+using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
 
@@ -28,7 +29,7 @@ public class ImageController : ApiBaseController
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> SendImage(IFormFile file)
+    public async Task<IActionResult> SendImage(IFormFile file, TypeUpload type)
     {
         try
         {
@@ -41,14 +42,14 @@ public class ImageController : ApiBaseController
             var image = new Image
             {
                 Stream = memoryStream,
-                Extension = file.FileName.Split('.')[1],
+                Extension = file.FileName.Split('.').Last(),
                 FileName = Guid.NewGuid(),
                 UserId = userId,
                 ContentType = file.ContentType
             };
             
-            await _imageService.SendImage(image);
-            return ApiOk(image.FileName, message: "Imagem enviada com sucesso");
+            var erros = await _imageService.SendImage(image, type);
+            return erros.Any() ? ApiBadRequest(erros) : ApiOk(image.FileName, message: "Imagem enviada com sucesso");
         }
         catch (ApplicationException e)
         {
