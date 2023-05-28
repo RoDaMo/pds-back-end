@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
@@ -21,7 +21,7 @@ public partial class ImageService
         var results = ValidateUpload(file, type);
         if (results.Any())
             return results;
-
+  
         using var client = GetClient;
         var uploadRequest = new TransferUtilityUploadRequest
         {

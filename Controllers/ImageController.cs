@@ -47,7 +47,6 @@ public class ImageController : ApiBaseController
                 UserId = userId,
                 ContentType = file.ContentType
             };
-            
             var erros = await _imageService.SendImage(image, type);
             return erros.Any() ? ApiBadRequest(erros) : ApiOk(image.FileName, message: "Imagem enviada com sucesso");
         }
