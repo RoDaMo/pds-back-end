@@ -60,7 +60,10 @@ builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<PlayerTempProfileService>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<ImageService>();
-builder.Services.AddSingleton(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>()));
+builder.Services.AddSingleton<EmailService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<EmailService>()));
+
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 builder.Services.Configure<RequestLocalizationOptions>(options =>

@@ -54,6 +54,18 @@ public partial class UserValidator : AbstractValidator<User>
                 .WithMessage("Senha inválida");
         });
 
+
+         RuleSet("Password", () =>
+        {
+            RuleFor(rule => rule.Password)
+                .NotEmpty()
+                .WithMessage("Insira sua senha");
+
+            RuleFor(rule => rule.Password)
+                .Matches(PasswordRegex())
+                .WithMessage("Senha inválida");
+        });
+
         RuleSet("Update", () =>
         {
             RuleFor(rule => rule.Bio)
@@ -69,7 +81,7 @@ public partial class UserValidator : AbstractValidator<User>
             RuleFor(rule => rule.Name.ToLower())
                 .Length(4, 200)
                 .WithMessage("Nome deve possuir pelo menos 4 caracteres e no máximo 200.");
-        });
+       }); 
 
         RuleSet("UpdatePassword", () =>
         {

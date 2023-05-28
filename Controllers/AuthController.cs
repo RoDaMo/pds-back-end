@@ -39,6 +39,9 @@ public class AuthController : ApiBaseController
 
 			if (user.Id == Guid.Empty)
 				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
+			
+			if (!user.ConfirmEmail)
+				return ApiUnauthorizedRequest("Confirme seu email para poder acessar sua conta.");
 
 			var expires = DateTime.UtcNow.AddMinutes(15);
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, expires);
@@ -111,8 +114,13 @@ public class AuthController : ApiBaseController
 		try
 		{
 			var errors = await _authService.RegisterValidationAsync(user);
+			if(errors[0].Length == 36)
+			{
+				return ApiOk(errors[0], true, "Cadastro realizado com sucesso.");
+			}
 
-			return errors.Any() ? ApiBadRequest(errors) : ApiOk("Usuário cadastrado com sucesso");
+			return ApiBadRequest(errors);
+			
 		}
 		catch (ApplicationException ex)
 		{
@@ -141,6 +149,56 @@ public class AuthController : ApiBaseController
 		return ApiOk(true);
 	}
 
+	[HttpGet]
+	[Route("/auth/confirm-email")] 
+	public async Task<IActionResult> ConfirmEmail(string token)
+	{
+		try
+		{
+			return ApiOk(await _authService.ConfirmEmail(token));
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpGet]
+	[Route("/auth/resend-confirm-email")] 
+	public async Task<IActionResult> ResendConfirmEmail(Guid id)
+	{
+		try
+		{
+			await _authService.SendEmailToConfirmAccount(id);
+			return ApiOk("Email de confirmação reenviado");
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpPost]
+	[Route("/auth/forgot-password")] 
+	public async Task<IActionResult> ForgotPassword(User user)
+	{
+		try
+		{
+			var result = await _authService.ForgotPassword(user);
+
+			if(result[0].Length == 36)
+			{
+				return ApiOk(result[0], true, "Pedido de redefinição de senha realizado.");
+			}
+			
+			return ApiBadRequest(result);
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
 	[Authorize]
 	[HttpGet]
 	[Route("/auth/user")]
@@ -164,6 +222,49 @@ public class AuthController : ApiBaseController
 	}
 
 	[HttpGet]
+	[Route("/auth/resend-forgot-password")] 
+	public async Task<IActionResult> ResendForgotPassword(Guid id)
+	{
+		try
+		{
+			await _authService.SendEmailToResetPassword(id);
+			return ApiOk("Email de confirmação reenviado");
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpGet]
+	[Route("/auth/reset-password")] 
+	public IActionResult ResetPassword(string token)
+	{
+		try
+		{
+			return ApiOk(_authService.ConfirmResetPassword(token));
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpPost]
+	[Route("/auth/reset-password")] 
+	public async Task<IActionResult> ResetPassword(User user)
+	{
+		try
+		{
+			var result = await _authService.ResetPassword(user);
+			return result.Any() ? ApiBadRequest(result) : ApiOk(result);
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
 	[Authorize]
 	[Route("/auth/cpf")]
 	public async Task<IActionResult> CurrentUserHasCpf()
