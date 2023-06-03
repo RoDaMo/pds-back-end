@@ -72,4 +72,20 @@ public class DbService
 
 	}
 
+	public async Task<Guid> EditData2(string command, object parms)
+	{
+
+		try
+		{
+			var result = await _db.ExecuteScalarAsync<Guid>(command, parms);
+
+			return result;
+		}
+		catch (Exception)
+		{
+			throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+		}
+
+	}
+
 }

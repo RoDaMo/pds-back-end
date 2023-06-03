@@ -32,9 +32,11 @@ public partial class UserValidator : AbstractValidator<User>
         {
             RuleFor(rule => rule.Name.ToLower())
                 .NotEmpty()
-                .Length(4, 200) // biggest name in the world had over 600 characters
+                .WithMessage("Informe o seu nome")
                 .NotEqual("null")
-                .WithMessage("Informe o seu nome");
+                .WithMessage("Informe o seu nome")
+                .Length(4, 200)
+                .WithMessage("Nome deve possuir pelo menos 4 caracteres e no máximo 200."); // biggest name in the world had over 600 characters
             
             RuleFor(rule => rule.Birthday)
                 .NotEmpty()
@@ -54,22 +56,32 @@ public partial class UserValidator : AbstractValidator<User>
                 .WithMessage("Senha inválida");
         });
 
-        RuleSet("Update", () =>
+
+         RuleSet("Password", () =>
+        {
+            RuleFor(rule => rule.Password)
+                .NotEmpty()
+                .WithMessage("Insira sua senha");
+
+            RuleFor(rule => rule.Password)
+                .Matches(PasswordRegex())
+                .WithMessage("Senha inválida");
+        });
+
+        RuleSet("Bio", () =>
         {
             RuleFor(rule => rule.Bio)
                 .Length(0, 300) 
                 .WithMessage("Campo Bio pode ter no máximo 300 caracteres.");
-            
-            RuleFor(rule => rule.Name.ToLower())
-                .NotEmpty()
-                .WithMessage("Informe o seu nome")
-                .NotEqual("null")
-                .WithMessage("Informe o seu nome");
-
-            RuleFor(rule => rule.Name.ToLower())
-                .Length(4, 200)
-                .WithMessage("Nome deve possuir pelo menos 4 caracteres e no máximo 200.");
-        });
+        }); 
+        
+        RuleSet("Name", () => RuleFor(rule => rule.Name)
+            .NotEmpty()
+            .WithMessage("Informe o seu nome")
+            .NotEqual("null")
+            .WithMessage("Informe o seu nome")
+            .Length(4, 200)
+            .WithMessage("Nome deve possuir pelo menos 4 caracteres e no máximo 200."));
 
         RuleSet("UpdatePassword", () =>
         {

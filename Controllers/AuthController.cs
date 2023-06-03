@@ -14,7 +14,7 @@ public class AuthController : ApiBaseController
 	private readonly AuthService _authService;
 	private readonly RedisService _redisService;
 	private readonly CookieOptions cookieOptions;
-	private readonly DateTime _expires = DateTime.UtcNow.AddMinutes(15);
+	private readonly DateTime _expires = DateTime.UtcNow.AddDays(1);
 
 	public AuthController(AuthService authService, RedisService redisService)
 	{
@@ -39,9 +39,11 @@ public class AuthController : ApiBaseController
 
 			if (user.Id == Guid.Empty)
 				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
+			
+			if (!user.ConfirmEmail)
+				return ApiUnauthorizedRequest("Confirme seu email para poder acessar sua conta.");
 
-			var expires = DateTime.UtcNow.AddMinutes(15);
-			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, expires);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, _expires);
 
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				cookieOptions.Domain = "playoffs.netlify.app";
@@ -79,8 +81,7 @@ public class AuthController : ApiBaseController
 				return ApiUnauthorizedRequest("Refresh token expirado");
 
 			var user = await _authService.GetUserByIdAsync(token.UserId);
-			var expires = DateTime.UtcNow.AddMinutes(15);
-			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, expires);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, _expires);
 			
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				cookieOptions.Domain = "playoffs.netlify.app";
@@ -111,8 +112,13 @@ public class AuthController : ApiBaseController
 		try
 		{
 			var errors = await _authService.RegisterValidationAsync(user);
+			if(errors[0].Length == 36)
+			{
+				return ApiOk(errors[0], true, "Cadastro realizado com sucesso.");
+			}
 
-			return errors.Any() ? ApiBadRequest(errors) : ApiOk("Usuário cadastrado com sucesso");
+			return ApiBadRequest(errors);
+			
 		}
 		catch (ApplicationException ex)
 		{
@@ -141,6 +147,56 @@ public class AuthController : ApiBaseController
 		return ApiOk(true);
 	}
 
+	[HttpGet]
+	[Route("/auth/confirm-email")] 
+	public async Task<IActionResult> ConfirmEmail(string token)
+	{
+		try
+		{
+			return ApiOk(await _authService.ConfirmEmail(token));
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpGet]
+	[Route("/auth/resend-confirm-email")] 
+	public async Task<IActionResult> ResendConfirmEmail(Guid id)
+	{
+		try
+		{
+			await _authService.SendEmailToConfirmAccount(id);
+			return ApiOk("Email de confirmação reenviado");
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpPost]
+	[Route("/auth/forgot-password")] 
+	public async Task<IActionResult> ForgotPassword(User user)
+	{
+		try
+		{
+			var result = await _authService.ForgotPassword(user);
+
+			if(result[0].Length == 36)
+			{
+				return ApiOk(result[0], true, "Pedido de redefinição de senha realizado.");
+			}
+			
+			return ApiBadRequest(result);
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
 	[Authorize]
 	[HttpGet]
 	[Route("/auth/user")]
@@ -152,6 +208,10 @@ public class AuthController : ApiBaseController
 			var user = await _authService.GetUserByIdAsync(userId);
 			return ApiOk(new
 			{
+				email = user.Email,
+				userName = user.Username,
+				bio = user.Bio,
+				picture = user.Picture,
 				profileImg = user.Picture,
 				name = user.Name,
 				id = user.Id
@@ -164,7 +224,51 @@ public class AuthController : ApiBaseController
 	}
 
 	[HttpGet]
+	[Route("/auth/resend-forgot-password")] 
+	public async Task<IActionResult> ResendForgotPassword(Guid id)
+	{
+		try
+		{
+			await _authService.SendEmailToResetPassword(id);
+			return ApiOk("Email de confirmação reenviado");
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpGet]
+	[Route("/auth/reset-password")] 
+	public IActionResult ResetPassword(string token)
+	{
+		try
+		{
+			return ApiOk(_authService.ConfirmResetPassword(token));
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
+	[HttpPost]
+	[Route("/auth/reset-password")] 
+	public async Task<IActionResult> ResetPassword(User user)
+	{
+		try
+		{
+			var result = await _authService.ResetPassword(user);
+			return result.Any() ? ApiBadRequest(result) : ApiOk(result);
+		}
+		catch (ApplicationException ex)
+		{
+			return ApiBadRequest(ex.Message, "Erro");
+		}
+	}
+
 	[Authorize]
+	[HttpGet]
 	[Route("/auth/cpf")]
 	public async Task<IActionResult> CurrentUserHasCpf()
 	{
@@ -198,6 +302,40 @@ public class AuthController : ApiBaseController
 		catch (Exception ex)
 		{
 			return ApiBadRequest(ex.Message);
+		}
+	}
+
+	[HttpGet]
+	[Route("/auth/{id:guid}")]
+	public async Task<IActionResult> GetById(Guid id)
+	{
+		try
+		{
+			return ApiOk(await _authService.GetUserByIdAsync(id));
+		}
+		catch (Exception)
+		{
+			return ApiBadRequest("Usuário não existe");
+		}
+	}
+
+	[HttpDelete]
+	[Authorize]
+	[Route("/auth/user")]
+	public async Task<IActionResult> Delete()
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			await _authService.DeleteCurrentUserValidation(userId);
+			Response.Cookies.Delete("playoffs-token");
+			Response.Cookies.Delete("playoffs-refresh-token");
+			
+			return ApiOk("Usuário excluido com sucesso");
+		}
+		catch (Exception)
+		{
+			return ApiBadRequest("Houve um erro ao excluir o usuário");
 		}
 	}
 }

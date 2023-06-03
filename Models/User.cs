@@ -26,4 +26,5 @@ public class User
 	public string Bio { get; set; }
 	public string Picture { get; set; }
 	public bool RememberMe { get; set; }
+	public bool ConfirmEmail{ get; set; }
 }
