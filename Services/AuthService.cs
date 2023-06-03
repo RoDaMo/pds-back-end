@@ -85,7 +85,8 @@ public class AuthService
 			await SendEmailToConfirmAccount(id); //remove this after adding temporary player consent check functionality
 			resultId.Add(id.ToString());
 			return resultId;
-		}		
+		}
+		
 		newUser.Id = await RegisterUserAsync(newUser);
 		await SendEmailToConfirmAccount(newUser.Id);
 		resultId.Add(newUser.Id.ToString());
@@ -116,29 +117,29 @@ public class AuthService
 
 	public async Task<User> VerifyCredentials(User user)
 	{
-		var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash, ConfirmEmail FROM users WHERE Username=@Username;", user);
+		var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash, ConfirmEmail FROM users WHERE Username=@Username AND deleted = false;", user);
 		if (actualUser == null)
 			return new();
-		
-		if (VerifyEncryptedPassword(user.Password, actualUser.PasswordHash))
-			user.Id = actualUser.Id;
-			user.ConfirmEmail = actualUser.ConfirmEmail;
 
+		if (!VerifyEncryptedPassword(user.Password, actualUser.PasswordHash)) return user;
+		
+		user.Id = actualUser.Id;
+		user.ConfirmEmail = actualUser.ConfirmEmail;
 		return user;
 	}
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
-		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf FROM users WHERE id = @Id", new User { Id = userId});
+		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
 
 	public async Task SendEmailToConfirmAccount(Guid userId)
 	{
 
 		var user = await GetUserByIdAsync(userId);
 		var token = GenerateJwtToken(user.Id, user.Email, DateTime.UtcNow.AddHours(2));
-		var baseUrl = "https://playoffs.netlify.app/pages/confirmacao-cadastro.html";
+		const string baseUrl = "https://playoffs.netlify.app/pages/confirmacao-cadastro.html";
         var url = $"{baseUrl}?token={token}";
 		
-        var emailResponse = _emailService.SendConfirmationEmail(user.Email, user.Username, url);
+        var emailResponse = EmailService.SendConfirmationEmail(user.Email, user.Username, url);
 
         if(!emailResponse)
         {
@@ -166,8 +167,7 @@ public class AuthService
 				ValidateAudience = false,
 				ClockSkew = TimeSpan.Zero
 			};
-			SecurityToken securityToken;
-			var principal = tokenHandler.ValidateToken(token, tokenDescriptor, out securityToken);
+			tokenHandler.ValidateToken(token, tokenDescriptor, out var securityToken);
 			jwtSecurityToken = securityToken as JwtSecurityToken;
 			
 		}
@@ -228,7 +228,7 @@ public class AuthService
 
 	private async Task DeletePlayerTempProfile(Guid id)
 	{
-		await _dbService.EditData("DELETE FROM playertempprofiles WHERE Id = id;", id);
+		await _dbService.EditData("DELETE FROM playertempprofiles WHERE Id = @id;", id);
 	}
 
 	public async Task<List<string>> ForgotPassword(User user)
@@ -257,10 +257,10 @@ public class AuthService
 
 		var user = await GetUserByIdAsync(userId);
 		var token = GenerateJwtToken(user.Id, user.Email, DateTime.UtcNow.AddHours(2));
-		var baseUrl = "https://playoffs.netlify.app/pages/redefinir-senha.html";
+		const string baseUrl = "https://playoffs.netlify.app/pages/redefinir-senha.html";
         var url = $"{baseUrl}?token={token}";
     
-        var emailResponse = _emailService.SendEmailPasswordReset(user.Email, user.Username, url);
+        var emailResponse = EmailService.SendEmailPasswordReset(user.Email, user.Username, url);
 
         if(!emailResponse)
         {
@@ -287,9 +287,9 @@ public class AuthService
 				ValidateAudience = false,
 				ClockSkew = TimeSpan.Zero
 			};
-			SecurityToken securityToken;
-			var principal = tokenHandler.ValidateToken(token, tokenDescriptor, out securityToken);
+			tokenHandler.ValidateToken(token, tokenDescriptor, out var securityToken);
 			jwtSecurityToken = securityToken as JwtSecurityToken;
+			
 			var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
 			errorMessages.Add(email);
 			return errorMessages;
@@ -325,10 +325,34 @@ public class AuthService
 	public async Task<List<string>> UpdateProfileValidationAsync(User user, Guid userId)
 	{
 		var errorMessages = new List<string>();
-
 		var userValidator = new UserValidator();
+		var actualUser = await GetUserByIdAsync(userId);
+		var ruleSets = new List<string>();
 
-		var result = await new UserValidator().ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorUsername", "IdentificadorEmail", "Update"));
+		if (!string.IsNullOrEmpty(user.Username))
+		{
+			ruleSets.Add("IdentificadorUsername");
+			ruleSets.Add("Bio");
+			actualUser.Username = user.Username;
+			actualUser.Bio = user.Bio;
+		}
+
+		if (!string.IsNullOrEmpty(user.Email))
+		{
+			ruleSets.Add("IdentificadorEmail");
+			actualUser.Email = user.Email;
+		}
+
+		if (!string.IsNullOrEmpty(user.Name))
+		{
+			ruleSets.Add("Name");
+			actualUser.Name = user.Name;
+		}
+
+		actualUser.ArtisticName ??= user.ArtisticName;
+		actualUser.Picture ??= user.Picture;
+		
+		var result = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets(ruleSets.ToArray()));
 
 		if (!result.IsValid)
 		{
@@ -336,19 +360,16 @@ public class AuthService
 			return errorMessages;
 		}
 
-		if(await checkIfUserIsPlayerAsync(userId) && user.ArtisticName is not null)
-		{
+		if (await CheckIfUserIsPlayerAsync(userId) && !string.IsNullOrEmpty(user.ArtisticName))
 			throw new ApplicationException("Apenas jogadores podem alterar o nome artístico");
-		}
-
+		
 		user.Id = userId;
 
-        if(await OtherUserAlreadyExists(user))
-		{
-			throw new ApplicationException("Nome de usuário ou email inválido!");
-		}
+        if (await OtherUserAlreadyExists(user))
+	        throw new ApplicationException("Nome de usuário ou email inválido!");
+		
 
-		await UpdateProfileSendAsync(user);
+		await UpdateProfileSendAsync(actualUser);
 
 		return errorMessages;
 	}
@@ -357,7 +378,7 @@ public class AuthService
 	{
 		await _dbService.EditData(
             "UPDATE users SET name = @Name, username = @UserName, email = @Email, artisticname = @ArtisticName, bio = @Bio, picture = @Picture WHERE id = @Id;", user
-            );
+        );
 	}
 
     public async Task<List<string>> UpdatePasswordValidationAsync(UpdatePasswordDTO updatePasswordDTO, Guid userId)
@@ -386,7 +407,7 @@ public class AuthService
 		return errorMessages;
 	}
 
-	private async Task<bool> checkIfUserIsPlayerAsync(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT playerteamid FROM users WHERE id = @userId AND playerteamid is null);", new {userId});
+	private async Task<bool> CheckIfUserIsPlayerAsync(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT playerteamid FROM users WHERE id = @userId AND playerteamid is null);", new {userId});
 
 	private async Task<bool> OtherUserAlreadyExists(User user) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE id <> @Id AND (username = @Username OR email = @Email))", user);
 
@@ -433,4 +454,9 @@ public class AuthService
 
 	private async Task AddCpfUserSend(User user) 
 		=> await _dbService.EditData("UPDATE users SET cpf = @cpf WHERE id = @id", user);
+
+	public async Task DeleteCurrentUserValidation(Guid userId) => await DeleteCurrentUserSend(userId);
+
+	private async Task DeleteCurrentUserSend(Guid userId) =>
+		await _dbService.EditData("UPDATE users SET deleted = true WHERE id =  @userId", new { userId });
 }

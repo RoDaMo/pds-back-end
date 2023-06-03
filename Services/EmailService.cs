@@ -5,12 +5,12 @@ namespace PlayOffsApi.Services;
 
 public class EmailService
 {
-    private string Email { get => Environment.GetEnvironmentVariable("EMAILCLIENT"); }
-    private string Senha { get => Environment.GetEnvironmentVariable("EMAILPASSWORD"); }
+    private static string Email => Environment.GetEnvironmentVariable("EMAILCLIENT");
+    private static string Senha => Environment.GetEnvironmentVariable("EMAILPASSWORD");
 
-    public bool SendEmailPasswordReset(string userEmail, string userName, string link)
+    public static bool SendEmailPasswordReset(string userEmail, string userName, string link)
     {
-        MailMessage mailMessage = new MailMessage();
+        var mailMessage = new MailMessage();
         mailMessage.From = new MailAddress(Email);
         mailMessage.To.Add(new MailAddress(userEmail));
         mailMessage.Subject = "Redefinição de senha";
@@ -27,11 +27,11 @@ public class EmailService
             "<p>Atenciosamente,</p>\n" +
             "<p>Equipe RoDaMo</p></div></div>";
 
-        SmtpClient client = new SmtpClient("smtp-mail.outlook.com");
+        var client = new SmtpClient("smtp-mail.outlook.com");
         client.Port = 587;
         client.DeliveryMethod = SmtpDeliveryMethod.Network;
         client.UseDefaultCredentials = false;
-        System.Net.NetworkCredential credential = new System.Net.NetworkCredential(Email, Senha); 
+        var credential = new System.Net.NetworkCredential(Email, Senha); 
         client.EnableSsl = true;
         client.Credentials = credential;
         try
@@ -48,9 +48,9 @@ public class EmailService
         }
     }
 
-    public bool SendConfirmationEmail(string userEmail, string userName, string link)
+    public static bool SendConfirmationEmail(string userEmail, string userName, string link)
     {
-        MailMessage mailMessage = new MailMessage();
+        var mailMessage = new MailMessage();
         mailMessage.From = new MailAddress(Email);
         mailMessage.To.Add(new MailAddress(userEmail));
         mailMessage.Subject = "Confirmação de Email";

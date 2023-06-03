@@ -14,7 +14,7 @@ public class AuthController : ApiBaseController
 	private readonly AuthService _authService;
 	private readonly RedisService _redisService;
 	private readonly CookieOptions cookieOptions;
-	private readonly DateTime _expires = DateTime.UtcNow.AddMinutes(15);
+	private readonly DateTime _expires = DateTime.UtcNow.AddDays(1);
 
 	public AuthController(AuthService authService, RedisService redisService)
 	{
@@ -43,8 +43,7 @@ public class AuthController : ApiBaseController
 			if (!user.ConfirmEmail)
 				return ApiUnauthorizedRequest("Confirme seu email para poder acessar sua conta.");
 
-			var expires = DateTime.UtcNow.AddMinutes(15);
-			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, expires);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, _expires);
 
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				cookieOptions.Domain = "playoffs.netlify.app";
@@ -82,8 +81,7 @@ public class AuthController : ApiBaseController
 				return ApiUnauthorizedRequest("Refresh token expirado");
 
 			var user = await _authService.GetUserByIdAsync(token.UserId);
-			var expires = DateTime.UtcNow.AddMinutes(15);
-			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, expires);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, _expires);
 			
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				cookieOptions.Domain = "playoffs.netlify.app";
@@ -102,8 +100,8 @@ public class AuthController : ApiBaseController
 	[Authorize]
 	public IActionResult LogoutUser()
 	{
-		Response.Cookies.Delete("playoffs-token");
-		Response.Cookies.Delete("playoffs-refresh-token");
+		Response.Cookies.Delete("playoffs-token", cookieOptions);
+		Response.Cookies.Delete("playoffs-refresh-token", cookieOptions);
 		return ApiOk<string>("Usuário deslogado com sucesso");
 	}
 
@@ -210,6 +208,10 @@ public class AuthController : ApiBaseController
 			var user = await _authService.GetUserByIdAsync(userId);
 			return ApiOk(new
 			{
+				email = user.Email,
+				userName = user.Username,
+				bio = user.Bio,
+				picture = user.Picture,
 				profileImg = user.Picture,
 				name = user.Name,
 				id = user.Id
@@ -266,6 +268,7 @@ public class AuthController : ApiBaseController
 	}
 
 	[Authorize]
+	[HttpGet]
 	[Route("/auth/cpf")]
 	public async Task<IActionResult> CurrentUserHasCpf()
 	{
@@ -299,6 +302,40 @@ public class AuthController : ApiBaseController
 		catch (Exception ex)
 		{
 			return ApiBadRequest(ex.Message);
+		}
+	}
+
+	[HttpGet]
+	[Route("/auth/{id:guid}")]
+	public async Task<IActionResult> GetById(Guid id)
+	{
+		try
+		{
+			return ApiOk(await _authService.GetUserByIdAsync(id));
+		}
+		catch (Exception)
+		{
+			return ApiBadRequest("Usuário não existe");
+		}
+	}
+
+	[HttpDelete]
+	[Authorize]
+	[Route("/auth/user")]
+	public async Task<IActionResult> Delete()
+	{
+		try
+		{
+			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+			await _authService.DeleteCurrentUserValidation(userId);
+			Response.Cookies.Delete("playoffs-token");
+			Response.Cookies.Delete("playoffs-refresh-token");
+			
+			return ApiOk("Usuário excluido com sucesso");
+		}
+		catch (Exception)
+		{
+			return ApiBadRequest("Houve um erro ao excluir o usuário");
 		}
 	}
 }
