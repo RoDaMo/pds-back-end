@@ -122,6 +122,7 @@ public class AuthService
 		
 		if (VerifyEncryptedPassword(user.Password, actualUser.PasswordHash))
 			user.Id = actualUser.Id;
+			user.ConfirmEmail = actualUser.ConfirmEmail;
 
 		return user;
 	}
@@ -210,7 +211,7 @@ public class AuthService
 
 	private async Task<bool> UserAlreadyExistsInPlayerTemp(string email)
 	{
-		return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM playertempprofiles WHERE Email = email", email);
+		return await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM playertempprofiles WHERE Email = @email)", new {email});
 	}
 
 	private async Task<Guid> CreateAccountAndAddPlayer(User user)
@@ -218,12 +219,11 @@ public class AuthService
 		var player = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Email = email", user.Email);
 		user.ArtisticName = player.ArtisticName;
 		user.Number = player.Number;
-		user.SoccerPositionId = player.SoccerPositionId;
-		user.VolleyballPositionId = player.VolleyballPositionId;
+		user.PlayerPositionsId = player.PlayerPositionsId;
 		user.PlayerTeamId = player.TeamsId;
 		user.PasswordHash = EncryptPassword(user.Password);
 
-		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, ArtisticName, Number, SoccerPositionId, VolleyballPositionId, PlayerTeamId) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, 'false', @ArtisticName, @Number, @SoccerPositionId, @VolleyballPositionId, @PlayerTeamId) RETURNING Id;", user);
+		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, ArtisticName, Number, PlayerPositionsId, PlayerTeamId) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, 'false', @ArtisticName, @Number, @PlayerPositionsId, @PlayerTeamId) RETURNING Id;", user);
 	}
 
 	private async Task DeletePlayerTempProfile(Guid id)

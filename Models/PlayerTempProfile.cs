@@ -10,8 +10,7 @@ public class PlayerTempProfile
     public int Number { get; set; }
     public string Email { get; set; }
 	public int TeamsId { get; set; }
-	public int SoccerPositionId { get; set; }
-	public int VolleyballPositionId { get; set; }
+	public int PlayerPositionsId { get; set; }
 
 	public PlayerTempProfile(string name, string artisticName, int number, string email)
 	{

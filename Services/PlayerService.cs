@@ -39,9 +39,7 @@ public class PlayerService
 
         var playerValidator = new PlayerValidator();
 
-		var result = (team.SportsId == 1) 
-		? await playerValidator.ValidateAsync(user, options => options.IncludeRuleSets("ValidationSoccer"))
-		: await playerValidator.ValidateAsync(user, options => options.IncludeRuleSets("ValidationVolleyBall"));
+		var result = await playerValidator.ValidateAsync(user);
 
 		if (!result.IsValid)
 		{
@@ -49,12 +47,17 @@ public class PlayerService
 			return errorMessages;
 		}
 
+		if(!await ChecksIfPositionIsValid(user.PlayerPositionsId, team.SportsId))
+		{
+			throw new ApplicationException("Posição inválida para o esporte do time.");
+		}
+
 		if(await ChecksIfUserIsManager(userId))
 		{
 			throw new ApplicationException("Apenas técnicos podem cadastrar jogadores.");
 		}
 
-        if(!await ChecksIfUserPassedExists(user.Id))
+        if(!await ChecksIfUserPassedExists(user.Email))
 		{
 			throw new ApplicationException("Usuário passado não existe.");
 		}
@@ -74,7 +77,7 @@ public class PlayerService
 			throw new ApplicationException("Já exite capitão no time atual.");
 		}
 
-		if(await ChecksIfUserPassedAlreadHasTeam(user.Id))
+		if(await ChecksIfUserPassedAlreadHasTeam(user.Email))
 		{
 			throw new ApplicationException("Jogador passado já pertence a um time.");
 		}
@@ -89,7 +92,7 @@ public class PlayerService
     private async Task CreateSendAsync(User user)
 	{
 		await _dbService.EditData(
-            "UPDATE users SET artisticname = @ArtisticName, number = @Number, soccerpositionid = @SoccerPositionId, volleyballpositionid = @VolleyballPositionId, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE id = @Id;", user
+            "UPDATE users SET artisticname = @ArtisticName, number = @Number, playerpositionsid = @PlayerPositionsId, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE email = @Email;", user
             );
 	}
 
@@ -98,7 +101,8 @@ public class PlayerService
 	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number, int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number AND playerteamid = @teamId);", new {number, teamId});
     private async Task<bool> ChecksIfTeamAlreadyHasCaptain() => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE iscaptain = true);", new {});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
-    private async Task<bool> ChecksIfUserPassedExists(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @userId);", new {userId});
-    private async Task<bool> ChecksIfUserPassedAlreadHasTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @userId AND playerteamid IS NOT NULL);", new {userId});
+    private async Task<bool> ChecksIfUserPassedExists(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email);", new {email});
+    private async Task<bool> ChecksIfUserPassedAlreadHasTeam(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email AND playerteamid IS NOT NULL);", new {email});
+	private async Task<bool> ChecksIfPositionIsValid(int playerPositionId, int sportsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM PlayerPositions WHERE id = @playerPositionId AND sportsid = @sportsId);", new {playerPositionId, sportsId});
 
 }

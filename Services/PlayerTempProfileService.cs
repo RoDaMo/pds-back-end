@@ -39,14 +39,17 @@ public class PlayerTempProfileService
 
 		var playerTempProfileValidator = new PlayerTempProfileValidator();
 
-		var result = (team.SportsId == 1) 
-		? await playerTempProfileValidator.ValidateAsync(playerTempProfile, options => options.IncludeRuleSets("ValidationSoccer"))
-		: await playerTempProfileValidator.ValidateAsync(playerTempProfile, options => options.IncludeRuleSets("ValidationVolleyBall"));
+		var result = await playerTempProfileValidator.ValidateAsync(playerTempProfile);
 
 		if (!result.IsValid)
 		{
 			errorMessages = result.Errors.Select(x => x.ErrorMessage).ToList();
 			return errorMessages;
+		}
+
+		if(!await ChecksIfPositionIsValid(playerTempProfile.PlayerPositionsId, team.SportsId))
+		{
+			throw new ApplicationException("Posição inválida para o esporte do time.");
 		}
 
 		if(await ChecksIfUserIsManager(userId))
@@ -84,7 +87,7 @@ public class PlayerTempProfileService
     private async Task CreateSendAsync(PlayerTempProfile playerTempProfile)
 	{
 		await _dbService.EditData(
-			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, soccerpositionid, volleyballpositionid) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @SoccerPositionId, @VolleyballPositionId)", playerTempProfile);
+			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, playerPositionsid) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @PlayerPositionsId)", playerTempProfile);
 	}
 
 	private async Task<bool> ChecksIfUserIsManager(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NULL);", new {userId});
@@ -93,5 +96,6 @@ public class PlayerTempProfileService
 	private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number, int teamsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number AND teamsid = @teamsId);", new {number, teamsId});
 	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number);", new {number});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
+	private async Task<bool> ChecksIfPositionIsValid(int playerPositionId, int sportsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM PlayerPositions WHERE id = @playerPositionId AND sportsid = @sportsId);", new {playerPositionId, sportsId});
 
 }
