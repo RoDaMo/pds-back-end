@@ -37,7 +37,7 @@ public class PlayerTempProfileValidator : AbstractValidator<PlayerTempProfile>
 				.NotEmpty()
 				.WithMessage("Campo Time não pode ser vazio.");
 			
-			RuleFor(p => p.PlayerPositionsId)
+			RuleFor(p => p.PlayerPosition)
 				.NotEmpty()
 				.WithMessage("Campo Posição não pode ser vazio.");
 		}	

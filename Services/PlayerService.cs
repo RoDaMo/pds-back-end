@@ -1,4 +1,3 @@
-using FluentValidation;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
 
@@ -39,10 +38,13 @@ public class PlayerService
 			return errorMessages;
 		}
 
-		if(!await ChecksIfPositionIsValid(user.PlayerPositionsId, team.SportsId))
-		{
-			throw new ApplicationException("Posição inválida para o esporte do time.");
-		}
+		switch (team.SportsId)
+        {
+	        case 1 when ((int)user.PlayerPosition) > 9 || ((int)user.PlayerPosition) < 1 :
+		        throw new ApplicationException("Posição inválida para o esporte do time.");
+	        case 2 when ((int)user.PlayerPosition) < 10 || ((int)user.PlayerPosition) > 14 :
+		        throw new ApplicationException("Posição inválida para o esporte do time.");
+        }
 
 		if(await ChecksIfUserIsManager(userId))
 		{
@@ -81,7 +83,7 @@ public class PlayerService
     private async Task CreateSendAsync(User user)
 	{
 		await _dbService.EditData(
-            "UPDATE users SET artisticname = @ArtisticName, number = @Number, playerpositionsid = @PlayerPositionsId, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE email = @Email;", user
+            "UPDATE users SET artisticname = @ArtisticName, number = @Number, playerposition = @PlayerPosition, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE email = @Email;", user
             );
 	}
 
@@ -92,6 +94,5 @@ public class PlayerService
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
     private async Task<bool> ChecksIfUserPassedExists(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email);", new {email});
     private async Task<bool> ChecksIfUserPassedAlreadHasTeam(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email AND playerteamid IS NOT NULL);", new {email});
-	private async Task<bool> ChecksIfPositionIsValid(int playerPositionId, int sportsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM PlayerPositions WHERE id = @playerPositionId AND sportsid = @sportsId);", new {playerPositionId, sportsId});
 
 }

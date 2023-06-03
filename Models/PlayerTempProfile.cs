@@ -1,4 +1,6 @@
+using System.Text.Json.Serialization;
 using PlayOffsApi.Enum;
+using PlayOffsApi.Middleware;
 
 namespace PlayOffsApi.Models;
 
@@ -10,7 +12,7 @@ public class PlayerTempProfile
     public int Number { get; set; }
     public string Email { get; set; }
 	public int TeamsId { get; set; }
-	public int PlayerPositionsId { get; set; }
+	public PlayerPosition PlayerPosition { get; set; }
 
 	public PlayerTempProfile(string name, string artisticName, int number, string email)
 	{

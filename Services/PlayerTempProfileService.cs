@@ -10,10 +10,11 @@ public class PlayerTempProfileService
 	private readonly TeamService _teamService;
 
 
-    public PlayerTempProfileService(DbService dbService, ElasticService elasticService)
+    public PlayerTempProfileService(DbService dbService, ElasticService elasticService, TeamService teamService)
 	{
 		_dbService = dbService;
         _elasticService = elasticService;
+		_teamService = teamService;
 	}
 
     public async Task<List<string>> CreateValidationAsync(PlayerTempProfile playerTempProfile, Guid userId)
@@ -37,10 +38,13 @@ public class PlayerTempProfileService
 			return errorMessages;
 		}
 
-		if(!await ChecksIfPositionIsValid(playerTempProfile.PlayerPositionsId, team.SportsId))
-		{
-			throw new ApplicationException("Posição inválida para o esporte do time.");
-		}
+		switch (team.SportsId)
+        {
+	        case 1 when ((int)playerTempProfile.PlayerPosition) > 9 || ((int)playerTempProfile.PlayerPosition) < 1 :
+		        throw new ApplicationException("Posição inválida para o esporte do time.");
+	        case 2 when ((int)playerTempProfile.PlayerPosition) < 10 || ((int)playerTempProfile.PlayerPosition) > 14 :
+		        throw new ApplicationException("Posição inválida para o esporte do time.");
+        }
 
 		if(await ChecksIfUserIsManager(userId))
 		{
@@ -74,7 +78,7 @@ public class PlayerTempProfileService
     private async Task CreateSendAsync(PlayerTempProfile playerTempProfile)
 	{
 		await _dbService.EditData(
-			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, playerPositionsid) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @PlayerPositionsId)", playerTempProfile);
+			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, playerPosition) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @PlayerPosition)", playerTempProfile);
 	}
 
 	private async Task<bool> ChecksIfUserIsManager(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NULL);", new {userId});
@@ -83,6 +87,5 @@ public class PlayerTempProfileService
 	private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number, int teamsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number AND teamsid = @teamsId);", new {number, teamsId});
 	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number);", new {number});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
-	private async Task<bool> ChecksIfPositionIsValid(int playerPositionId, int sportsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM PlayerPositions WHERE id = @playerPositionId AND sportsid = @sportsId);", new {playerPositionId, sportsId});
 
 }

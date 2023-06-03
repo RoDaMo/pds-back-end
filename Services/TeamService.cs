@@ -51,7 +51,7 @@ public class TeamService
 
 
     private async Task<int> CreateSendAsync(Team team) => await _dbService.EditData(
-			"INSERT INTO teams (emblem, uniformHome, uniformAway, deleted, sportsid, name, numberofplayers) VALUES (@Emblem, @UniformHome, @UniformAway, @Deleted, @SportsId, @Name, 0) RETURNING Id;",
+			"INSERT INTO teams (emblem, uniformHome, uniformAway, deleted, sportsid, name) VALUES (@Emblem, @UniformHome, @UniformAway, @Deleted, @SportsId, @Name) RETURNING Id;",
 			team);
 
 	public async Task<List<Team>> GetAllValidationAsync() => await GetAllSendAsync();

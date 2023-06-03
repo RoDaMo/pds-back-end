@@ -19,13 +19,13 @@ public class PlayerValidator : AbstractValidator<User>
 				.WithMessage("Campo Número não pode ser vazio.");
 			RuleFor(p => p.Number)
 				.InclusiveBetween(1, 99)
-				.WithMessage("O Campo Número deve estar entre 1 e 20");
+				.WithMessage("O Campo Número deve estar entre 1 e 99");
 
 			RuleFor(p => p.PlayerTeamId)
 				.NotEmpty()
 				.WithMessage("Campo Time não pode ser vazio.");
 			
-			RuleFor(p => p.PlayerPositionsId)
+			RuleFor(p => p.PlayerPosition)
 				.NotEmpty()
 				.WithMessage("Campo Posição não pode ser vazio.");
     }

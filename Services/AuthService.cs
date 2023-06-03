@@ -219,7 +219,7 @@ public class AuthService
 		var player = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Email = email", user.Email);
 		user.ArtisticName = player.ArtisticName;
 		user.Number = player.Number;
-		user.PlayerPositionsId = player.PlayerPositionsId;
+		user.PlayerPosition = player.PlayerPosition;
 		user.PlayerTeamId = player.TeamsId;
 		user.PasswordHash = EncryptPassword(user.Password);
 
