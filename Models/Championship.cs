@@ -36,4 +36,5 @@ public class Championship
 	public string Neighborhood { get; set; }
 	public Guid OrganizerId => Organizer.Id;
 	public User Organizer { get; set; }
+	public int NumberOfPlayers { get; set; }
 }

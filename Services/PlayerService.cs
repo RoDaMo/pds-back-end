@@ -29,14 +29,6 @@ public class PlayerService
 		
 		var team = await _teamService.GetByIdSendAsync(user.PlayerTeamId);
 
-        switch (team.SportsId)
-        {
-	        case 1 when team.NumberOfPlayers > 24:
-		        throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-	        case 2 when team.NumberOfPlayers > 14:
-		        throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-        }
-
         var playerValidator = new PlayerValidator();
 
 		var result = await playerValidator.ValidateAsync(user);
@@ -83,9 +75,6 @@ public class PlayerService
 		}
 
 		await CreateSendAsync(user);
-        team.NumberOfPlayers++;
-		await _teamService.IncrementNumberOfPlayers(team.Id, team.NumberOfPlayers);
-
 		return errorMessages;
 	}
 

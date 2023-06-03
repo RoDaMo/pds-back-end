@@ -40,8 +40,8 @@ public class ChampionshipService
 	{
 		championship.Id = await _dbService.EditData(
 			@"
-			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId) 
-			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId) RETURNING Id;",
+			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId, numberofplayers) 
+			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId, @NumberOfPlayers) RETURNING Id;",
 			championship);
 
 		var resultado = await _elasticService._client.IndexAsync(championship, INDEX);
@@ -108,4 +108,6 @@ public class ChampionshipService
 
 	private async Task<Championship> GetByIdSend(int id) 
 		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid FROM championships WHERE id = @id", id);
+	private async Task<int> GetNumberOfPlayers(int championshipId)
+		=> await _dbService.GetAsync<int>("SELECT numberofplayers FROM championships WHERE id = @championshipId", new {championshipId});
 }

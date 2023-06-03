@@ -63,10 +63,6 @@ public class TeamService
 	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id", new {id});
 
 	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NOT NULL);", new {userId});
-	public async Task IncrementNumberOfPlayers(int teamId, int numberOfPlayers)
-	{
-		await _dbService.EditData("UPDATE teams SET numberofplayers = @numberOfPlayers WHERE id = @teamId;", new {teamId, numberOfPlayers });
-	}
 
 	private async Task UpdateUser(Guid userId, int teamId)
 	{

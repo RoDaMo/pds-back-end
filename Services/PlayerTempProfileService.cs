@@ -1,4 +1,3 @@
-using FluentValidation;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
 
@@ -11,11 +10,10 @@ public class PlayerTempProfileService
 	private readonly TeamService _teamService;
 
 
-    public PlayerTempProfileService(DbService dbService, ElasticService elasticService, TeamService teamService)
+    public PlayerTempProfileService(DbService dbService, ElasticService elasticService)
 	{
 		_dbService = dbService;
         _elasticService = elasticService;
-		_teamService = teamService;
 	}
 
     public async Task<List<string>> CreateValidationAsync(PlayerTempProfile playerTempProfile, Guid userId)
@@ -28,14 +26,6 @@ public class PlayerTempProfileService
         }
 		
 		var team = await _teamService.GetByIdSendAsync(playerTempProfile.TeamsId);
-
-		switch (team.SportsId)
-		{
-			case 1 when team.NumberOfPlayers > 24:
-				throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-			case 2 when team.NumberOfPlayers > 14:
-				throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-		}
 
 		var playerTempProfileValidator = new PlayerTempProfileValidator();
 
@@ -78,9 +68,6 @@ public class PlayerTempProfileService
 		}
 
 		await CreateSendAsync(playerTempProfile);
-		team.NumberOfPlayers++;
-		await _teamService.IncrementNumberOfPlayers(team.Id, team.NumberOfPlayers);
-
 		return errorMessages;
 	}
 
