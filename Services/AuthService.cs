@@ -129,7 +129,7 @@ public class AuthService
 	}
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
-		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
+		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
 
 	public async Task SendEmailToConfirmAccount(Guid userId)
 	{
