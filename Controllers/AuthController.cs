@@ -100,8 +100,8 @@ public class AuthController : ApiBaseController
 	[Authorize]
 	public IActionResult LogoutUser()
 	{
-		Response.Cookies.Delete("playoffs-token");
-		Response.Cookies.Delete("playoffs-refresh-token");
+		Response.Cookies.Delete("playoffs-token", cookieOptions);
+		Response.Cookies.Delete("playoffs-refresh-token", cookieOptions);
 		return ApiOk<string>("Usuário deslogado com sucesso");
 	}
 
