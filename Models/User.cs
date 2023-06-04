@@ -30,4 +30,5 @@ public class User
 	public bool RememberMe { get; set; }
 	public bool ConfirmEmail{ get; set; }
 	public PlayerPosition PlayerPosition { get; set; }
+	public int ChampionshipId { get; set; }
 }
