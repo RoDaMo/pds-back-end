@@ -189,7 +189,8 @@ public class AuthService
         }
         if(user.ConfirmEmail)
         {
-           return errorMessages;
+			errorMessages.Add(user.Username);
+        	return errorMessages;
         } 
 
         user.ConfirmEmail = true;
