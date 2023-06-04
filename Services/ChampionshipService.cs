@@ -10,19 +10,20 @@ public class ChampionshipService
 {
 	private readonly DbService _dbService;
 	private readonly ElasticService _elasticService;
+	private readonly AuthService _authService;
 	private const string INDEX = "championships";
 
-	public ChampionshipService(DbService dbService, ElasticService elasticService)
+	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService)
 	{
 		_dbService = dbService;
 		_elasticService = elasticService;
+		_authService = authService;
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
 	{
 		var errorMessages = new List<string>();
 
 		var championshipValidator = new ChampionshipValidator();
-
 		var result = await championshipValidator.ValidateAsync(championship);
 
 		if (!result.IsValid)
@@ -31,8 +32,10 @@ public class ChampionshipService
 			return errorMessages;
 		}
 
+		if (!await _authService.UserHasCpfValidationAsync(championship.Organizer.Id))
+			throw new ApplicationException("Não é permitido cadastrar um campeonato sem um CPF cadastrado.");
+		
 		await CreateSendAsync(championship);
-
 		return errorMessages;
 	}
 
@@ -43,6 +46,10 @@ public class ChampionshipService
 			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId) 
 			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId) RETURNING Id;",
 			championship);
+
+		await _dbService.EditData(
+			"UPDATE users SET championshipId = @championshipId WHERE id = @userId", new
+				{ championshipId = championship.Id, userId = championship.Organizer.Id });
 
 		var resultado = await _elasticService._client.IndexAsync(championship, INDEX);
 
@@ -107,5 +114,24 @@ public class ChampionshipService
 	public async Task<Championship> GetByIdValidation(int id) => await GetByIdSend(id);
 
 	private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid FROM championships WHERE id = @id", id);
+		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid, teamquantity FROM championships WHERE id = @id", new { id });
+
+	public async Task<List<string>> UpdateValidate(Championship championship)
+	{
+		var oldChamp = await GetByIdValidation(championship.Id);
+		var result = await new ChampionshipValidator().ValidateAsync(championship);
+		
+		if (!result.IsValid)
+			return result.Errors.Select(x => x.ErrorMessage).ToList();
+
+		await UpdateSend(championship);
+		return new();
+	}
+
+	private async Task UpdateSend(Championship championship) =>
+		await _dbService.EditData(
+			"UPDATE championships SET " +
+			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, nation = @nation, state = @state, city = @city, neighborhood = @neighborhood, teamquantity = @teamquantity " +
+			"WHERE id=@id",
+			championship);
 }

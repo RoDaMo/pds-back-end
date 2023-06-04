@@ -83,11 +83,13 @@ public partial class ImageService
         using var response = await responseTask;
         var memoryStream = new MemoryStream();
         await response.ResponseStream.CopyToAsync(memoryStream);
+        var cloudFilename = response.Key;
         return new Image
         {
             Stream = memoryStream,
-            FileName = Guid.Parse(response.Key),
-            Extension = response.Headers.ContentType
+            FileName = Guid.Parse(cloudFilename),
+            Extension = response.Headers.ContentType.Split('/')[1],
+            ContentType = response.Headers.ContentType
         };
     }
 

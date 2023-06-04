@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.DTO;
+using PlayOffsApi.Models;
 using PlayOffsApi.Services;
 
 namespace PlayOffsApi.Controllers;
@@ -14,11 +15,13 @@ public class TeamController : ApiBaseController
 {
     private readonly TeamService _teamService;
     private readonly RedisService _redisService;
+    private readonly ChampionshipService _championshipService;
 
-    public TeamController(TeamService teamService, RedisService redisService)
+    public TeamController(TeamService teamService, RedisService redisService, ChampionshipService championshipService)
     {
         _teamService = teamService;
         _redisService = redisService;
+        _championshipService = championshipService;
     }
 
     [HttpPost]
@@ -41,11 +44,11 @@ public class TeamController : ApiBaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index([FromQuery]string query)
     {
         try
         {
-            var result = await _teamService.GetAllValidationAsync();
+            var result = string.IsNullOrEmpty(query) ? await _teamService.GetAllValidationAsync() : await _teamService.SearchTeamsValidation(query);
             return ApiOk(result);
         }
         catch (ApplicationException ex)
@@ -66,6 +69,48 @@ public class TeamController : ApiBaseController
         catch (ApplicationException ex)
         {
             return ApiBadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost]
+    [Authorize]
+    [Route("/teams/championship")]
+    public async Task<IActionResult> AddTeamToChampionship(int teamId, int championshipId)
+    {
+        try
+        {
+            var championship = await _championshipService.GetByIdValidation(championshipId);
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            if (championship.Organizer.Id != userId)
+                return ApiBadRequest("Você não tem permissão para adicionar um time participante.");
+
+            await _teamService.AddTeamToChampionshipValidation(teamId, championshipId);
+            return ApiOk("Time vinculado com sucesso");
+        }
+        catch (ApplicationException e)
+        {
+            return ApiBadRequest(e.Message);
+        }
+    }
+
+    [HttpDelete]
+    [Authorize]
+    [Route("/teams/championship")]
+    public async Task<IActionResult> RemoveTeamFromChampionship(int teamId, int championshipId)
+    {
+        try
+        {
+            var championship = await _championshipService.GetByIdValidation(championshipId);
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            if (championship.Organizer.Id != userId)
+                return ApiBadRequest("Você não tem permissão para remover um time participante.");
+
+            await _teamService.RemoveTeamFromChampionshipValidation(teamId, championshipId);
+            return ApiOk("Time desvinculado com sucesso");
+        }
+        catch (ApplicationException e)
+        {
+            return ApiBadRequest(e.Message);
         }
     }
 }
