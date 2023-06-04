@@ -1,4 +1,3 @@
-using FluentValidation;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
 
@@ -29,19 +28,9 @@ public class PlayerService
 		
 		var team = await _teamService.GetByIdSendAsync(user.PlayerTeamId);
 
-        switch (team.SportsId)
-        {
-	        case 1 when team.NumberOfPlayers > 24:
-		        throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-	        case 2 when team.NumberOfPlayers > 14:
-		        throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-        }
-
         var playerValidator = new PlayerValidator();
 
-		var result = (team.SportsId == 1) 
-		? await playerValidator.ValidateAsync(user, options => options.IncludeRuleSets("ValidationSoccer"))
-		: await playerValidator.ValidateAsync(user, options => options.IncludeRuleSets("ValidationVolleyBall"));
+		var result = await playerValidator.ValidateAsync(user);
 
 		if (!result.IsValid)
 		{
@@ -49,12 +38,20 @@ public class PlayerService
 			return errorMessages;
 		}
 
+		switch (team.SportsId)
+        {
+	        case 1 when ((int)user.PlayerPosition) > 9 || ((int)user.PlayerPosition) < 1 :
+		        throw new ApplicationException("Posição inválida para o esporte do time.");
+	        case 2 when ((int)user.PlayerPosition) < 10 || ((int)user.PlayerPosition) > 14 :
+		        throw new ApplicationException("Posição inválida para o esporte do time.");
+        }
+
 		if(await ChecksIfUserIsManager(userId))
 		{
 			throw new ApplicationException("Apenas técnicos podem cadastrar jogadores.");
 		}
 
-        if(!await ChecksIfUserPassedExists(user.Id))
+        if(!await ChecksIfUserPassedExists(user.Email))
 		{
 			throw new ApplicationException("Usuário passado não existe.");
 		}
@@ -74,22 +71,19 @@ public class PlayerService
 			throw new ApplicationException("Já exite capitão no time atual.");
 		}
 
-		if(await ChecksIfUserPassedAlreadHasTeam(user.Id))
+		if(await ChecksIfUserPassedAlreadHasTeam(user.Email))
 		{
 			throw new ApplicationException("Jogador passado já pertence a um time.");
 		}
 
 		await CreateSendAsync(user);
-        team.NumberOfPlayers++;
-		await _teamService.IncrementNumberOfPlayers(team.Id, team.NumberOfPlayers);
-
 		return errorMessages;
 	}
 
     private async Task CreateSendAsync(User user)
 	{
 		await _dbService.EditData(
-            "UPDATE users SET artisticname = @ArtisticName, number = @Number, soccerpositionid = @SoccerPositionId, volleyballpositionid = @VolleyballPositionId, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE id = @Id;", user
+            "UPDATE users SET artisticname = @ArtisticName, number = @Number, playerposition = @PlayerPosition, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE email = @Email;", user
             );
 	}
 
@@ -98,7 +92,7 @@ public class PlayerService
 	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number, int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number AND playerteamid = @teamId);", new {number, teamId});
     private async Task<bool> ChecksIfTeamAlreadyHasCaptain() => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE iscaptain = true);", new {});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
-    private async Task<bool> ChecksIfUserPassedExists(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @userId);", new {userId});
-    private async Task<bool> ChecksIfUserPassedAlreadHasTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @userId AND playerteamid IS NOT NULL);", new {userId});
+    private async Task<bool> ChecksIfUserPassedExists(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email);", new {email});
+    private async Task<bool> ChecksIfUserPassedAlreadHasTeam(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email AND playerteamid IS NOT NULL);", new {email});
 
 }

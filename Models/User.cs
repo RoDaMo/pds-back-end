@@ -1,3 +1,7 @@
+using System.Text.Json.Serialization;
+using PlayOffsApi.Enum;
+using PlayOffsApi.Middleware;
+
 namespace PlayOffsApi.Models;
 
 public class User
@@ -18,8 +22,6 @@ public class User
 	public string Cpf { get; set; }
 	public int TeamManagementId  { get; set; }
 	public int PlayerTeamId  { get; set; }
-	public int SoccerPositionId { get; set; }
-	public int VolleyballPositionId { get; set; }
 	public string ArtisticName { get; set; }
 	public int Number { get; set; }
 	public bool IsCaptain { get; set; }
@@ -27,5 +29,6 @@ public class User
 	public string Picture { get; set; }
 	public bool RememberMe { get; set; }
 	public bool ConfirmEmail{ get; set; }
+	public PlayerPosition PlayerPosition { get; set; }
 	public int ChampionshipId { get; set; }
 }

@@ -52,7 +52,7 @@ public class TeamService
 
 
     private async Task<int> CreateSendAsync(Team team) => await _dbService.EditData(
-			"INSERT INTO teams (emblem, uniformHome, uniformAway, deleted, sportsid, name, numberofplayers) VALUES (@Emblem, @UniformHome, @UniformAway, @Deleted, @SportsId, @Name, 0) RETURNING Id;",
+			"INSERT INTO teams (emblem, uniformHome, uniformAway, deleted, sportsid, name) VALUES (@Emblem, @UniformHome, @UniformAway, @Deleted, @SportsId, @Name) RETURNING Id;",
 			team);
 
 	public async Task<List<Team>> GetAllValidationAsync() => await GetAllSendAsync();
@@ -64,10 +64,6 @@ public class TeamService
 	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id", new {id});
 
 	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NOT NULL);", new {userId});
-	public async Task IncrementNumberOfPlayers(int teamId, int numberOfPlayers)
-	{
-		await _dbService.EditData("UPDATE teams SET numberofplayers = @numberOfPlayers WHERE id = @teamId;", new {teamId, numberOfPlayers });
-	}
 
 	private async Task UpdateUser(Guid userId, int teamId)
 	{
