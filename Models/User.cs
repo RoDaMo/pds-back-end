@@ -27,4 +27,5 @@ public class User
 	public string Picture { get; set; }
 	public bool RememberMe { get; set; }
 	public bool ConfirmEmail{ get; set; }
+	public int ChampionshipId { get; set; }
 }

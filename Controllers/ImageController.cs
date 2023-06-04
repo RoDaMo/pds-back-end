@@ -24,13 +24,12 @@ public class ImageController : ApiBaseController
     {
         var image = await _imageService.GetImage(id);
         
-        return File(image.Stream.ToArray(), image.Extension, image.FileName.ToString());
+        return File(image.Stream.ToArray(), image.ContentType, image.FileName + "." + image.Extension);
     }
 
     [HttpPost]
     [Authorize]
-
-    public async Task<IActionResult> SendImage(IFormFile file, TypeUpload type)
+    public async Task<IActionResult> SendImage(IFormFile file, [FromForm]TypeUpload type)
     {
         try
         {

@@ -1,3 +1,4 @@
+using Elastic.Clients.Elasticsearch;
 using PlayOffsApi.DTO;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
@@ -39,8 +40,8 @@ public class TeamService
 		
 		var team = ToTeam(teamDto);
 
-		var teamId =  await CreateSendAsync(team);
-		await UpdateUser(userId, teamId);
+		team.Id =  await CreateSendAsync(team);
+		await UpdateUser(userId, team.Id);
 
 		var resultado = await _elasticService._client.IndexAsync(team, INDEX);
 		if (!resultado.IsValidResponse)
@@ -74,4 +75,50 @@ public class TeamService
 	}
 
 	private static Team ToTeam(TeamDTO teamDto) => new(teamDto.Emblem, teamDto.UniformHome, teamDto.UniformAway, teamDto.SportsId, teamDto.Name);
+
+	public async Task<List<Team>> SearchTeamsValidation(string query)
+	{
+		var response = await SearchTeamsSend(query);
+		return response.Documents.ToList();
+	}
+
+	private async Task<SearchResponse<Team>> SearchTeamsSend(string query)
+		=> await _elasticService.SearchAsync<Team>(el =>
+		{
+			el.Index(INDEX);
+			el.Query(q => q.Bool(b => b.Must(must => must.MatchPhrasePrefix(mpp => mpp.Field(f => f.Name).Query(query)))));
+		});
+
+
+	public async Task AddTeamToChampionshipValidation(int teamId, int championshipId)
+	{
+		if (await RelationAlreadyExistsValidation(teamId, championshipId))
+			throw new ApplicationException("Time já vinculado com esse campeonato");
+		
+		await AddTeamToChampionshipSend(teamId, championshipId);
+	}
+
+	private async Task AddTeamToChampionshipSend(int teamId, int championshipId)
+	{
+		await _dbService.EditData(
+			"INSERT INTO championships_teams (teamId, championshipId) VALUES (@teamId, @championshipId)",
+			new { teamId, championshipId });
+	}
+
+	public async Task<bool> RelationAlreadyExistsValidation(int teamId, int championshipId)
+		=> await RelationAlreadyExistsSend(teamId, championshipId);
+
+	private async Task<bool> RelationAlreadyExistsSend(int teamId, int championshipId)
+		=> await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM championships_teams WHERE teamId = @teamId AND championshipId = @championshipId", new { teamId, championshipId });
+
+	public async Task RemoveTeamFromChampionshipValidation(int teamId, int championshipId)
+	{
+		if (!await RelationAlreadyExistsValidation(teamId, championshipId))
+			throw new ApplicationException("Time não vinculado com campeonato");
+
+		await RemoveTeamFromChampionshipSend(teamId, championshipId);
+	}
+
+	private async Task RemoveTeamFromChampionshipSend(int teamId, int championshipId)
+		=> await _dbService.EditData("DELETE FROM championships_teams WHERE teamId = @teamId AND championshipId = @championshipId", new { teamId, championshipId });
 }
