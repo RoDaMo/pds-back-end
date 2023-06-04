@@ -44,11 +44,11 @@ public class TeamController : ApiBaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index([FromQuery]string query)
+    public async Task<IActionResult> Index([FromQuery]string query, Sports sport)
     {
         try
         {
-            var result = string.IsNullOrEmpty(query) ? await _teamService.GetAllValidationAsync() : await _teamService.SearchTeamsValidation(query);
+            var result = string.IsNullOrEmpty(query) ? await _teamService.GetAllValidationAsync(sport) : await _teamService.SearchTeamsValidation(query, sport);
             return ApiOk(result);
         }
         catch (ApplicationException ex)
@@ -75,16 +75,16 @@ public class TeamController : ApiBaseController
     [HttpPost]
     [Authorize]
     [Route("/teams/championship")]
-    public async Task<IActionResult> AddTeamToChampionship(int teamId, int championshipId)
+    public async Task<IActionResult> AddTeamToChampionship([FromBody]ChampionshipTeamsDto championshipTeamsDto)
     {
         try
         {
-            var championship = await _championshipService.GetByIdValidation(championshipId);
+            var championship = await _championshipService.GetByIdValidation(championshipTeamsDto.ChampionshipId);
             var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-            if (championship.Organizer.Id != userId)
+            if (championship.OrganizerId != userId)
                 return ApiBadRequest("Você não tem permissão para adicionar um time participante.");
 
-            await _teamService.AddTeamToChampionshipValidation(teamId, championshipId);
+            await _teamService.AddTeamToChampionshipValidation(championshipTeamsDto.TeamId, championshipTeamsDto.ChampionshipId);
             return ApiOk("Time vinculado com sucesso");
         }
         catch (ApplicationException e)
@@ -96,16 +96,16 @@ public class TeamController : ApiBaseController
     [HttpDelete]
     [Authorize]
     [Route("/teams/championship")]
-    public async Task<IActionResult> RemoveTeamFromChampionship(int teamId, int championshipId)
+    public async Task<IActionResult> RemoveTeamFromChampionship([FromBody]ChampionshipTeamsDto championshipTeamsDto)
     {
         try
         {
-            var championship = await _championshipService.GetByIdValidation(championshipId);
+            var championship = await _championshipService.GetByIdValidation(championshipTeamsDto.ChampionshipId);
             var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-            if (championship.Organizer.Id != userId)
+            if (championship.OrganizerId != userId)
                 return ApiBadRequest("Você não tem permissão para remover um time participante.");
 
-            await _teamService.RemoveTeamFromChampionshipValidation(teamId, championshipId);
+            await _teamService.RemoveTeamFromChampionshipValidation(championshipTeamsDto.TeamId, championshipTeamsDto.ChampionshipId);
             return ApiOk("Time desvinculado com sucesso");
         }
         catch (ApplicationException e)

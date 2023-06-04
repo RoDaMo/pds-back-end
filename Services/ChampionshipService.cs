@@ -99,7 +99,9 @@ public class ChampionshipService
 						must2 => must2
 							.Range(r => r
 								.DateRange(d => d.Field(f => f.InitialDate).Gte(start).Lte(finish))
-							)
+							),
+						must3 => must3
+							.Term(t => t.Field(f => f.Deleted).Value(false))
 					)
 					.Filter(fi =>
 						{
@@ -137,4 +139,22 @@ public class ChampionshipService
 			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, nation = @nation, state = @state, city = @city, neighborhood = @neighborhood, teamquantity = @teamquantity " +
 			"WHERE id=@id",
 			championship);
+
+	public async Task<List<Team>> GetAllTeamsOfChampionshipValidation(int championshipId) => await GetAllTeamsOfChampionshipSend(championshipId);
+
+	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)
+		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId;", new { championshipId });
+
+	public async Task DeleteValidation(Championship championship)
+	{
+		await DeleteSend(championship);
+		championship.Deleted = true;
+		await _elasticService._client.IndexAsync(championship, INDEX);
+	}
+
+	private async Task DeleteSend(Championship championship)
+	{
+		await _dbService.EditData("UPDATE championships SET deleted = true WHERE id = @id", championship);
+		await _dbService.EditData("UPDATE users SET championshipid = null WHERE id = @organizerId", championship);
+	}
 }

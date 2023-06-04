@@ -35,7 +35,8 @@ public class Championship
 	public string State { get; set; }
 	public string City { get; set; }
 	public string Neighborhood { get; set; }
-	// public Guid OrganizerId => Organizer.Id;
+	public Guid OrganizerId { get; set; }
 	public User Organizer { get; set; }
 	public int NumberOfPlayers { get; set; }
+	public bool Deleted { get; set; }
 }

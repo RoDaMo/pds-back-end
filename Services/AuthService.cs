@@ -350,8 +350,8 @@ public class AuthService
 			actualUser.Name = user.Name;
 		}
 
-		actualUser.ArtisticName ??= user.ArtisticName;
-		actualUser.Picture ??= user.Picture;
+		actualUser.ArtisticName = user.ArtisticName ?? actualUser.ArtisticName;
+		actualUser.Picture = user.Picture ?? actualUser.Picture;
 		
 		var result = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets(ruleSets.ToArray()));
 
