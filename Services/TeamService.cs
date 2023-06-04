@@ -55,9 +55,9 @@ public class TeamService
 			"INSERT INTO teams (emblem, uniformHome, uniformAway, deleted, sportsid, name) VALUES (@Emblem, @UniformHome, @UniformAway, @Deleted, @SportsId, @Name) RETURNING Id;",
 			team);
 
-	public async Task<List<Team>> GetAllValidationAsync() => await GetAllSendAsync();
+	public async Task<List<Team>> GetAllValidationAsync(Sports sport) => await GetAllSendAsync(sport);
 
-	private async Task<List<Team>> GetAllSendAsync() => await _dbService.GetAll<Team>("SELECT * FROM teams", new { });
+	private async Task<List<Team>> GetAllSendAsync(Sports sport) => await _dbService.GetAll<Team>("SELECT * FROM teams WHERE sportId = @sport", new { sport });
 
 	public async Task<Team> GetByIdValidationAsync(int id) => await GetByIdSendAsync(id);
 
@@ -72,17 +72,17 @@ public class TeamService
 
 	private static Team ToTeam(TeamDTO teamDto) => new(teamDto.Emblem, teamDto.UniformHome, teamDto.UniformAway, teamDto.SportsId, teamDto.Name);
 
-	public async Task<List<Team>> SearchTeamsValidation(string query)
+	public async Task<List<Team>> SearchTeamsValidation(string query, Sports sport)
 	{
-		var response = await SearchTeamsSend(query);
+		var response = await SearchTeamsSend(query, sport);
 		return response.Documents.ToList();
 	}
 
-	private async Task<SearchResponse<Team>> SearchTeamsSend(string query)
+	private async Task<SearchResponse<Team>> SearchTeamsSend(string query, Sports sports)
 		=> await _elasticService.SearchAsync<Team>(el =>
 		{
 			el.Index(INDEX);
-			el.Query(q => q.Bool(b => b.Must(must => must.MatchPhrasePrefix(mpp => mpp.Field(f => f.Name).Query(query)))));
+			el.Query(q => q.Bool(b => b.Must(must => must.MatchPhrasePrefix(mpp => mpp.Field(f => f.Name).Query(query))).Filter(f => f.Term(t => t.Field(ff => ff.SportsId).Value((int)sports)))));
 		});
 
 

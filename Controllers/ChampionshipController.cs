@@ -34,6 +34,7 @@ public class ChampionshipController : ApiBaseController
       var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
       var user = await _authService.GetUserByIdAsync(userId);
       championship.Organizer = user;
+      championship.OrganizerId = user.Id;
       
       result = await _championshipService.CreateValidationAsync(championship);
       if (result.Any())
@@ -101,6 +102,41 @@ public class ChampionshipController : ApiBaseController
         return ApiBadRequest(results);
 
       return ApiOk("Campeonato atualizado com sucesso");
+    }
+    catch (ApplicationException ex)
+    {
+      return ApiBadRequest(ex.Message);
+    }
+  }
+
+  [HttpGet]
+  [Route("/championships/teams")]
+  public async Task<IActionResult> GetAllTeams(int championshipId)
+  {
+    try
+    {
+      var championships = await _championshipService.GetAllTeamsOfChampionshipValidation(championshipId);
+      return ApiOk(championships);
+    }
+    catch (ApplicationException e)
+    {
+      return ApiBadRequest(e.Message);
+    }
+  }
+
+  [HttpDelete]
+  [Route("/championships/{id:int}")]
+  public async Task<IActionResult> Delete(int id)
+  {
+    try
+    {
+      var championship = await _championshipService.GetByIdValidation(id);
+      var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+      if (championship.OrganizerId != userId)
+        return ApiUnauthorizedRequest("Você não tem permissão para excluir um campeonato");
+      
+      await _championshipService.DeleteValidation(championship);
+      return ApiOk("Campeonato excluido com sucesso");
     }
     catch (ApplicationException ex)
     {

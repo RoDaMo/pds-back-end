@@ -215,7 +215,8 @@ public class AuthController : ApiBaseController
 				profileImg = user.Picture,
 				name = user.Name,
 				id = user.Id,
-				championshipId = user.ChampionshipId
+				championshipId = user.ChampionshipId,
+				teamManagementId = user.TeamManagementId
 			});
 		}
 		catch (Exception ex)
