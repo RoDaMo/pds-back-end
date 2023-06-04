@@ -15,6 +15,7 @@ public class Championship
 		TeamQuantity = teamQuantity;
 		Format = format;
 	}
+	public Championship() { }
 	
 	public int Id { get; set; }
 	public string Name { get; set; }
@@ -34,6 +35,7 @@ public class Championship
 	public string State { get; set; }
 	public string City { get; set; }
 	public string Neighborhood { get; set; }
-	public Guid OrganizerId => Organizer.Id;
+	// public Guid OrganizerId => Organizer.Id;
 	public User Organizer { get; set; }
+	public int NumberOfPlayers { get; set; }
 }

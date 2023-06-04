@@ -1,4 +1,3 @@
-using FluentValidation;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
 
@@ -29,25 +28,23 @@ public class PlayerTempProfileService
 		
 		var team = await _teamService.GetByIdSendAsync(playerTempProfile.TeamsId);
 
-		switch (team.SportsId)
-		{
-			case 1 when team.NumberOfPlayers > 24:
-				throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-			case 2 when team.NumberOfPlayers > 14:
-				throw new ApplicationException("Time passado já atingiu o limite de jogadores.");
-		}
-
 		var playerTempProfileValidator = new PlayerTempProfileValidator();
 
-		var result = (team.SportsId == 1) 
-		? await playerTempProfileValidator.ValidateAsync(playerTempProfile, options => options.IncludeRuleSets("ValidationSoccer"))
-		: await playerTempProfileValidator.ValidateAsync(playerTempProfile, options => options.IncludeRuleSets("ValidationVolleyBall"));
+		var result = await playerTempProfileValidator.ValidateAsync(playerTempProfile);
 
 		if (!result.IsValid)
 		{
 			errorMessages = result.Errors.Select(x => x.ErrorMessage).ToList();
 			return errorMessages;
 		}
+
+		switch (team.SportsId)
+        {
+	        case 1 when ((int)playerTempProfile.PlayerPosition) > 9 || ((int)playerTempProfile.PlayerPosition) < 1 :
+		        throw new ApplicationException("Posição inválida para o esporte do time.");
+	        case 2 when ((int)playerTempProfile.PlayerPosition) < 10 || ((int)playerTempProfile.PlayerPosition) > 14 :
+		        throw new ApplicationException("Posição inválida para o esporte do time.");
+        }
 
 		if(await ChecksIfUserIsManager(userId))
 		{
@@ -75,16 +72,13 @@ public class PlayerTempProfileService
 		}
 
 		await CreateSendAsync(playerTempProfile);
-		team.NumberOfPlayers++;
-		await _teamService.IncrementNumberOfPlayers(team.Id, team.NumberOfPlayers);
-
 		return errorMessages;
 	}
 
     private async Task CreateSendAsync(PlayerTempProfile playerTempProfile)
 	{
 		await _dbService.EditData(
-			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, soccerpositionid, volleyballpositionid) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @SoccerPositionId, @VolleyballPositionId)", playerTempProfile);
+			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, playerPosition) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @PlayerPosition)", playerTempProfile);
 	}
 
 	private async Task<bool> ChecksIfUserIsManager(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NULL);", new {userId});

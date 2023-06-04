@@ -69,6 +69,9 @@ public class ChampionshipValidator : AbstractValidator<Championship>
 			.NotEmpty()
 			.WithMessage("Campo Bairro não pode estar vazio.");
 
+		RuleFor(c => c.NumberOfPlayers)
+			.NotEmpty()
+			.WithMessage("Campo Número de Jogadores não pode estar vazio.");
 	}
 
 	private static bool IsPowerOfTwo(int x) => x is not 0 && (x & (x - 1)) == 0;

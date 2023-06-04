@@ -89,5 +89,23 @@ public class ChampionshipController : ApiBaseController
       return ApiBadRequest("Campeonato com esse ID não existe");
     }
   }
+
+  [HttpPut]
+  [Authorize]
+  public async Task<IActionResult> Update([FromBody] Championship championship)
+  {
+    try
+    {
+      var results = await _championshipService.UpdateValidate(championship);
+      if (results.Any())
+        return ApiBadRequest(results);
+
+      return ApiOk("Campeonato atualizado com sucesso");
+    }
+    catch (ApplicationException ex)
+    {
+      return ApiBadRequest(ex.Message);
+    }
+  }
 }
 

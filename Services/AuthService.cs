@@ -129,7 +129,7 @@ public class AuthService
 	}
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
-		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
+		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture, championshipId, teammanagementid, playerteamid FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
 
 	public async Task SendEmailToConfirmAccount(Guid userId)
 	{
@@ -189,7 +189,8 @@ public class AuthService
         }
         if(user.ConfirmEmail)
         {
-           return errorMessages;
+			errorMessages.Add(user.Username);
+        	return errorMessages;
         } 
 
         user.ConfirmEmail = true;
@@ -211,7 +212,7 @@ public class AuthService
 
 	private async Task<bool> UserAlreadyExistsInPlayerTemp(string email)
 	{
-		return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM playertempprofiles WHERE Email = email", email);
+		return await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM playertempprofiles WHERE Email = @email)", new {email});
 	}
 
 	private async Task<Guid> CreateAccountAndAddPlayer(User user)
@@ -219,12 +220,11 @@ public class AuthService
 		var player = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Email = email", user.Email);
 		user.ArtisticName = player.ArtisticName;
 		user.Number = player.Number;
-		user.SoccerPositionId = player.SoccerPositionId;
-		user.VolleyballPositionId = player.VolleyballPositionId;
+		user.PlayerPosition = player.PlayerPosition;
 		user.PlayerTeamId = player.TeamsId;
 		user.PasswordHash = EncryptPassword(user.Password);
 
-		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, ArtisticName, Number, SoccerPositionId, VolleyballPositionId, PlayerTeamId) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, 'false', @ArtisticName, @Number, @SoccerPositionId, @VolleyballPositionId, @PlayerTeamId) RETURNING Id;", user);
+		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, ArtisticName, Number, PlayerPositionsId, PlayerTeamId) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, 'false', @ArtisticName, @Number, @PlayerPositionsId, @PlayerTeamId) RETURNING Id;", user);
 	}
 
 	private async Task DeletePlayerTempProfile(Guid id)
