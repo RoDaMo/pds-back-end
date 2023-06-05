@@ -144,4 +144,49 @@
   <data name="PrizeNotNull" xml:space="preserve">
     <value>Prize field cannot be empty</value>
   </data>
+  <data name="ShowCampeonatoIdNaoExiste" xml:space="preserve">
+    <value>Championship with this ID does not exist</value>
+  </data>
+  <data name="UpdateCampeonatoAtualizadoComSucesso" xml:space="preserve">
+    <value>Championship updated successfully</value>
+  </data>
+  <data name="DeleteNotAuthorized" xml:space="preserve">
+    <value>You don't have the permissions required to delete a championship.</value>
+  </data>
+  <data name="DeleteDeleted" xml:space="preserve">
+    <value>Championship deleted successfully</value>
+  </data>
+  <data name="ChampionshipValidatorAtleastTwo" xml:space="preserve">
+    <value>There must be at least 2 teams in the championship.</value>
+  </data>
+  <data name="ChampionshipValidatorCityNotNull" xml:space="preserve">
+    <value>City field cannot be empty.</value>
+  </data>
+  <data name="ChampionshipValidatorFootballOrVolley" xml:space="preserve">
+    <value>Sports Field cannot be empty.</value>
+  </data>
+  <data name="ChampionshipValidatorMaximumQuantityExceeded" xml:space="preserve">
+    <value>Number of teams cannot exceed 128 teams.</value>
+  </data>
+  <data name="ChampionshipValidatorInvalidQuantity" xml:space="preserve">
+    <value>Number of teams must be a square of 2, such as 4, 16, 32, 64, etc.</value>
+  </data>
+  <data name="ChampionshipValidatorAtleast10" xml:space="preserve">
+    <value>There must be at least 10 characters in the description, and no more than 10,000 characters.</value>
+  </data>
+  <data name="ChampionshipValidatorNationNotNull" xml:space="preserve">
+    <value>Country field cannot be empty.</value>
+  </data>
+  <data name="ChampionshipValidatorNeighborhoodNotNull" xml:space="preserve">
+    <value>Neighborhood field cannot be empty.</value>
+  </data>
+  <data name="ChampionshipValidatorNumberOfPlayers" xml:space="preserve">
+    <value>Filed number of players must not be empty.</value>
+  </data>
+  <data name="ChampionshipValidatorSportNotNull" xml:space="preserve">
+    <value>Sports Field cannot be empty.</value>
+  </data>
+  <data name="ChampionshipValidatorStateNotNull" xml:space="preserve">
+    <value>State field cannot be empty.</value>
+  </data>
 </root>

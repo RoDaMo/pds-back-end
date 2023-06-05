@@ -87,7 +87,7 @@ public class ChampionshipController : ApiBaseController
     }
     catch (ApplicationException)
     {
-      return ApiBadRequest("Campeonato com esse ID não existe");
+      return ApiBadRequest(Resource.ShowCampeonatoIdNaoExiste);
     }
   }
 
@@ -101,7 +101,7 @@ public class ChampionshipController : ApiBaseController
       if (results.Any())
         return ApiBadRequest(results);
 
-      return ApiOk("Campeonato atualizado com sucesso");
+      return ApiOk(Resource.UpdateCampeonatoAtualizadoComSucesso);
     }
     catch (ApplicationException ex)
     {
@@ -133,10 +133,10 @@ public class ChampionshipController : ApiBaseController
       var championship = await _championshipService.GetByIdValidation(id);
       var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
       if (championship.OrganizerId != userId)
-        return ApiUnauthorizedRequest("Você não tem permissão para excluir um campeonato");
+        return ApiUnauthorizedRequest(Resource.DeleteNotAuthorized);
       
       await _championshipService.DeleteValidation(championship);
-      return ApiOk("Campeonato excluido com sucesso");
+      return ApiOk(Resource.DeleteDeleted);
     }
     catch (ApplicationException ex)
     {

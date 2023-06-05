@@ -70,6 +70,123 @@ namespace PlayOffsApi.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Deve haver pelo menos 10 caracteres na descrição, e no máximo 10 mil caracteres..
+        /// </summary>
+        public static string ChampionshipValidatorAtleast10 {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorAtleast10", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Deve haver pelo menos 2 times no campeonato..
+        /// </summary>
+        public static string ChampionshipValidatorAtleastTwo {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorAtleastTwo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campo Cidade não pode estar vazia..
+        /// </summary>
+        public static string ChampionshipValidatorCityNotNull {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorCityNotNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campo Esporte deve ser preenchido com Vôlei ou futebol..
+        /// </summary>
+        public static string ChampionshipValidatorFootballOrVolley {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorFootballOrVolley", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Quantidade de times deve ser um quadrado de 2, como 4, 16, 32, 64, etc..
+        /// </summary>
+        public static string ChampionshipValidatorInvalidQuantity {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorInvalidQuantity", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Quantidade de times não pode exceder 128 times..
+        /// </summary>
+        public static string ChampionshipValidatorMaximumQuantityExceeded {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorMaximumQuantityExceeded", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campo País não pode estar vazio..
+        /// </summary>
+        public static string ChampionshipValidatorNationNotNull {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorNationNotNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campo Bairro não pode estar vazio..
+        /// </summary>
+        public static string ChampionshipValidatorNeighborhoodNotNull {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorNeighborhoodNotNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campo Número de Jogadores não pode estar vazio..
+        /// </summary>
+        public static string ChampionshipValidatorNumberOfPlayers {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorNumberOfPlayers", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campo Esporte não pode ser vazio..
+        /// </summary>
+        public static string ChampionshipValidatorSportNotNull {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorSportNotNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campo Estado não pode estar vazio..
+        /// </summary>
+        public static string ChampionshipValidatorStateNotNull {
+            get {
+                return ResourceManager.GetString("ChampionshipValidatorStateNotNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campeonato excluido com sucesso.
+        /// </summary>
+        public static string DeleteDeleted {
+            get {
+                return ResourceManager.GetString("DeleteDeleted", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Você não tem permissão para excluir um campeonato.
+        /// </summary>
+        public static string DeleteNotAuthorized {
+            get {
+                return ResourceManager.GetString("DeleteNotAuthorized", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Campo Data Final não pode ser vazio..
         /// </summary>
         public static string FinalDateNotNull {
@@ -124,6 +241,15 @@ namespace PlayOffsApi.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Campo Nome Artístico não pode ser vazio..
+        /// </summary>
+        public static string PlayerValidatorArtisticNameNotNull {
+            get {
+                return ResourceManager.GetString("PlayerValidatorArtisticNameNotNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Campo Prêmio deve ter entre 3 e 20 caracteres..
         /// </summary>
         public static string PrizeCharRange {
@@ -138,6 +264,24 @@ namespace PlayOffsApi.Resources {
         public static string PrizeNotNull {
             get {
                 return ResourceManager.GetString("PrizeNotNull", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campeonato com esse ID não existe.
+        /// </summary>
+        public static string ShowCampeonatoIdNaoExiste {
+            get {
+                return ResourceManager.GetString("ShowCampeonatoIdNaoExiste", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Campeonato atualizado com sucesso.
+        /// </summary>
+        public static string UpdateCampeonatoAtualizadoComSucesso {
+            get {
+                return ResourceManager.GetString("UpdateCampeonatoAtualizadoComSucesso", resourceCulture);
             }
         }
     }

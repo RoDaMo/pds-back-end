@@ -28,6 +28,51 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Resources\Controllers\AuthController.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AuthController.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Controllers\ImageController.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ImageController.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Controllers\TeamController.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TeamController.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Services\AuthService.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AuthService.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Services\EmailService.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>EmailService.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Services\ImageService.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ImageService.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Services\PlayerService.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>PlayerService.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Services\PlayerTempProfileService.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>PlayerTempProfileService.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Services\TeamService.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>TeamService.resx</DependentUpon>
+    </Compile>
     <Compile Update="Resources\Validations\Championship\Championship.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
@@ -38,9 +83,70 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Generic.resx</DependentUpon>
     </Compile>
+    <Compile Update="Resources\Validations\PlayerTempProfile\PlayerTempProfile.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>PlayerTempProfile.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Validations\Player\Player.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Player.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Validations\Team\Team.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Team.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Validations\UpdatePassword\UpdatePassword.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>UpdatePassword.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Validations\User\User.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>User.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Update="Resources\Controllers\AuthController.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>AuthController.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Controllers\ImageController.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>ImageController.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Controllers\TeamController.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>TeamController.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Services\AuthService.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>AuthService.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Services\EmailService.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>EmailService.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Services\ImageService.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>ImageService.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Services\PlayerService.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>PlayerService.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Services\PlayerTempProfileService.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>PlayerTempProfileService.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Services\TeamService.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>TeamService.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Update="Resources\Validations\Championship\Championship.en.resx">
       <Generator></Generator>
       <CustomToolNamespace>PlayOffsApi.Resources</CustomToolNamespace>
@@ -57,6 +163,26 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Generic.Designer.cs</LastGenOutput>
       <CustomToolNamespace>PlayOffsApi.Resources</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Validations\PlayerTempProfile\PlayerTempProfile.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>PlayerTempProfile.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Validations\Player\Player.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Player.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Validations\Team\Team.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Team.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Validations\UpdatePassword\UpdatePassword.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>UpdatePassword.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Validations\User\User.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>User.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 

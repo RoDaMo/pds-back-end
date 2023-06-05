@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using FluentValidation;
 using PlayOffsApi.Models;
+using Resource = PlayOffsApi.Resources.Validations.User.User;
 
 namespace PlayOffsApi.Validations;
 
@@ -13,11 +14,11 @@ public partial class UserValidator : AbstractValidator<User>
             RuleFor(rule => rule.Username.ToLower())
                 .NotEmpty()
                 .NotEqual("null")
-                .WithMessage("Informe seu nome de usuário, ele será utilizado para permitir que outros usuários o identifiquem sem revelar seu nome");
+                .WithMessage(Resource.UserValidatorUsernameNotNull);
 
             RuleFor(rule => rule.Username)
                 .Matches(UsernameRegex())
-                .WithMessage(@"Nome de usuário inválido, seu nome de usuário deve conter apenas letras maíusculas, minúsculas, números e opcionalmente ""-"",""_"". Assim como deve possuir pelo menos 4 caracteres e no máximo 100.");
+                .WithMessage(Resource.UserValidatorInvalidUsername);
         });
         
         RuleSet("IdentificadorEmail", () =>
@@ -25,35 +26,35 @@ public partial class UserValidator : AbstractValidator<User>
             RuleFor(rule => rule.Email)
                 .NotEmpty()
                 .EmailAddress()
-                .WithMessage("Endereço de email inválido");
+                .WithMessage(Resource.UserValidatorInvalidEmail);
         });
         
         RuleSet("Dados", () =>
         {
             RuleFor(rule => rule.Name.ToLower())
                 .NotEmpty()
-                .WithMessage("Informe o seu nome")
+                .WithMessage(Resource.UserValidatorNameNotNull)
                 .NotEqual("null")
-                .WithMessage("Informe o seu nome")
+                .WithMessage(Resource.UserValidatorNameNotNull)
                 .Length(4, 200)
-                .WithMessage("Nome deve possuir pelo menos 4 caracteres e no máximo 200."); // biggest name in the world had over 600 characters
+                .WithMessage(Resource.UserValidatorInvalidNameLength); // biggest name in the world had over 600 characters
             
             RuleFor(rule => rule.Birthday)
                 .NotEmpty()
-                .WithMessage("Informe sua data de nascimento");
+                .WithMessage(Resource.UserValidatorDateBirthNotNull);
 
             RuleFor(rule => rule.Birthday)
                 .LessThan(DateTime.Now.AddYears(-13))
-                .WithMessage("É necessário possuir pelo menos 13 anos de idade para se cadastrar");
+                .WithMessage(Resource.UserValidatorAtleast13);
 
 
             RuleFor(rule => rule.Password)
                 .NotEmpty()
-                .WithMessage("Insira sua senha");
+                .WithMessage(Resource.UserValidatorPasswordNotNull);
 
             RuleFor(rule => rule.Password)
                 .Matches(PasswordRegex())
-                .WithMessage("Senha inválida");
+                .WithMessage(Resource.UserValidatorInvalidPassword);
         });
 
 
@@ -61,46 +62,46 @@ public partial class UserValidator : AbstractValidator<User>
         {
             RuleFor(rule => rule.Password)
                 .NotEmpty()
-                .WithMessage("Insira sua senha");
+                .WithMessage(Resource.UserValidatorPasswordNotNull);
 
             RuleFor(rule => rule.Password)
                 .Matches(PasswordRegex())
-                .WithMessage("Senha inválida");
+                .WithMessage(Resource.UserValidatorInvalidPassword);
         });
 
         RuleSet("Bio", () =>
         {
             RuleFor(rule => rule.Bio)
                 .Length(0, 300) 
-                .WithMessage("Campo Bio pode ter no máximo 300 caracteres.");
+                .WithMessage(Resource.UserValidatorBioInvalidLength);
         }); 
         
         RuleSet("Name", () => RuleFor(rule => rule.Name)
             .NotEmpty()
-            .WithMessage("Informe o seu nome")
+            .WithMessage(Resource.UserValidatorNameNotNull)
             .NotEqual("null")
-            .WithMessage("Informe o seu nome")
+            .WithMessage(Resource.UserValidatorNameNotNull)
             .Length(4, 200)
-            .WithMessage("Nome deve possuir pelo menos 4 caracteres e no máximo 200."));
+            .WithMessage(Resource.UserValidatorInvalidNameLength));
 
         RuleSet("UpdatePassword", () =>
         {
             RuleFor(rule => rule.Password)
                 .NotEmpty()
-                .WithMessage("Insira sua senha");
+                .WithMessage(Resource.UserValidatorPasswordNotNull);
         });
         
         RuleSet("Cpf", () =>
         {
             RuleFor(t => t.Cpf)
                 .NotEmpty()
-                .WithMessage("Campo CPF não pode ser vazio.");
+                .WithMessage(Resource.UserValidatorCpfNotNull);
             RuleFor(t => t.Cpf)
                 .Length(11, 11)
-                .WithMessage("Campo CPF deve ter 11 caracteres.");
+                .WithMessage(Resource.UserValidatorInvalidLength);
             RuleFor(t => t.Cpf)
                 .Matches(@"^\d+$")
-                .WithMessage("Campos CPF deve conter apenas números");
+                .WithMessage(Resource.UserValidatorOnlyNumbers);
         });
     }
     

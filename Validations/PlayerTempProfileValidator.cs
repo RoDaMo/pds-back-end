@@ -1,5 +1,6 @@
 using FluentValidation;
 using PlayOffsApi.Models;
+using Resource = PlayOffsApi.Resources.Validations.PlayerTempProfile.PlayerTempProfile;
 
 namespace PlayOffsApi.Validations;
 
@@ -9,37 +10,37 @@ public class PlayerTempProfileValidator : AbstractValidator<PlayerTempProfile>
 	{
 			RuleFor(p => p.Name)
 				.NotEmpty()
-				.WithMessage("Campo Nome não pode ser vazio.");
+				.WithMessage(Resource.NameFieldNotNull);
 			RuleFor(p => p.Name)
 				.Length(4, 50)
-				.WithMessage("Campo Nome deve ter entre 4 e 50 caracteres.");
+				.WithMessage(Resource.InvalidNameLength);
 
 			RuleFor(p => p.ArtisticName)
 				.NotEmpty()
-				.WithMessage("Campo Nome Artístico não pode ser vazio.");
+				.WithMessage(Resource.ArtisticNameNotNull);
 			RuleFor(p => p.ArtisticName)
 				.Length(4, 50)
-				.WithMessage("Campo Nome Artístico deve ter entre 4 e 50 caracteres.");
+				.WithMessage(Resource.InvalidArtisticNameLength);
 			
 			RuleFor(p => p.Email)
 				.NotEmpty()
 				.EmailAddress()
-				.WithMessage("Endereço de email inválido.");
+				.WithMessage(Resource.InvalidEmail);
 
 			RuleFor(p => p.Number)
 				.NotEmpty()
-				.WithMessage("Campo Número não pode ser vazio.");
+				.WithMessage(Resource.NumberNotNull);
 			RuleFor(p => p.Number)
 				.InclusiveBetween(1, 99)
-				.WithMessage("O Campo Número deve estar entre 1 e 99");
+				.WithMessage(Resource.InvalidNumberLengthTwo);
 
 			RuleFor(p => p.TeamsId)
 				.NotEmpty()
-				.WithMessage("Campo Time não pode ser vazio.");
+				.WithMessage(Resource.TeamNotNull);
 			
 			RuleFor(p => p.PlayerPosition)
 				.NotEmpty()
-				.WithMessage("Campo Posição não pode ser vazio.");
+				.WithMessage(Resource.PositionNotNull);
 		}	
 	
 }

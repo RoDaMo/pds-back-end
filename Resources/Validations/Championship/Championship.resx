@@ -144,4 +144,52 @@
   <data name="PrizeNotNull" xml:space="preserve">
     <value>Campo Prêmio não pode ser vazio.</value>
   </data>
+  <data name="ShowCampeonatoIdNaoExiste" xml:space="preserve">
+    <value>Campeonato com esse ID não existe</value>
+  </data>
+  <data name="UpdateCampeonatoAtualizadoComSucesso" xml:space="preserve">
+    <value>Campeonato atualizado com sucesso</value>
+  </data>
+  <data name="DeleteNotAuthorized" xml:space="preserve">
+    <value>Você não tem permissão para excluir um campeonato</value>
+  </data>
+  <data name="DeleteDeleted" xml:space="preserve">
+    <value>Campeonato excluido com sucesso</value>
+  </data>
+  <data name="ChampionshipValidatorSportNotNull" xml:space="preserve">
+    <value>Campo Esporte não pode ser vazio.</value>
+  </data>
+  <data name="ChampionshipValidatorFootballOrVolley" xml:space="preserve">
+    <value>Campo Esporte deve ser preenchido com Vôlei ou futebol.</value>
+  </data>
+  <data name="ChampionshipValidatorInvalidQuantity" xml:space="preserve">
+    <value>Quantidade de times deve ser um quadrado de 2, como 4, 16, 32, 64, etc.</value>
+  </data>
+  <data name="ChampionshipValidatorMaximumQuantityExceeded" xml:space="preserve">
+    <value>Quantidade de times não pode exceder 128 times.</value>
+  </data>
+  <data name="ChampionshipValidatorAtleastTwo" xml:space="preserve">
+    <value>Deve haver pelo menos 2 times no campeonato.</value>
+  </data>
+  <data name="ChampionshipValidatorAtleast10" xml:space="preserve">
+    <value>Deve haver pelo menos 10 caracteres na descrição, e no máximo 10 mil caracteres.</value>
+  </data>
+  <data name="ChampionshipValidatorNationNotNull" xml:space="preserve">
+    <value>Campo País não pode estar vazio.</value>
+  </data>
+  <data name="ChampionshipValidatorStateNotNull" xml:space="preserve">
+    <value>Campo Estado não pode estar vazio.</value>
+  </data>
+  <data name="ChampionshipValidatorCityNotNull" xml:space="preserve">
+    <value>Campo Cidade não pode estar vazia.</value>
+  </data>
+  <data name="ChampionshipValidatorNeighborhoodNotNull" xml:space="preserve">
+    <value>Campo Bairro não pode estar vazio.</value>
+  </data>
+  <data name="ChampionshipValidatorNumberOfPlayers" xml:space="preserve">
+    <value>Campo Número de Jogadores não pode estar vazio.</value>
+  </data>
+  <data name="PlayerValidatorArtisticNameNotNull" xml:space="preserve">
+    <value>Campo Nome Artístico não pode ser vazio.</value>
+  </data>
 </root>
