@@ -175,14 +175,14 @@ public class AuthService
 		catch (Exception)
 		{
 			var email2 = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
-			var user2 = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @email2;", email2);
+			var user2 = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @email2;", new { email2 });
 			errorMessages.Add(user2.Id.ToString());
 			errorMessages.Add(Resource.InvalidEmailToken);
 			return errorMessages;
 		}
 
 		var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
-		var user = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @email;", email);
+		var user = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @email;", new { email });
 
         if(user == null)
         {
@@ -218,7 +218,7 @@ public class AuthService
 
 	private async Task<Guid> CreateAccountAndAddPlayer(User user)
 	{
-		var player = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Email = @email", user.Email);
+		var player = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Email = @email", user);
 		user.ArtisticName = player.ArtisticName;
 		user.Number = player.Number;
 		user.PlayerPosition = player.PlayerPosition;
