@@ -139,8 +139,10 @@ public class ChampionshipService
 		
 		if (!result.IsValid)
 			return result.Errors.Select(x => x.ErrorMessage).ToList();
-
+		
 		await UpdateSend(championship);
+		await _elasticService._client.IndexAsync(championship, INDEX);
+		
 		return new();
 	}
 
