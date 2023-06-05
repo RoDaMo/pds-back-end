@@ -6,6 +6,7 @@ using System.Text;
 using PlayOffsApi.Validations;
 using FluentValidation;
 using PlayOffsApi.DTO;
+using Resource = PlayOffsApi.Resources.Services.AuthService;
 
 namespace PlayOffsApi.Services;
 
@@ -75,7 +76,7 @@ public class AuthService
 			return result.Errors.Select(x => x.ErrorMessage).ToList();
 
 		if (await UserAlreadyExists(newUser))
-			return new() { "Email ou nome de usuário já cadastrado no sistema" };
+			return new() { Resource.UserAlreadyRegistered };
 
 		newUser.Picture = "https://cdn-icons-png.flaticon.com/512/17/17004.png";
 
@@ -106,7 +107,7 @@ public class AuthService
 		if (result.IsValid || result2.IsValid)
 			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE username = @Username OR email = @Email", user);
 
-		throw new ApplicationException("Nome de usuário ou email inválido!");
+		throw new ApplicationException(Resource.InvalidUsername);
 	}
 
 	private async Task<Guid> RegisterUserAsync(User newUser)
@@ -144,7 +145,7 @@ public class AuthService
         if(!emailResponse)
         {
             await DeleteUserByIdAsync(userId);
-            throw new ApplicationException("Erro ao enviar o email de confirmação.");
+            throw new ApplicationException(Resource.ErrorSendingConfirmationEmail);
         }
 
 	}
@@ -176,7 +177,7 @@ public class AuthService
 			var email2 = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
 			var user2 = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = email;", email2);
 			errorMessages.Add(user2.Id.ToString());
-			errorMessages.Add("Token de confirmação de email inválido.");
+			errorMessages.Add(Resource.InvalidEmailToken);
 			return errorMessages;
 		}
 
@@ -185,7 +186,7 @@ public class AuthService
 
         if(user == null)
         {
-           throw new ApplicationException("Tente se cadastrar novamente.");
+           throw new ApplicationException(Resource.TryAgain);
         }
         if(user.ConfirmEmail)
         {
@@ -243,10 +244,10 @@ public class AuthService
 		var actualUser = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @Email;", new { Email = user.Email });
 
 		if(actualUser is null)
-			throw new ApplicationException("Email inválido.");
+			throw new ApplicationException(Resource.ForgotPasswordInvalidEmail);
 
 		if (!actualUser.ConfirmEmail)
-				throw new ApplicationException("Confirme seu email para poder acessar sua conta.");
+				throw new ApplicationException(Resource.ConfirmEmailToAccess);
 		
 		await SendEmailToResetPassword(actualUser.Id);
 		errorMessages.Add(actualUser.Id.ToString());
@@ -265,7 +266,7 @@ public class AuthService
 
         if(!emailResponse)
         {
-            throw new ApplicationException("Erro ao enviar o email de confirmação.");
+            throw new ApplicationException(Resource.ErrorSendingConfirmationEmail);
         }
 
 	}
@@ -297,7 +298,7 @@ public class AuthService
 		}
 		catch (Exception)
 		{
-			throw new ApplicationException("Token de redefinição de senha inválido.");
+			throw new ApplicationException(Resource.InvalidPasswordToken);
 		}
 	}
 
@@ -362,12 +363,12 @@ public class AuthService
 		}
 
 		if (await CheckIfUserIsPlayerAsync(userId) && !string.IsNullOrEmpty(user.ArtisticName))
-			throw new ApplicationException("Apenas jogadores podem alterar o nome artístico");
+			throw new ApplicationException(Resource.NotPlayer);
 		
 		user.Id = userId;
 
         if (await OtherUserAlreadyExists(user))
-	        throw new ApplicationException("Nome de usuário ou email inválido!");
+	        throw new ApplicationException(Resource.InvalidUsername);
 		
 
 		await UpdateProfileSendAsync(actualUser);
@@ -398,7 +399,7 @@ public class AuthService
 
         if (!VerifyEncryptedPassword(updatePasswordDTO.CurrentPassword, actualUser.PasswordHash))
         {
-            throw new ApplicationException("Senha atual incorreta");
+            throw new ApplicationException(Resource.UpdatePasswordValidationAsyncInvalidPassword);
         }
 
 		actualUser.PasswordHash = EncryptPassword(updatePasswordDTO.NewPassword);
@@ -419,7 +420,7 @@ public class AuthService
 
 	public async Task<List<string>> AddCpfUserValidationAsync(Guid userId, string cpf)
 	{
-		if (await UserHasCpfValidationAsync(userId)) throw new ApplicationException("Usuário já possui CPF");
+		if (await UserHasCpfValidationAsync(userId)) throw new ApplicationException(Resource.AddCpfUserValidationAsyncHasCpf);
 		
 		var userValidator = new UserValidator();
 		var results = await userValidator.ValidateAsync(new User { Cpf = cpf }, option => option.IncludeRuleSets("Cpf"));

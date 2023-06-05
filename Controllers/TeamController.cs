@@ -5,6 +5,7 @@ using PlayOffsApi.API;
 using PlayOffsApi.DTO;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using Resource = PlayOffsApi.Resources.Controllers.TeamController;
 
 namespace PlayOffsApi.Controllers;
 
@@ -64,7 +65,7 @@ public class TeamController : ApiBaseController
         {
             var result = await _teamService.GetByIdValidationAsync(id);
 
-            return result is null ? ApiBadRequest("Time não existente") : ApiOk(result);
+            return result is null ? ApiBadRequest(Resource.ShowTimeNaoExistente) : ApiOk(result);
         }
         catch (ApplicationException ex)
         {
@@ -82,10 +83,10 @@ public class TeamController : ApiBaseController
             var championship = await _championshipService.GetByIdValidation(championshipTeamsDto.ChampionshipId);
             var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
             if (championship.OrganizerId != userId)
-                return ApiBadRequest("Você não tem permissão para adicionar um time participante.");
+                return ApiBadRequest(Resource.AddTeamToChampionshipNoPermission);
 
             await _teamService.AddTeamToChampionshipValidation(championshipTeamsDto.TeamId, championshipTeamsDto.ChampionshipId);
-            return ApiOk("Time vinculado com sucesso");
+            return ApiOk(Resource.AddTeamToChampionshipVinculado);
         }
         catch (ApplicationException e)
         {
@@ -103,10 +104,10 @@ public class TeamController : ApiBaseController
             var championship = await _championshipService.GetByIdValidation(championshipTeamsDto.ChampionshipId);
             var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
             if (championship.OrganizerId != userId)
-                return ApiBadRequest("Você não tem permissão para remover um time participante.");
+                return ApiBadRequest(Resource.RemoveTeamFromChampionshipNoPermissionToDelete);
 
             await _teamService.RemoveTeamFromChampionshipValidation(championshipTeamsDto.TeamId, championshipTeamsDto.ChampionshipId);
-            return ApiOk("Time desvinculado com sucesso");
+            return ApiOk(Resource.RemoveTeamFromChampionshipUnlinked);
         }
         catch (ApplicationException e)
         {

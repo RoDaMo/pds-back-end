@@ -1,5 +1,6 @@
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
+using Resource = PlayOffsApi.Resources.Services.PlayerService;
 
 namespace PlayOffsApi.Services;
 
@@ -23,7 +24,7 @@ public class PlayerService
 
         if(!await ChecksIfTeamExists(user.PlayerTeamId))
         {
-			throw new ApplicationException("Time passado não existe.");
+			throw new ApplicationException(Resource.CreateValidationAsyncDoesntExist);
         }
 		
 		var team = await _teamService.GetByIdSendAsync(user.PlayerTeamId);
@@ -41,39 +42,39 @@ public class PlayerService
 		switch (team.SportsId)
         {
 	        case 1 when ((int)user.PlayerPosition) > 9 || ((int)user.PlayerPosition) < 1 :
-		        throw new ApplicationException("Posição inválida para o esporte do time.");
+		        throw new ApplicationException(Resource.CreateValidationAsyncInvalidPosition);
 	        case 2 when ((int)user.PlayerPosition) < 10 || ((int)user.PlayerPosition) > 14 :
-		        throw new ApplicationException("Posição inválida para o esporte do time.");
+		        throw new ApplicationException(Resource.CreateValidationAsyncInvalidPosition);
         }
 
 		if(await ChecksIfUserIsManager(userId))
 		{
-			throw new ApplicationException("Apenas técnicos podem cadastrar jogadores.");
+			throw new ApplicationException(Resource.CreateValidationAsyncOnlyTechnicians);
 		}
 
         if(!await ChecksIfUserPassedExists(user.Email))
 		{
-			throw new ApplicationException("Usuário passado não existe.");
+			throw new ApplicationException(Resource.CreateValidationAsyncUserDoesntExist);
 		}
 
 		if(await ChecksIfNumberAlreadyExistsInPlayerTemp(user.Number, user.PlayerTeamId))
 		{
-			throw new ApplicationException("Já exite jogador temporário com o número de camisa passado.");
+			throw new ApplicationException(Resource.CreateValidationAsyncNumberAlreadyExists);
 		}
 
         if(await ChecksIfNumberAlreadyExistsInUser(user.Number, user.PlayerTeamId))
 		{
-			throw new ApplicationException("Já exite jogador com o número de camisa passado.");
+			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyExists);
 		}
 
         if(await ChecksIfTeamAlreadyHasCaptain())
 		{
-			throw new ApplicationException("Já exite capitão no time atual.");
+			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyHasCaptain);
 		}
 
 		if(await ChecksIfUserPassedAlreadHasTeam(user.Email))
 		{
-			throw new ApplicationException("Jogador passado já pertence a um time.");
+			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyBelongsTeam);
 		}
 
 		await CreateSendAsync(user);

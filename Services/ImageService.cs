@@ -6,6 +6,7 @@ using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
+using Resource = PlayOffsApi.Resources.Services.ImageService;
 
 namespace PlayOffsApi.Services;
 
@@ -49,20 +50,20 @@ public partial class ImageService
             case TypeUpload.UserLogo:
             {
                 if (ConvertBytesToMegabytes(file.Stream.Length) > 5)
-                    returnValue.Add("Arquivo grande demais.");
+                    returnValue.Add(Resource.ValidateUploadArquivoGrandeDemais);
                 
                 if (!imgRegex.IsMatch(extension))
-                    returnValue.Add("Tipo de arquivo inválido.");
+                    returnValue.Add(Resource.ValidateUploadInvalidFileType);
                         
                 return returnValue;
             }
             case TypeUpload.ChampionshipRule:
             {
                 if (ConvertBytesToMegabytes(file.Stream.Length) > 20)
-                    returnValue.Add("Arquivo grande demais.");
+                    returnValue.Add(Resource.ValidateUploadArquivoGrandeDemais);
                 
                 if (!fileRegex.IsMatch(extension))
-                    returnValue.Add("Tipo de arquivo inválido.");
+                    returnValue.Add(Resource.ValidateUploadInvalidFileType);
                         
                 return returnValue;
             }

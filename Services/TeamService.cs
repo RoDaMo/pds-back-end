@@ -2,7 +2,8 @@ using Elastic.Clients.Elasticsearch;
 using PlayOffsApi.DTO;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
-using Resource = PlayOffsApi.Resources.Generic;
+using Resource = PlayOffsApi.Resources.Services.TeamService;
+using Generic = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Services;
 
@@ -27,7 +28,7 @@ public class TeamService
 
 		var result = await teamValidator.ValidateAsync(teamDto);
 		if (!await _authService.UserHasCpfValidationAsync(userId))
-			throw new ApplicationException("É necessário cadastrar um CPF para criar um time.");
+			throw new ApplicationException(Resource.CreateValidationAsyncCpfNeeded);
 		
 		if (!result.IsValid)
 		{
@@ -36,7 +37,7 @@ public class TeamService
 		}
 
 		if(await IsAlreadyTechOfAnotherTeam(userId))
-			throw new ApplicationException("Usuário passado já é técnico de um time.");
+			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyCoach);
 		
 		var team = ToTeam(teamDto);
 
@@ -45,7 +46,7 @@ public class TeamService
 
 		var resultado = await _elasticService._client.IndexAsync(team, INDEX);
 		if (!resultado.IsValidResponse)
-			throw new ApplicationException(Resource.GenericErrorMessage);
+			throw new ApplicationException(Generic.GenericErrorMessage);
 		
 		return errorMessages;
 	}
@@ -89,7 +90,7 @@ public class TeamService
 	public async Task AddTeamToChampionshipValidation(int teamId, int championshipId)
 	{
 		if (await RelationAlreadyExistsValidation(teamId, championshipId))
-			throw new ApplicationException("Time já vinculado com esse campeonato");
+			throw new ApplicationException(Resource.AddTeamToChampionshipValidationTeamAlreadyLinked);
 		
 		await AddTeamToChampionshipSend(teamId, championshipId);
 	}
@@ -110,7 +111,7 @@ public class TeamService
 	public async Task RemoveTeamFromChampionshipValidation(int teamId, int championshipId)
 	{
 		if (!await RelationAlreadyExistsValidation(teamId, championshipId))
-			throw new ApplicationException("Time não vinculado com campeonato");
+			throw new ApplicationException(Resource.RemoveTeamFromChampionshipValidationTeamNotLinked);
 
 		await RemoveTeamFromChampionshipSend(teamId, championshipId);
 	}

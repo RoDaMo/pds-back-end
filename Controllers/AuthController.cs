@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using Resource = PlayOffsApi.Resources.Controllers.AuthController;
 
 namespace PlayOffsApi.Controllers;
 
@@ -38,10 +39,10 @@ public class AuthController : ApiBaseController
 			user = await _authService.VerifyCredentials(user);
 
 			if (user.Id == Guid.Empty)
-				return ApiUnauthorizedRequest("Nome de usuário ou senha incorreta.");
+				return ApiUnauthorizedRequest(Resource.GenerateTokenNomeInvalido);
 			
 			if (!user.ConfirmEmail)
-				return ApiUnauthorizedRequest("Confirme seu email para poder acessar sua conta.");
+				return ApiUnauthorizedRequest(Resource.GenerateTokenConfirmeEmail);
 
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, _expires);
 
@@ -72,13 +73,13 @@ public class AuthController : ApiBaseController
 		{
 			var oldToken = Request.Cookies["playoffs-refresh-token"];
 			if (string.IsNullOrEmpty(oldToken))
-				return ApiUnauthorizedRequest("Usuário não autenticado");
+				return ApiUnauthorizedRequest(Resource.UpdateAccesTokenNaoAutenticado);
 
 			var redis = await _redisService.GetDatabase();
 			var token = await redis.GetAsync<RefreshToken>(oldToken);
 
 			if (token is null || token.ExpirationDate < DateTime.Now)
-				return ApiUnauthorizedRequest("Refresh token expirado");
+				return ApiUnauthorizedRequest(Resource.UpdateAccesTokenRefreshTokenExpirado);
 
 			var user = await _authService.GetUserByIdAsync(token.UserId);
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, _expires);
@@ -88,11 +89,11 @@ public class AuthController : ApiBaseController
 			
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
-			return ApiOk("Token atualizado");
+			return ApiOk(Resource.UpdateAccesTokenTokenAtualizado);
 		}
 		catch (Exception)
 		{
-			return ApiBadRequest("Houve um erro autenticando o usuário.");
+			return ApiBadRequest(Resource.UpdateAccesTokenErroAutenticando);
 		}
 	}
 
@@ -102,7 +103,7 @@ public class AuthController : ApiBaseController
 	{
 		Response.Cookies.Delete("playoffs-token", cookieOptions);
 		Response.Cookies.Delete("playoffs-refresh-token", cookieOptions);
-		return ApiOk<string>("Usuário deslogado com sucesso");
+		return ApiOk<string>(Resource.LogoutUserDeslogadoSucesso);
 	}
 
 	[HttpPost]
@@ -114,7 +115,7 @@ public class AuthController : ApiBaseController
 			var errors = await _authService.RegisterValidationAsync(user);
 			if(errors[0].Length == 36)
 			{
-				return ApiOk(errors[0], true, "Cadastro realizado com sucesso.");
+				return ApiOk(errors[0], true, Resource.RegisterUserCadastroRealizadoSucesso);
 			}
 
 			return ApiBadRequest(errors);
@@ -122,7 +123,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			return ApiBadRequest(ex.Message, Resource.RegisterUserErro);
 		}
 	}
 
@@ -136,7 +137,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			return ApiBadRequest(ex.Message, Resource.UserAlreadyExistsErro);
 		}
 	}
 
@@ -157,7 +158,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			return ApiBadRequest(ex.Message, Resource.ConfirmEmailErro);
 		}
 	}
 
@@ -168,7 +169,7 @@ public class AuthController : ApiBaseController
 		try
 		{
 			await _authService.SendEmailToConfirmAccount(id);
-			return ApiOk("Email de confirmação reenviado");
+			return ApiOk(Resource.ResendConfirmEmailEnviado);
 		}
 		catch (ApplicationException ex)
 		{
@@ -186,14 +187,14 @@ public class AuthController : ApiBaseController
 
 			if(result[0].Length == 36)
 			{
-				return ApiOk(result[0], true, "Pedido de redefinição de senha realizado.");
+				return ApiOk(result[0], true, Resource.ForgotPasswordRedefinicaoSenha);
 			}
 			
 			return ApiBadRequest(result);
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			return ApiBadRequest(ex.Message, Resource.ForgotPasswordErro);
 		}
 	}
 
@@ -232,7 +233,7 @@ public class AuthController : ApiBaseController
 		try
 		{
 			await _authService.SendEmailToResetPassword(id);
-			return ApiOk("Email de confirmação reenviado");
+			return ApiOk(Resource.ResendForgotPasswordEmailDeConfirmacaoReenviado);
 		}
 		catch (ApplicationException ex)
 		{
@@ -250,7 +251,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			return ApiBadRequest(ex.Message, Resource.ResetPasswordErro);
 		}
 	}
 
@@ -265,7 +266,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			return ApiBadRequest(ex.Message, Resource.ResetPasswordErro);
 		}
 	}
 
@@ -299,7 +300,7 @@ public class AuthController : ApiBaseController
 			if (resultados.Any())
 				return ApiBadRequest(resultados);
 			
-			return ApiOk("CPF vinculado com sucesso");
+			return ApiOk(Resource.AddCpfCPFVinculadoComSucesso);
 		}
 		catch (Exception ex)
 		{
@@ -317,7 +318,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (Exception)
 		{
-			return ApiBadRequest("Usuário não existe");
+			return ApiBadRequest(Resource.GetByIdUsuarioNaoExiste);
 		}
 	}
 
@@ -333,11 +334,11 @@ public class AuthController : ApiBaseController
 			Response.Cookies.Delete("playoffs-token");
 			Response.Cookies.Delete("playoffs-refresh-token");
 			
-			return ApiOk("Usuário excluido com sucesso");
+			return ApiOk(Resource.DeleteUsuarioExcluidoComSucesso);
 		}
 		catch (Exception)
 		{
-			return ApiBadRequest("Houve um erro ao excluir o usuário");
+			return ApiBadRequest(Resource.DeleteHouveErroExcluirUsuario);
 		}
 	}
 }

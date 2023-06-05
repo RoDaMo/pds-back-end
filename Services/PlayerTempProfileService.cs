@@ -1,5 +1,6 @@
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
+using Resource = PlayOffsApi.Resources.Services.PlayerTempProfileService;
 
 namespace PlayOffsApi.Services;
 
@@ -23,7 +24,7 @@ public class PlayerTempProfileService
 
 		if(!await ChecksIfTeamExists(playerTempProfile.TeamsId))
         {
-			throw new ApplicationException("Time passado não existe.");
+			throw new ApplicationException(Resource.CreateValidationAsyncTeamDoesntExist);
         }
 		
 		var team = await _teamService.GetByIdSendAsync(playerTempProfile.TeamsId);
@@ -41,34 +42,34 @@ public class PlayerTempProfileService
 		switch (team.SportsId)
         {
 	        case 1 when ((int)playerTempProfile.PlayerPosition) > 9 || ((int)playerTempProfile.PlayerPosition) < 1 :
-		        throw new ApplicationException("Posição inválida para o esporte do time.");
+		        throw new ApplicationException(Resource.CreateValidationAsyncInvalidPosition);
 	        case 2 when ((int)playerTempProfile.PlayerPosition) < 10 || ((int)playerTempProfile.PlayerPosition) > 14 :
-		        throw new ApplicationException("Posição inválida para o esporte do time.");
+		        throw new ApplicationException(Resource.CreateValidationAsyncInvalidPosition);
         }
 
 		if(await ChecksIfUserIsManager(userId))
 		{
-			throw new ApplicationException("Apenas técnicos podem cadastrar jogadores temporários.");
+			throw new ApplicationException(Resource.CreateValidationAsyncOnlyTechnicians);
 		}
 
 		if(await ChecksIfEmailAlreadyExistsInPlayerTempProfiles(playerTempProfile.Email))
 		{
-			throw new ApplicationException("Já exite jogador temporário com o email passado.");
+			throw new ApplicationException(Resource.CreateValidationAsyncPlayerAlreadyExists);
 		}
 
 		if(await ChecksIfEmailAlreadyExistsInUsers(playerTempProfile.Email))
 		{
-			throw new ApplicationException("Já exite usuário com o email passado.");
+			throw new ApplicationException(Resource.CreateValidationAsyncUserAlreadyExists);
 		}
 
 		if(await ChecksIfNumberAlreadyExistsInPlayerTemp(playerTempProfile.Number, playerTempProfile.TeamsId))
 		{
-			throw new ApplicationException("Já exite jogador temporário com o número de camisa passado.");
+			throw new ApplicationException(Resource.CreateValidationAsyncPlayerWithNumberExists);
 		}
 
 		if(await ChecksIfNumberAlreadyExistsInUser(playerTempProfile.Number))
 		{
-			throw new ApplicationException("Já exite jogador com o número de camisa passado.");
+			throw new ApplicationException(Resource.CreateValidationAsyncExists);
 		}
 
 		await CreateSendAsync(playerTempProfile);

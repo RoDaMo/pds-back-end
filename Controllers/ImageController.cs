@@ -5,6 +5,7 @@ using PlayOffsApi.API;
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using Resource = PlayOffsApi.Resources.Controllers.ImageController;
 
 namespace PlayOffsApi.Controllers;
 
@@ -48,7 +49,7 @@ public class ImageController : ApiBaseController
                 ContentType = file.ContentType
             };
             var erros = await _imageService.SendImage(image, type);
-            return erros.Any() ? ApiBadRequest(erros) : ApiOk(image.FileName, message: "Imagem enviada com sucesso");
+            return erros.Any() ? ApiBadRequest(erros) : ApiOk(image.FileName, message: Resource.SendImageImagemEnviadaSucesso);
         }
         catch (ApplicationException e)
         {
