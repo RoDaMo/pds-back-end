@@ -174,14 +174,14 @@ public class AuthService
 		}
 		catch (Exception)
 		{
-			var email2 = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
+			var email2 = jwtSecurityToken.Claims.First(c => c.Type == JwtRegisteredClaimNames.UniqueName).Value;
 			var user2 = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @email2;", new { email2 });
 			errorMessages.Add(user2.Id.ToString());
 			errorMessages.Add(Resource.InvalidEmailToken);
 			return errorMessages;
 		}
 
-		var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
+		var email = jwtSecurityToken.Claims.First(c => c.Type == JwtRegisteredClaimNames.UniqueName).Value;
 		var user = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @email;", new { email });
 
         if(user == null)
