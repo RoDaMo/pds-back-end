@@ -108,6 +108,11 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>User.resx</DependentUpon>
     </Compile>
+    <Compile Update="Resources\Services\ChampionshipService.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>ChampionshipService.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -183,6 +188,10 @@
     <EmbeddedResource Update="Resources\Validations\User\User.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>User.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Resources\Services\ChampionshipService.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ChampionshipService.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 

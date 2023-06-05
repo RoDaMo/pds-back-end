@@ -2,7 +2,8 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
-using Resource = PlayOffsApi.Resources.Generic;
+using Generic = PlayOffsApi.Resources.Generic;
+using Resource = PlayOffsApi.Resources.Services.ChampionshipService;
 
 namespace PlayOffsApi.Services;
 
@@ -33,10 +34,20 @@ public class ChampionshipService
 		}
 
 		if (!await _authService.UserHasCpfValidationAsync(championship.Organizer.Id))
-			throw new ApplicationException("Não é permitido cadastrar um campeonato sem um CPF cadastrado.");
-		
-		await CreateSendAsync(championship);
-		return errorMessages;
+			throw new ApplicationException(Resource.CreateValidationAsyncCpfNotNull);
+
+		switch (championship.SportsId)
+		{
+			case Sports.Football when championship.NumberOfPlayers < 11:
+				throw new ApplicationException(Resource.CreateValidationAsyncInvalidFootballPlayers);
+			case Sports.Volleyball when championship.NumberOfPlayers < 6:
+				throw new ApplicationException(Resource.CreateValidationAsyncInvalidVolleyPlayers);
+			case Sports.All:
+				throw new ApplicationException(Resource.CreateValidationAsyncInvalidSport);
+			default:
+				await CreateSendAsync(championship);
+				return errorMessages;
+		}
 	}
 
 	private async Task CreateSendAsync(Championship championship)
@@ -54,7 +65,7 @@ public class ChampionshipService
 		var resultado = await _elasticService._client.IndexAsync(championship, INDEX);
 
 		if (!resultado.IsValidResponse)
-			throw new ApplicationException(Resource.GenericErrorMessage);
+			throw new ApplicationException(Generic.GenericErrorMessage);
 	}
 
 	public async Task<(List<Championship> campionships, long total)> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort)
