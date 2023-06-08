@@ -189,4 +189,7 @@
   <data name="ChampionshipValidatorStateNotNull" xml:space="preserve">
     <value>State field cannot be empty.</value>
   </data>
+  <data name="PlayerValidatorArtisticNameNotNull" xml:space="preserve">
+    <value>Artistic Name field cannot be empty.</value>
+  </data>
 </root>

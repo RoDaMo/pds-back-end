@@ -129,4 +129,7 @@
   <data name="AddTeamToChampionshipValidationTeamAlreadyLinked" xml:space="preserve">
     <value>Team already linked to championship.</value>
   </data>
+  <data name="AddTeamToChampionshipValidationLimitReached" xml:space="preserve">
+    <value>The limit of linked teams of this championship has already been reached.</value>
+  </data>
 </root>

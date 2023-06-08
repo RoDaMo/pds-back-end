@@ -12,13 +12,15 @@ public class TeamService
     private readonly DbService _dbService;
     private readonly ElasticService _elasticService;
     private readonly AuthService _authService;
+    private readonly ChampionshipService _championshipService;
 	private const string INDEX = "teams";
 	
-    public TeamService(DbService dbService, ElasticService elasticService, AuthService authService)
+    public TeamService(DbService dbService, ElasticService elasticService, AuthService authService, ChampionshipService championshipService)
 	{
 		_dbService = dbService;
         _elasticService = elasticService;
         _authService = authService;
+        _championshipService = championshipService;
 	}
 
     public async Task<List<string>> CreateValidationAsync(TeamDTO teamDto, Guid userId)
@@ -91,7 +93,10 @@ public class TeamService
 	{
 		if (await RelationAlreadyExistsValidation(teamId, championshipId))
 			throw new ApplicationException(Resource.AddTeamToChampionshipValidationTeamAlreadyLinked);
-		
+
+		if (!await _championshipService.CanMoreTeamsBeAddedValidation(championshipId))
+			throw new ApplicationException("O limite de times para esse campeonato já foi atingido");
+			
 		await AddTeamToChampionshipSend(teamId, championshipId);
 	}
 

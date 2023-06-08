@@ -170,4 +170,8 @@ public class ChampionshipService
 		await _dbService.EditData("UPDATE championships SET deleted = true WHERE id = @id", championship);
 		await _dbService.EditData("UPDATE users SET championshipid = null WHERE id = @organizerId", championship);
 	}
+
+	public async Task<bool> CanMoreTeamsBeAddedValidation(int championshipId) => await CanMoreTeamsBeAddedSend(championshipId);
+
+	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT (SELECT COUNT(*) FROM championships_teams) <= teamquantity FROM championships WHERE id = @championshipId;", new { championshipId });
 }

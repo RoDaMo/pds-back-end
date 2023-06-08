@@ -61,6 +61,15 @@ namespace PlayOffsApi.Resources.Services {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to O limite de times para esse campeonato já foi atingido.
+        /// </summary>
+        public static string AddTeamToChampionshipValidationLimitReached {
+            get {
+                return ResourceManager.GetString("AddTeamToChampionshipValidationLimitReached", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Time já vinculado com esse campeonato.
         /// </summary>
         public static string AddTeamToChampionshipValidationTeamAlreadyLinked {
