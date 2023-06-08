@@ -75,17 +75,26 @@ public class TeamService
 
 	private static Team ToTeam(TeamDTO teamDto) => new(teamDto.Emblem, teamDto.UniformHome, teamDto.UniformAway, teamDto.SportsId, teamDto.Name);
 
-	public async Task<List<Team>> SearchTeamsValidation(string query, Sports sport)
+	public async Task<List<Team>> SearchTeamsValidation(string query, Sports sport, int championshipId)
 	{
 		var response = await SearchTeamsSend(query, sport);
-		return response.Documents.ToList();
+		var linkedTeams = await _championshipService.GetAllTeamsLinkedToValidation(championshipId);
+		var hashSet = linkedTeams.ToHashSet();
+		
+		var responseList = response.Documents.ToList();
+		responseList.RemoveAll(r => hashSet.Contains(r.Id));
+		return responseList;
 	}
 
 	private async Task<SearchResponse<Team>> SearchTeamsSend(string query, Sports sports)
 		=> await _elasticService.SearchAsync<Team>(el =>
 		{
 			el.Index(INDEX);
-			el.Query(q => q.Bool(b => b.Must(must => must.MatchPhrasePrefix(mpp => mpp.Field(f => f.Name).Query(query))).Filter(f => f.Term(t => t.Field(ff => ff.SportsId).Value((int)sports)))));
+			el.Query(q => q.Bool(b => b.
+					Must(must => must.MatchPhrasePrefix(mpp => mpp.Field(f => f.Name).Query(query))).
+					Filter(f => f.Term(t => t.Field(ff => ff.SportsId).Value((int)sports)))
+				)
+			);
 		});
 
 
