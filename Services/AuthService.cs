@@ -421,7 +421,7 @@ public class AuthService
 	public async Task<bool> CpfAlreadyExistsValidation(string cpf) => await CpfAlreadyExistsSend(cpf);
 
 	private async Task<bool> CpfAlreadyExistsSend(string cpf)
-		=> await _dbService.GetAsync<bool>("SELECT COUNT(cpf) FROM users WHERE id = @userId", new { cpf });
+		=> await _dbService.GetAsync<bool>("SELECT COUNT(@cpf) FROM users", new { cpf });
 	
 	public async Task<List<string>> AddCpfUserValidationAsync(Guid userId, string cpf)
 	{
