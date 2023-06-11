@@ -78,12 +78,12 @@ public class AuthService
 		if (await UserAlreadyExists(newUser))
 			return new() { Resource.UserAlreadyRegistered };
 
-		newUser.Picture = "https://cdn-icons-png.flaticon.com/512/17/17004.png";
+		newUser.Picture = "https://playoffs-api.up.railway.app/img/e82930b9-b71c-442a-9bc9-95b189c19afb";
 
 		if (await UserAlreadyExistsInPlayerTemp(newUser.Email))
 		{
 			var id = await CreateAccountAndAddPlayer(newUser);
-			await SendEmailToConfirmAccount(id); //remove this after adding temporary player consent check functionality
+			await SendEmailToConfirmAccount(id); //TODO: remove this after adding temporary player consent check functionality
 			resultId.Add(id.ToString());
 			return resultId;
 		}
@@ -105,7 +105,7 @@ public class AuthService
 		var result2 = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorEmail"));
 
 		if (result.IsValid || result2.IsValid)
-			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE username = @Username OR email = @Email", user);
+			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE deleted = 0 AND (username = @Username OR email = @Email)", user);
 
 		throw new ApplicationException(Resource.InvalidUsername);
 	}
@@ -113,7 +113,7 @@ public class AuthService
 	private async Task<Guid> RegisterUserAsync(User newUser)
 	{
 		newUser.PasswordHash = EncryptPassword(newUser.Password);
-		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, 'false') RETURNING Id;", newUser);
+		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, picture) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, false, @picture) RETURNING Id;", newUser);
 	}
 
 	public async Task<User> VerifyCredentials(User user)
@@ -448,7 +448,7 @@ public class AuthService
 		var secondVerifierDigit = (sum * 10) % 11;
 		secondVerifierDigit = secondVerifierDigit == 10 ? 0 : secondVerifierDigit;
 
-		if (firstVerifierDigit != numberCpf[9] || secondVerifierDigit != numberCpf[10]) throw new ApplicationException("CPF inválido");
+		if (firstVerifierDigit != numberCpf[9] || secondVerifierDigit != numberCpf[10]) throw new ApplicationException(Resource.InvalidCpf);
 
 		await AddCpfUserSend(new() { Id = userId, Cpf = cpf });
 		return new();
