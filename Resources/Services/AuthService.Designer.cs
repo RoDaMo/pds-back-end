@@ -61,6 +61,15 @@ namespace PlayOffsApi.Resources.Services {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to CPF já cadastrado..
+        /// </summary>
+        public static string AddCpfUserValidationAsyncCpfCadastrado {
+            get {
+                return ResourceManager.GetString("AddCpfUserValidationAsyncCpfCadastrado", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Usuário já possui CPF.
         /// </summary>
         public static string AddCpfUserValidationAsyncHasCpf {

@@ -153,4 +153,7 @@
   <data name="AddCpfUserValidationAsyncHasCpf" xml:space="preserve">
     <value>Usuário já possui CPF</value>
   </data>
+  <data name="AddCpfUserValidationAsyncCpfCadastrado" xml:space="preserve">
+    <value>CPF já cadastrado.</value>
+  </data>
 </root>

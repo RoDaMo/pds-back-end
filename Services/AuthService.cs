@@ -418,10 +418,15 @@ public class AuthService
 	private async Task<bool> UserHasCpfSendAsync(Guid userId) =>
 		await _dbService.GetAsync<bool>("SELECT CASE WHEN COALESCE(TRIM(cpf), '') = '' THEN false ELSE true END FROM users WHERE id = @userId", new { userId });
 
+	public async Task<bool> CpfAlreadyExistsValidation(string cpf) => await CpfAlreadyExistsSend(cpf);
+
+	private async Task<bool> CpfAlreadyExistsSend(string cpf)
+		=> await _dbService.GetAsync<bool>("SELECT COUNT(cpf) FROM users WHERE id = @userId", new { cpf });
+	
 	public async Task<List<string>> AddCpfUserValidationAsync(Guid userId, string cpf)
 	{
 		if (await UserHasCpfValidationAsync(userId)) throw new ApplicationException(Resource.AddCpfUserValidationAsyncHasCpf);
-		
+		if (await CpfAlreadyExistsValidation(cpf)) throw new ApplicationException(Resource.AddCpfUserValidationAsyncCpfCadastrado);
 		var userValidator = new UserValidator();
 		var results = await userValidator.ValidateAsync(new User { Cpf = cpf }, option => option.IncludeRuleSets("Cpf"));
 		

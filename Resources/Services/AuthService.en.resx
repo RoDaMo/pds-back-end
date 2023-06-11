@@ -153,4 +153,7 @@
   <data name="UpdatePasswordValidationAsyncInvalidPassword" xml:space="preserve">
     <value>Invalid current password</value>
   </data>
+  <data name="AddCpfUserValidationAsyncCpfCadastrado" xml:space="preserve">
+    <value>CPF already exists.</value>
+  </data>
 </root>
