@@ -2,7 +2,8 @@ using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
-using Resource = PlayOffsApi.Resources.Generic;
+using Generic = PlayOffsApi.Resources.Generic;
+using Resource = PlayOffsApi.Resources.Services.ChampionshipService;
 
 namespace PlayOffsApi.Services;
 
@@ -33,10 +34,20 @@ public class ChampionshipService
 		}
 
 		if (!await _authService.UserHasCpfValidationAsync(championship.Organizer.Id))
-			throw new ApplicationException("Não é permitido cadastrar um campeonato sem um CPF cadastrado.");
-		
-		await CreateSendAsync(championship);
-		return errorMessages;
+			throw new ApplicationException(Resource.CreateValidationAsyncCpfNotNull);
+
+		switch (championship.SportsId)
+		{
+			case Sports.Football when championship.NumberOfPlayers < 11:
+				throw new ApplicationException(Resource.CreateValidationAsyncInvalidFootballPlayers);
+			case Sports.Volleyball when championship.NumberOfPlayers < 6:
+				throw new ApplicationException(Resource.CreateValidationAsyncInvalidVolleyPlayers);
+			case Sports.All:
+				throw new ApplicationException(Resource.CreateValidationAsyncInvalidSport);
+			default:
+				await CreateSendAsync(championship);
+				return errorMessages;
+		}
 	}
 
 	private async Task CreateSendAsync(Championship championship)
@@ -54,7 +65,7 @@ public class ChampionshipService
 		var resultado = await _elasticService._client.IndexAsync(championship, INDEX);
 
 		if (!resultado.IsValidResponse)
-			throw new ApplicationException(Resource.GenericErrorMessage);
+			throw new ApplicationException(Generic.GenericErrorMessage);
 	}
 
 	public async Task<(List<Championship> campionships, long total)> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort)
@@ -116,7 +127,7 @@ public class ChampionshipService
 	public async Task<Championship> GetByIdValidation(int id) => await GetByIdSend(id);
 
 	private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid, teamquantity FROM championships WHERE id = @id", new { id });
+		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid, teamquantity, numberofplayers FROM championships WHERE id = @id", new { id });
 	
   private async Task<int> GetNumberOfPlayers(int championshipId)
 		=> await _dbService.GetAsync<int>("SELECT numberofplayers FROM championships WHERE id = @championshipId", new {championshipId});
@@ -128,15 +139,17 @@ public class ChampionshipService
 		
 		if (!result.IsValid)
 			return result.Errors.Select(x => x.ErrorMessage).ToList();
-
+		
 		await UpdateSend(championship);
+		await _elasticService._client.IndexAsync(championship, INDEX);
+		
 		return new();
 	}
 
 	private async Task UpdateSend(Championship championship) =>
 		await _dbService.EditData(
 			"UPDATE championships SET " +
-			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, nation = @nation, state = @state, city = @city, neighborhood = @neighborhood, teamquantity = @teamquantity " +
+			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, nation = @nation, state = @state, city = @city, neighborhood = @neighborhood, teamquantity = @teamquantity, numberofplayers = @numberofplayers " +
 			"WHERE id=@id",
 			championship);
 
@@ -157,4 +170,13 @@ public class ChampionshipService
 		await _dbService.EditData("UPDATE championships SET deleted = true WHERE id = @id", championship);
 		await _dbService.EditData("UPDATE users SET championshipid = null WHERE id = @organizerId", championship);
 	}
+
+	public async Task<bool> CanMoreTeamsBeAddedValidation(int championshipId) => await CanMoreTeamsBeAddedSend(championshipId);
+
+	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT (SELECT COUNT(*) FROM championships_teams) <= teamquantity FROM championships WHERE id = @championshipId;", new { championshipId });
+
+	public async Task<List<int>> GetAllTeamsLinkedToValidation(int championshipId) =>
+		await GetAllTeamsLinkedToSend(championshipId);
+
+	private async Task<List<int>> GetAllTeamsLinkedToSend(int championshipId) => await _dbService.GetAll<int>("SELECT teamid FROM championships_teams WHERE championshipid = @championshipid;", new { championshipId });
 }

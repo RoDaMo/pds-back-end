@@ -72,7 +72,8 @@ public class ChampionshipValidator : AbstractValidator<Championship>
 		RuleFor(c => c.NumberOfPlayers)
 			.NotEmpty()
 			.WithMessage(Resource.ChampionshipValidatorNumberOfPlayers);
+
 	}
 
-	private static bool IsPowerOfTwo(int x) => x is not 0 && (x & (x - 1)) == 0;
+	private static bool IsPowerOfTwo(int x) => (x is not 0 && (x & (x - 1)) is 0) || (x >= 4 && x % 2 == 0 && x <= 20);
 }

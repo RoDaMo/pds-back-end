@@ -22,24 +22,24 @@ namespace PlayOffsApi.Resources.Services {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    public class TeamService {
+    internal class ChampionshipService {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
         private static global::System.Globalization.CultureInfo resourceCulture;
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal TeamService() {
+        internal ChampionshipService() {
         }
         
         /// <summary>
         ///   Returns the cached ResourceManager instance used by this class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Resources.ResourceManager ResourceManager {
+        internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("PlayOffsApi.Resources.Services.TeamService", typeof(TeamService).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("PlayOffsApi.Resources.Services.ChampionshipService", typeof(ChampionshipService).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -51,7 +51,7 @@ namespace PlayOffsApi.Resources.Services {
         ///   resource lookups using this strongly typed resource class.
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        public static global::System.Globalization.CultureInfo Culture {
+        internal static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -61,47 +61,38 @@ namespace PlayOffsApi.Resources.Services {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to O limite de times para esse campeonato já foi atingido.
+        ///   Looks up a localized string similar to Não é permitido cadastrar um campeonato sem um CPF cadastrado..
         /// </summary>
-        public static string AddTeamToChampionshipValidationLimitReached {
+        internal static string CreateValidationAsyncCpfNotNull {
             get {
-                return ResourceManager.GetString("AddTeamToChampionshipValidationLimitReached", resourceCulture);
+                return ResourceManager.GetString("CreateValidationAsyncCpfNotNull", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Time já vinculado com esse campeonato.
+        ///   Looks up a localized string similar to Número de jogadores inválido para futebol. Deve haver no mínimo 11 jogadores num time de futebol..
         /// </summary>
-        public static string AddTeamToChampionshipValidationTeamAlreadyLinked {
+        internal static string CreateValidationAsyncInvalidFootballPlayers {
             get {
-                return ResourceManager.GetString("AddTeamToChampionshipValidationTeamAlreadyLinked", resourceCulture);
+                return ResourceManager.GetString("CreateValidationAsyncInvalidFootballPlayers", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Usuário passado já é técnico de um time..
+        ///   Looks up a localized string similar to Esporte inválido!.
         /// </summary>
-        public static string CreateValidationAsyncAlreadyCoach {
+        internal static string CreateValidationAsyncInvalidSport {
             get {
-                return ResourceManager.GetString("CreateValidationAsyncAlreadyCoach", resourceCulture);
+                return ResourceManager.GetString("CreateValidationAsyncInvalidSport", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to É necessário cadastrar um CPF para criar um time..
+        ///   Looks up a localized string similar to Número de jogadores inválido para vôlei. Deve haver no mínimo 6 jogadores num time de vôlei..
         /// </summary>
-        public static string CreateValidationAsyncCpfNeeded {
+        internal static string CreateValidationAsyncInvalidVolleyPlayers {
             get {
-                return ResourceManager.GetString("CreateValidationAsyncCpfNeeded", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Time não vinculado com campeonato.
-        /// </summary>
-        public static string RemoveTeamFromChampionshipValidationTeamNotLinked {
-            get {
-                return ResourceManager.GetString("RemoveTeamFromChampionshipValidationTeamNotLinked", resourceCulture);
+                return ResourceManager.GetString("CreateValidationAsyncInvalidVolleyPlayers", resourceCulture);
             }
         }
     }

@@ -47,7 +47,7 @@ public class AuthController : ApiBaseController
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, _expires);
 
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
-				cookieOptions.Domain = "playoffs.netlify.app";
+				cookieOptions.Domain = "playoffs.app.br";
 
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 
@@ -85,7 +85,7 @@ public class AuthController : ApiBaseController
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, _expires);
 			
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
-				cookieOptions.Domain = "playoffs.netlify.app";
+				cookieOptions.Domain = "playoffs.app.br";
 			
 			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
 

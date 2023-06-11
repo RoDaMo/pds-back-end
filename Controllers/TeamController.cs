@@ -45,11 +45,11 @@ public class TeamController : ApiBaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index([FromQuery]string query, Sports sport)
+    public async Task<IActionResult> Index([FromQuery]string query, Sports sport, int championshipId)
     {
         try
         {
-            var result = string.IsNullOrEmpty(query) ? await _teamService.GetAllValidationAsync(sport) : await _teamService.SearchTeamsValidation(query, sport);
+            var result = string.IsNullOrEmpty(query) ? await _teamService.GetAllValidationAsync(sport) : await _teamService.SearchTeamsValidation(query, sport, championshipId);
             return ApiOk(result);
         }
         catch (ApplicationException ex)

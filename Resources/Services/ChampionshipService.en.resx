@@ -117,19 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CreateValidationAsyncCpfNeeded" xml:space="preserve">
-    <value>It is necessary to register a CPF to create a team.</value>
+  <data name="CreateValidationAsyncCpfNotNull" xml:space="preserve">
+    <value>You're not allowed to register a championship without a CPF.</value>
   </data>
-  <data name="CreateValidationAsyncAlreadyCoach" xml:space="preserve">
-    <value>Past user is already coach of a team.</value>
+  <data name="CreateValidationAsyncInvalidFootballPlayers" xml:space="preserve">
+    <value>Invalid amount of players for football. There must be at least 11 players in a football team.</value>
   </data>
-  <data name="RemoveTeamFromChampionshipValidationTeamNotLinked" xml:space="preserve">
-    <value>Team not linked to championship.</value>
+  <data name="CreateValidationAsyncInvalidSport" xml:space="preserve">
+    <value>Invalid sport!</value>
   </data>
-  <data name="AddTeamToChampionshipValidationTeamAlreadyLinked" xml:space="preserve">
-    <value>Team already linked to championship.</value>
-  </data>
-  <data name="AddTeamToChampionshipValidationLimitReached" xml:space="preserve">
-    <value>The limit of linked teams of this championship has already been reached.</value>
+  <data name="CreateValidationAsyncInvalidVolleyPlayers" xml:space="preserve">
+    <value>Invalid amount of players for volleyball. There must be at least 6 players in a volleyball team.</value>
   </data>
 </root>

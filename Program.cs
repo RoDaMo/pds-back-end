@@ -22,7 +22,7 @@ if (builder.Environment.IsProduction())
 	// CRYPT_KEY = Environment.GetEnvironmentVariable("CRYPT_KEY").ToUtf8Bytes();
 }
 
-var audience = new[] { AUDIENCE, "https://localhost:5173", "https://127.0.0.1:5173" };
+var audience = new[] { AUDIENCE, "https://localhost:5173", "https://127.0.0.1:5173", "http://localhost" };
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(con =>
 {
@@ -87,7 +87,7 @@ builder.Services.AddCors(options =>
 {
 	options.AddPolicy("cors", policy =>
 	{
-		policy.WithOrigins("https://localhost:5173", "https://127.0.0.1:5173", "https://playoffs.netlify.app");
+		policy.WithOrigins("https://localhost:5173", "https://127.0.0.1:5173", AUDIENCE);
 		policy.AllowAnyHeader();
 		policy.AllowAnyMethod();
 		policy.AllowCredentials();

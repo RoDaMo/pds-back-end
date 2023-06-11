@@ -109,4 +109,7 @@
   <data name="RemoveTeamFromChampionshipValidationTeamNotLinked" xml:space="preserve">
     <value>Time não vinculado com campeonato</value>
   </data>
+  <data name="AddTeamToChampionshipValidationLimitReached" xml:space="preserve">
+    <value>O limite de times para esse campeonato já foi atingido</value>
+  </data>
 </root>
