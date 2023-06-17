@@ -124,7 +124,12 @@ public class ChampionshipService
 			);
 		});
 
-	public async Task<Championship> GetByIdValidation(int id) => await GetByIdSend(id);
+	public async Task<Championship> GetByIdValidation(int id)
+	{
+		var championship = await GetByIdSend(id);
+		championship.Teams = await GetAllTeamsOfChampionshipValidation(id);
+		return championship;
+	}
 
 	private async Task<Championship> GetByIdSend(int id) 
 		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid, teamquantity, numberofplayers FROM championships WHERE id = @id", new { id });
