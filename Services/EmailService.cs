@@ -28,7 +28,7 @@ public class EmailService
             $"<p>{Resource.SendEmailPasswordResetAtenciosamente},</p>\n" +
             $"<p>{Resource.SendEmailPasswordResetEquipeRoDaMo}</p></div></div>";
 
-        var client = new SmtpClient("smtp-mail.outlook.com");
+        var client = new SmtpClient("smtp.gmail.com");
         client.Port = 587;
         client.DeliveryMethod = SmtpDeliveryMethod.Network;
         client.UseDefaultCredentials = false;
@@ -69,7 +69,7 @@ public class EmailService
                 $"<p>{Resource.SendEmailPasswordResetEquipeRoDaMo}</p></div></div>";
 
 
-        SmtpClient client = new SmtpClient("smtp-mail.outlook.com");
+        SmtpClient client = new SmtpClient("smtp.gmail.com");
         client.Port = 587;
         client.DeliveryMethod = SmtpDeliveryMethod.Network;
         client.UseDefaultCredentials = false;
