@@ -14,10 +14,12 @@ public class PlayerTempProfileController : ApiBaseController
 {
   private readonly PlayerTempProfileService _playerTempProfileService;
   private readonly RedisService _redisService;
-  public PlayerTempProfileController(PlayerTempProfileService playerTempProfileService, RedisService redisService)
+  private readonly ErrorLogService _error;
+  public PlayerTempProfileController(PlayerTempProfileService playerTempProfileService, RedisService redisService, ErrorLogService error)
   {
     _playerTempProfileService = playerTempProfileService;
     _redisService = redisService;
+    _error = error;
   }
 
     [HttpPost]
@@ -32,9 +34,9 @@ public class PlayerTempProfileController : ApiBaseController
             result = await _playerTempProfileService.CreateValidationAsync(playerTempProfile, userId);
             return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }
-
         catch (ApplicationException ex)
         {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
             result.Add(ex.Message);
             return ApiBadRequest(result);
         }

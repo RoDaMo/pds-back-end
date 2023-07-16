@@ -5,6 +5,7 @@ using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
 using Resource = PlayOffsApi.Resources.Controllers.AuthController;
+using GenericError = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Controllers;
 
@@ -14,14 +15,16 @@ public class AuthController : ApiBaseController
 {
 	private readonly AuthService _authService;
 	private readonly RedisService _redisService;
-	private readonly CookieOptions cookieOptions;
+	private readonly CookieOptions _cookieOptions;
 	private readonly DateTime _expires = DateTime.UtcNow.AddDays(1);
+	private readonly ErrorLogService _error;
 
-	public AuthController(AuthService authService, RedisService redisService)
+	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error)
 	{
 		_authService = authService;
 		_redisService = redisService;
-		cookieOptions = new CookieOptions
+		_error = error;
+		_cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
 			Secure = true,
@@ -47,22 +50,23 @@ public class AuthController : ApiBaseController
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, _expires);
 
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
-				cookieOptions.Domain = "playoffs.app.br";
+				_cookieOptions.Domain = "playoffs.app.br";
 
-			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
+			Response.Cookies.Append("playoffs-token", jwt, _cookieOptions);
 
 			var expirationDate = user.RememberMe ? DateTime.UtcNow.AddDays(14) : DateTime.UtcNow.AddDays(1);
 
 			var refreshToken = AuthService.GenerateRefreshToken(user.Id, expirationDate);
 			await redis.SetAsync(refreshToken.Token.ToString(), refreshToken, refreshToken.ExpirationDate);
-			cookieOptions.Expires = refreshToken.ExpirationDate;
-			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), cookieOptions);
+			_cookieOptions.Expires = refreshToken.ExpirationDate;
+			Response.Cookies.Append("playoffs-refresh-token", refreshToken.Token.ToString(), _cookieOptions);
 
 			return ApiOk<string>("Autenticado com sucesso");
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
+			return ApiBadRequest(ex.Message, GenericError.GenericErrorMessage);
 		}
 	}
 
@@ -85,14 +89,15 @@ public class AuthController : ApiBaseController
 			var jwt = _authService.GenerateJwtToken(user.Id, user.Username, _expires);
 			
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
-				cookieOptions.Domain = "playoffs.app.br";
+				_cookieOptions.Domain = "playoffs.app.br";
 			
-			Response.Cookies.Append("playoffs-token", jwt, cookieOptions);
+			Response.Cookies.Append("playoffs-token", jwt, _cookieOptions);
 
 			return ApiOk(Resource.UpdateAccesTokenTokenAtualizado);
 		}
-		catch (Exception)
+		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(Resource.UpdateAccesTokenErroAutenticando);
 		}
 	}
@@ -101,8 +106,8 @@ public class AuthController : ApiBaseController
 	[Authorize]
 	public IActionResult LogoutUser()
 	{
-		Response.Cookies.Delete("playoffs-token", cookieOptions);
-		Response.Cookies.Delete("playoffs-refresh-token", cookieOptions);
+		Response.Cookies.Delete("playoffs-token", _cookieOptions);
+		Response.Cookies.Delete("playoffs-refresh-token", _cookieOptions);
 		return ApiOk<string>(Resource.LogoutUserDeslogadoSucesso);
 	}
 
@@ -123,6 +128,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(ex.Message, Resource.RegisterUserErro);
 		}
 	}
@@ -137,6 +143,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(ex.Message, Resource.UserAlreadyExistsErro);
 		}
 	}
@@ -158,6 +165,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(ex.Message, Resource.ConfirmEmailErro);
 		}
 	}
@@ -173,7 +181,8 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
+			return ApiBadRequest(ex.Message, GenericError.GenericErrorMessage);
 		}
 	}
 
@@ -194,6 +203,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(ex.Message, Resource.ForgotPasswordErro);
 		}
 	}
@@ -220,8 +230,9 @@ public class AuthController : ApiBaseController
 				teamManagementId = user.TeamManagementId
 			});
 		}
-		catch (Exception ex)
+		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(ex.Message);
 		}
 	}
@@ -237,13 +248,14 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, "Erro");
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
+			return ApiBadRequest(ex.Message, GenericError.GenericErrorMessage);
 		}
 	}
 
 	[HttpGet]
 	[Route("/auth/reset-password")] 
-	public IActionResult ResetPassword(string token)
+	public async Task<IActionResult> ResetPassword(string token)
 	{
 		try
 		{
@@ -251,7 +263,8 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
-			return ApiBadRequest(ex.Message, Resource.ResetPasswordErro);
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
+			return ApiBadRequest(Resource.InvalidPasswordToken, GenericError.GenericErrorMessage);
 		}
 	}
 
@@ -266,6 +279,7 @@ public class AuthController : ApiBaseController
 		}
 		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(ex.Message, Resource.ResetPasswordErro);
 		}
 	}
@@ -281,8 +295,9 @@ public class AuthController : ApiBaseController
 			var hasCpf = await _authService.UserHasCpfValidationAsync(userId);
 			return ApiOk(hasCpf);
 		}
-		catch (Exception ex)
+		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(ex.Message);
 		}
 	}
@@ -302,8 +317,9 @@ public class AuthController : ApiBaseController
 			
 			return ApiOk(Resource.AddCpfCPFVinculadoComSucesso);
 		}
-		catch (Exception ex)
+		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(ex.Message);
 		}
 	}
@@ -316,8 +332,9 @@ public class AuthController : ApiBaseController
 		{
 			return ApiOk(await _authService.GetUserByIdAsync(id));
 		}
-		catch (Exception)
+		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(Resource.GetByIdUsuarioNaoExiste);
 		}
 	}
@@ -336,8 +353,9 @@ public class AuthController : ApiBaseController
 			
 			return ApiOk(Resource.DeleteUsuarioExcluidoComSucesso);
 		}
-		catch (Exception)
+		catch (ApplicationException ex)
 		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
 			return ApiBadRequest(Resource.DeleteHouveErroExcluirUsuario);
 		}
 	}

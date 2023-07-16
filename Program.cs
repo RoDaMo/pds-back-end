@@ -5,6 +5,7 @@ using PlayOffsApi.Services;
 using ServiceStack;
 using System.Globalization;
 using System.Text;
+using PlayOffsApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -61,6 +62,7 @@ builder.Services.AddScoped<PlayerTempProfileService>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<ImageService>();
 builder.Services.AddSingleton<EmailService>();
+builder.Services.AddScoped<ErrorLogService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<EmailService>()));
 
@@ -110,6 +112,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseRequestLocalization(app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<RequestLocalizationOptions>>().Value);
+app.UseMiddleware<ErrorMiddleware>();
 
 app.MapControllers();
 

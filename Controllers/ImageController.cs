@@ -14,9 +14,11 @@ namespace PlayOffsApi.Controllers;
 public class ImageController : ApiBaseController
 {
     private readonly ImageService _imageService;
-    public ImageController(ImageService imageService)
+    private readonly ErrorLogService _error;
+    public ImageController(ImageService imageService, ErrorLogService error)
     {
         _imageService = imageService;
+        _error = error;
     }
     
     [HttpGet]
@@ -51,9 +53,10 @@ public class ImageController : ApiBaseController
             var erros = await _imageService.SendImage(image, type);
             return erros.Any() ? ApiBadRequest(erros) : ApiOk(image.FileName, message: Resource.SendImageImagemEnviadaSucesso);
         }
-        catch (ApplicationException e)
+        catch (ApplicationException ex)
         {
-            return ApiBadRequest(e.Message);
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
         }
     }
 }
