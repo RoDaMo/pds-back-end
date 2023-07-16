@@ -31,4 +31,5 @@ public class User
 	public bool ConfirmEmail{ get; set; }
 	public PlayerPosition PlayerPosition { get; set; }
 	public int ChampionshipId { get; set; }
+	public string Role { get; set; } = "user";
 }

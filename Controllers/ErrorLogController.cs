@@ -8,7 +8,7 @@ namespace PlayOffsApi.Controllers;
 
 [Route("/error")]
 [ApiController]  
-[Authorize]
+[Authorize(Roles = "admin")]
 public class ErrorLogController : ApiBaseController
 {
     private readonly ErrorLogService _error;
