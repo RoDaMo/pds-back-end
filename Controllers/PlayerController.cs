@@ -15,10 +15,12 @@ public class PlayerController : ApiBaseController
 {
     private readonly RedisService _redisService;
     private readonly PlayerService _playerService;
-    public PlayerController(RedisService redisService, PlayerService playerService)
+    private readonly ErrorLogService _error;
+    public PlayerController(RedisService redisService, PlayerService playerService, ErrorLogService error)
     {
         _redisService = redisService;
         _playerService = playerService;
+        _error = error;
     }
 
     [HttpPut]
@@ -36,6 +38,7 @@ public class PlayerController : ApiBaseController
 
         catch (ApplicationException ex)
         {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
             result.Add(ex.Message);
             return ApiBadRequest(result);
         }

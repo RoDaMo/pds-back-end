@@ -177,4 +177,7 @@
   <data name="UpdateAccesTokenErroAutenticando" xml:space="preserve">
     <value>There was an error authenticating the user.</value>
   </data>
+  <data name="InvalidPasswordToken" xml:space="preserve">
+    <value>Invalid password reset token.</value>
+  </data>
 </root>

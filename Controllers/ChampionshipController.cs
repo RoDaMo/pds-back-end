@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
-using System.Text.Json;
 using Resource = PlayOffsApi.Resources.Championship;
 
 namespace PlayOffsApi.Controllers;
@@ -15,12 +14,15 @@ public class ChampionshipController : ApiBaseController
 {
   private readonly ChampionshipService _championshipService;
   private readonly RedisService _redisService;
-  private readonly AuthService _authService;
-  public ChampionshipController(ChampionshipService championshipService, RedisService redisService, AuthService authService)
+  private readonly AuthService _authService;	
+  private readonly ErrorLogService _error;
+
+  public ChampionshipController(ChampionshipService championshipService, RedisService redisService, AuthService authService, ErrorLogService error)
   {
     _championshipService = championshipService;
     _redisService = redisService;
     _authService = authService;
+    _error = error;
   }
 
   [Authorize]
@@ -45,6 +47,7 @@ public class ChampionshipController : ApiBaseController
     }
     catch (ApplicationException ex)
     {
+      await _error.HandleExceptionValidationAsync(HttpContext, ex);
       result.Add(ex.Message);
       return ApiBadRequest(result);
     }
@@ -73,6 +76,7 @@ public class ChampionshipController : ApiBaseController
     }
     catch (ApplicationException ex)
     {
+      await _error.HandleExceptionValidationAsync(HttpContext, ex);
       return ApiBadRequest(ex.Message);
     }
   }
@@ -85,8 +89,9 @@ public class ChampionshipController : ApiBaseController
     {
       return ApiOk(await _championshipService.GetByIdValidation(id));
     }
-    catch (ApplicationException)
+    catch (ApplicationException ex)
     {
+      await _error.HandleExceptionValidationAsync(HttpContext, ex);
       return ApiBadRequest(Resource.ShowCampeonatoIdNaoExiste);
     }
   }
@@ -105,6 +110,7 @@ public class ChampionshipController : ApiBaseController
     }
     catch (ApplicationException ex)
     {
+      await _error.HandleExceptionValidationAsync(HttpContext, ex);
       return ApiBadRequest(ex.Message);
     }
   }
@@ -118,9 +124,10 @@ public class ChampionshipController : ApiBaseController
       var championships = await _championshipService.GetAllTeamsOfChampionshipValidation(championshipId);
       return ApiOk(championships);
     }
-    catch (ApplicationException e)
+    catch (ApplicationException ex)
     {
-      return ApiBadRequest(e.Message);
+      await _error.HandleExceptionValidationAsync(HttpContext, ex);
+      return ApiBadRequest(ex.Message);
     }
   }
 
@@ -140,6 +147,7 @@ public class ChampionshipController : ApiBaseController
     }
     catch (ApplicationException ex)
     {
+      await _error.HandleExceptionValidationAsync(HttpContext, ex);
       return ApiBadRequest(ex.Message);
     }
   }

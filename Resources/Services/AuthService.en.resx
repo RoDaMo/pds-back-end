@@ -138,9 +138,6 @@
   <data name="ConfirmEmailToAccess" xml:space="preserve">
     <value>Please confirm your email address to access your account.</value>
   </data>
-  <data name="InvalidPasswordToken" xml:space="preserve">
-    <value>Invalid password reset token.</value>
-  </data>
   <data name="InvalidCpf" xml:space="preserve">
     <value>Invalid CPF</value>
   </data>

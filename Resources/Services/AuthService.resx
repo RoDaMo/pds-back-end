@@ -129,9 +129,6 @@
   <data name="InvalidEmailToken" xml:space="preserve">
     <value>Token de confirmação de email inválido.</value>
   </data>
-  <data name="InvalidPasswordToken" xml:space="preserve">
-    <value>Token de redefinição de senha inválido.</value>
-  </data>
   <data name="InvalidUsername" xml:space="preserve">
     <value>Nome de usuário ou email inválido!</value>
   </data>

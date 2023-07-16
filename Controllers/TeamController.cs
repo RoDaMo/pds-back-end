@@ -17,12 +17,13 @@ public class TeamController : ApiBaseController
     private readonly TeamService _teamService;
     private readonly RedisService _redisService;
     private readonly ChampionshipService _championshipService;
-
-    public TeamController(TeamService teamService, RedisService redisService, ChampionshipService championshipService)
+    private readonly ErrorLogService _error;
+    public TeamController(TeamService teamService, RedisService redisService, ChampionshipService championshipService, ErrorLogService error)
     {
         _teamService = teamService;
         _redisService = redisService;
         _championshipService = championshipService;
+        _error = error;
     }
 
     [HttpPost]
@@ -39,6 +40,7 @@ public class TeamController : ApiBaseController
         }
         catch (ApplicationException ex)
         {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
             result.Add(ex.Message);
             return ApiBadRequest(result);
         }
@@ -54,6 +56,7 @@ public class TeamController : ApiBaseController
         }
         catch (ApplicationException ex)
         {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
             return ApiBadRequest(ex.Message);
         }
     }
@@ -69,6 +72,7 @@ public class TeamController : ApiBaseController
         }
         catch (ApplicationException ex)
         {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
             return ApiBadRequest(ex.Message);
         }
     }
@@ -88,9 +92,10 @@ public class TeamController : ApiBaseController
             await _teamService.AddTeamToChampionshipValidation(championshipTeamsDto.TeamId, championshipTeamsDto.ChampionshipId);
             return ApiOk(Resource.AddTeamToChampionshipVinculado);
         }
-        catch (ApplicationException e)
+        catch (ApplicationException ex)
         {
-            return ApiBadRequest(e.Message);
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
         }
     }
 
@@ -109,9 +114,10 @@ public class TeamController : ApiBaseController
             await _teamService.RemoveTeamFromChampionshipValidation(championshipTeamsDto.TeamId, championshipTeamsDto.ChampionshipId);
             return ApiOk(Resource.RemoveTeamFromChampionshipUnlinked);
         }
-        catch (ApplicationException e)
+        catch (ApplicationException ex)
         {
-            return ApiBadRequest(e.Message);
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
         }
     }
 }
