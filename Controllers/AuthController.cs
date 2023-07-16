@@ -47,7 +47,7 @@ public class AuthController : ApiBaseController
 			if (!user.ConfirmEmail)
 				return ApiUnauthorizedRequest(Resource.GenerateTokenConfirmeEmail);
 
-			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, _expires);
+			var jwt = _authService.GenerateJwtToken(user.Id, user.Email, _expires, user.Role);
 
 			if (!Request.Headers.ContainsKey("IsLocalhost"))
 				_cookieOptions.Domain = "playoffs.app.br";
@@ -113,18 +113,18 @@ public class AuthController : ApiBaseController
 
 	[HttpPost]
 	[Route("/auth/register")]
-	public async Task<IActionResult> RegisterUser(User user)
+	public async Task<IActionResult> RegisterUser(User user, [FromHeader]string superSecretPassword = "")
 	{
 		try
 		{
+			user.Role = superSecretPassword == Environment.GetEnvironmentVariable("SUPER_SECRET_PASSWORD") ? "admin" : "user";
 			var errors = await _authService.RegisterValidationAsync(user);
+			
 			if(errors[0].Length == 36)
-			{
 				return ApiOk(errors[0], true, Resource.RegisterUserCadastroRealizadoSucesso);
-			}
+			
 
 			return ApiBadRequest(errors);
-			
 		}
 		catch (ApplicationException ex)
 		{

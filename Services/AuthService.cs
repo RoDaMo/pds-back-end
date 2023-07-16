@@ -27,7 +27,7 @@ public class AuthService
 		_emailService = emailService;
 	}
 
-	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate)
+	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate, string role = "user")
 	{
 		var tokenHandler = new JwtSecurityTokenHandler();
 
@@ -36,6 +36,7 @@ public class AuthService
 			new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
 			new Claim(JwtRegisteredClaimNames.UniqueName, email),
 			new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+			new Claim(ClaimTypes.Role, role)
 		};
 
 		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
@@ -85,9 +86,13 @@ public class AuthService
 			resultId.Add(id.ToString());
 			return resultId;
 		}
+
+		if (newUser.Role != "admin")
+			await SendEmailToConfirmAccount(newUser.Id);
+		else
+			newUser.ConfirmEmail = true;
 		
 		newUser.Id = await RegisterUserAsync(newUser);
-		await SendEmailToConfirmAccount(newUser.Id);
 		resultId.Add(newUser.Id.ToString());
 
 		return resultId;
@@ -111,12 +116,12 @@ public class AuthService
 	private async Task<Guid> RegisterUserAsync(User newUser)
 	{
 		newUser.PasswordHash = EncryptPassword(newUser.Password);
-		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, picture) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, false, @picture) RETURNING Id;", newUser);
+		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, picture, role) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, @ConfirmEmail, @picture, @role) RETURNING Id;", newUser);
 	}
 
 	public async Task<User> VerifyCredentials(User user)
 	{
-		var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash, ConfirmEmail FROM users WHERE Username=@Username AND deleted = false;", user);
+		var actualUser = await _dbService.GetAsync<User>("SELECT id, passwordhash, ConfirmEmail, Role FROM users WHERE Username=@Username AND deleted = false;", user);
 		if (actualUser == null)
 			return new();
 
@@ -124,6 +129,7 @@ public class AuthService
 		
 		user.Id = actualUser.Id;
 		user.ConfirmEmail = actualUser.ConfirmEmail;
+		user.Role = actualUser.Role;
 		return user;
 	}
 
