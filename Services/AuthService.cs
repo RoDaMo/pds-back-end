@@ -17,16 +17,14 @@ public class AuthService
 	private readonly string _audience;
 	private readonly DbService _dbService;
 	private readonly EmailService _emailService;
-
-	// private readonly byte[] _criptKey;
-	public AuthService(string secretKey, string issuer, string audience, DbService dbService, EmailService emailService) // , byte[] criptKey
+	
+	public AuthService(string secretKey, string issuer, string audience, DbService dbService, EmailService emailService) 
 	{
 		_secretKey = secretKey;
 		_issuer = issuer;
 		_audience = audience;
 		_dbService = dbService;
-		// _criptKey = criptKey;
-        _emailService = emailService;
+		_emailService = emailService;
 	}
 
 	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate)
@@ -264,7 +262,7 @@ public class AuthService
     
         var emailResponse = EmailService.SendEmailPasswordReset(user.Email, user.Username, url);
 
-        if(!emailResponse)
+        if (!emailResponse)
         {
             throw new ApplicationException(Resource.ErrorSendingConfirmationEmail);
         }
@@ -275,31 +273,23 @@ public class AuthService
 	{
 		var errorMessages = new List<string>();
 		var jwtSecurityToken = new JwtSecurityToken();
+		var tokenHandler = new JwtSecurityTokenHandler();
+		var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
 
-		try
+		var tokenDescriptor = new TokenValidationParameters
 		{
-			var tokenHandler = new JwtSecurityTokenHandler();
-			var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
-
-			var tokenDescriptor = new TokenValidationParameters
-			{
-				ValidateIssuerSigningKey = true,
-				IssuerSigningKey = key,
-				ValidateIssuer = false,
-				ValidateAudience = false,
-				ClockSkew = TimeSpan.Zero
-			};
-			tokenHandler.ValidateToken(token, tokenDescriptor, out var securityToken);
-			jwtSecurityToken = securityToken as JwtSecurityToken;
-			
-			var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
-			errorMessages.Add(email);
-			return errorMessages;
-		}
-		catch (Exception)
-		{
-			throw new ApplicationException(Resource.InvalidPasswordToken);
-		}
+			ValidateIssuerSigningKey = true,
+			IssuerSigningKey = key,
+			ValidateIssuer = false,
+			ValidateAudience = false,
+			ClockSkew = TimeSpan.Zero
+		};
+		tokenHandler.ValidateToken(token, tokenDescriptor, out var securityToken);
+		jwtSecurityToken = securityToken as JwtSecurityToken;
+		
+		var email = jwtSecurityToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.UniqueName)?.Value;
+		errorMessages.Add(email);
+		return errorMessages;
 	}
 
 	public async Task<List<string>> ResetPassword(User user)

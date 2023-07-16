@@ -157,4 +157,7 @@
   <data name="DeleteHouveErroExcluirUsuario" xml:space="preserve">
     <value>Houve um erro ao excluir o usuário</value>
   </data>
+  <data name="InvalidPasswordToken" xml:space="preserve">
+    <value>Token de redefinição de senha inválido.</value>
+  </data>
 </root>

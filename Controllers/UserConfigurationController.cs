@@ -14,9 +14,11 @@ namespace PlayOffsApi.Controllers;
 public class UserConfigurationController : ApiBaseController
 {
     private readonly AuthService _authService;
-    public UserConfigurationController(AuthService authService)
+    private readonly ErrorLogService _error;
+    public UserConfigurationController(AuthService authService, ErrorLogService error)
     {
         _authService = authService;
+        _error = error;
     }
     
     [HttpPut]
@@ -34,6 +36,7 @@ public class UserConfigurationController : ApiBaseController
 
         catch (ApplicationException ex)
         {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
             result.Add(ex.Message);
             return ApiBadRequest(result);
         }
@@ -51,9 +54,9 @@ public class UserConfigurationController : ApiBaseController
             result = await _authService.UpdatePasswordValidationAsync(updatePasswordDTO, userId);
             return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }
-
         catch (ApplicationException ex)
         {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
             result.Add(ex.Message);
             return ApiBadRequest(result);
         }
