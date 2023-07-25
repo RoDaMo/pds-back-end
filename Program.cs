@@ -61,6 +61,7 @@ builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<PlayerTempProfileService>();
 builder.Services.AddScoped<PlayerService>();
 builder.Services.AddScoped<BracketingService>();
+builder.Services.AddScoped<MatchService>();
 builder.Services.AddScoped<ImageService>();
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddScoped<ErrorLogService>();
