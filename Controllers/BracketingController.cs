@@ -25,15 +25,15 @@ public class BracketingController : ApiBaseController
     public async Task<IActionResult> CreateSimpleknockout([FromBody] int championshipId)
     {
         var result = new List<Match>();
-        // try
-        // {
+        try
+        {
             result = await _bracketingService.CreateSimpleknockoutValidationAsync(championshipId);
             return ApiOk(result);
-        // }
-        // catch (ApplicationException ex)
-        // {
-        //     await _error.HandleExceptionValidationAsync(HttpContext, ex);
-        //     return ApiBadRequest(Resource.GenericErrorMessage);
-        // }
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(Resource.GenericErrorMessage);
+        }
     }
 }

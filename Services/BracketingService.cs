@@ -21,11 +21,8 @@ public class BracketingService
 
 	public async Task<List<Match>> CreateSimpleknockoutValidationAsync(int championshipId)
 	{
-		//checar a quantidade de times
 		var championship = await GetByIdSend(championshipId);
-		Console.WriteLine("Quantidade de times:" + championship.TeamQuantity);
 		var teams = await GetAllTeamsOfChampionshipSend(championshipId);
-		Console.WriteLine("Quantidade de times no outro array:" + teams.Count());
 
 		var matches = new List<Match>();
 		var number = 64;
@@ -43,16 +40,12 @@ public class BracketingService
 
 		for (int i = 0; i < teamQuantityInitial; i++)
 		{
-			Console.WriteLine("Primeiro: " + teams.Count());
 			var numberRandom = new Random().Next(0, teams.Count());
 			var numberRandom2 = new Random().Next(0, teams.Count());
 			while (numberRandom2 == numberRandom)
 			{
 				numberRandom2 = new Random().Next(0, teams.Count());
 			}
-			Console.WriteLine("numero 1: " + numberRandom);
-			Console.WriteLine("numero 2: " + numberRandom2);
-
 
 			var match = new Match(championshipId, teams[numberRandom].Id, teams[numberRandom2].Id, phase);
 			teams.RemoveAt(numberRandom);
@@ -73,7 +66,6 @@ public class BracketingService
 		var id = await _dbService.EditData(
 			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase) VALUES(@ChampionshipId, @Home, @Visitor, @Phase) returning id", match
 			);
-		Console.WriteLine(id);
 		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
 	}
 	private async Task<Championship> GetByIdSend(int id) 
