@@ -1,5 +1,6 @@
 
 using FluentValidation;
+using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
 
@@ -49,6 +50,11 @@ public class MatchService
             throw new ApplicationException("Time informado não participa da partida atual.");
         }
 
+        if(await DepartureDateNotSet(goal.MatchId))
+        {
+            throw new ApplicationException("Data da partida não definida.");
+        }
+
         if(await DidMatchNotStart(goal.MatchId))
         {
             throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
@@ -56,6 +62,22 @@ public class MatchService
 
         if(sportId == 1)
         {
+            // if(goal.IsPenaltyShootout)
+            // {
+            //     if(!await AreTeamsTied(goal.MatchId))
+            //     {
+            //         throw new ApplicationException("Pênaltis apenas para times empatados.");
+            //     }
+
+            //     var match = await GetMatchById(goal.MatchId);
+            //     var visitorPoints = await GetPenaltyShootoutFromTeamById(match.Id, match.Visitor);
+            //     var homePoints = await GetPenaltyShootoutFromTeamById((match.Id, match.Home);
+                
+            // }
+            // else if(await IsTherePenalty(goal.MatchId))
+            // {
+            //     throw new ApplicationException("Durante a etapa de pênaltis não é possível atribuir um gol normal.");
+            // }
             if(goal.PlayerId == Guid.Empty)
             {
                 await CreateGoalToPlayerTempSend(goal);
@@ -85,10 +107,25 @@ public class MatchService
                 await CreateGoalToPlayerSend(goal);
             }
 
-            await EndGame(goal.MatchId, goal.TeamId);
+            await EndGame(goal.MatchId, goal.TeamId, goal.OwnGoal);
         }
         return errorMessages;
     }
+    // private async Task<int> GetPenaltyShootoutFromTeamById(int matchId, int teamId)
+    //     => await _dbService.GetAsync<int>("SELECT COUNT(*) FROM goals WHERE MatchId = @matchId AND TeamId = @teamId AND IsPenaltyShootout = true", new {matchId, teamId});
+    // private async Task<bool> AreTeamsTied(int matchId)
+    // {
+    //     var match = await GetMatchById(matchId);
+    //     var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
+    //     var homePoints = await GetPointsFromTeamById(matchId, match.Home);
+    //     if(homePoints == visitorPoints)
+    //     {
+    //         return true;
+    //     }
+    //     return false;
+    // }
+    // private async Task<bool> IsTherePenalty(int matchId)
+    //     => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM goals WHERE MatchId = @matchId AND IsPenaltyShootout = true));", new {matchId});
     private async Task<bool> CheckRelationshipBetweenTeamAndMatch(int teamId, int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND (home = @teamId OR visitor = @teamId) );", new {matchId, teamId});
     private async Task<bool> CheckRelationshipBetweenPlayerAndTeam(Guid playerId, int teamId)
@@ -97,6 +134,8 @@ public class MatchService
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM playertempprofiles WHERE id = @playerTempId AND TeamsId = @teamId);", new {playerTempId, teamId});
     private async Task<bool> DidMatchNotStart(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date <> CURRENT_DATE);", new {matchId});
+     private async Task<bool> DepartureDateNotSet(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date IS NULL);", new {matchId});
     private async Task<bool> SetIsInvalid(int matchId, int teamId, int set)
     {
         var lastSet = 0;
@@ -169,7 +208,7 @@ public class MatchService
     private async Task<bool> ThereIsAWinner(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND winner IS NOT NULL);", new {matchId});
 
-    private async Task EndGame(int matchId, int teamId)
+    private async Task EndGame(int matchId, int teamId, bool ownGoal)
     {
         var pointsForSet = new List<int>();
         var pointsForSet2 = new List<int>();
@@ -177,12 +216,12 @@ public class MatchService
         var WonSets2 = 0;
         var lastSet = 0;
         lastSet = (!(await IsItFirstSet(matchId))) ? 1 : await GetLastSet(matchId);
-        var team2Id = await _dbService.GetAsync<int>("SELECT home, visitor, CASE WHEN home <> @teamId THEN home ELSE visitor END AS selected_team FROM matches;", new {teamId});
+        var team2Id = await _dbService.GetAsync<int>("SELECT CASE WHEN home <> @teamId THEN home ELSE visitor END AS selected_team FROM matches WHERE id = @matchId;", new {teamId, matchId});
 
         for (int i = 0;  i < lastSet; i++)
         {
-            pointsForSet.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND TeamId = @teamId AND Set = @j", new {matchId, teamId, j = i+1}));
-            pointsForSet2.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND TeamId <> @teamId AND Set = @j", new {matchId, teamId, j = i+1}));
+            pointsForSet.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId = @teamId OR TeamId <> @teamId And OwnGoal = true) AND Set = @j", new {matchId, teamId, j = i+1}));
+            pointsForSet2.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId <> @teamId OR TeamId = TeamId And OwnGoal = true) AND Set = @j", new {matchId, teamId, j = i+1}));
         }
 
         for (int i = 0;  i < lastSet; i++)
@@ -238,19 +277,55 @@ public class MatchService
             
         }
 
-        if(WonSets == 3)
+        if(WonSets == 3 && !ownGoal)
         {
             await DefineWinner(teamId, matchId);
         }
-        else if(WonSets2 == 3)
+        else if(WonSets2 == 3  && !ownGoal)
+        {
+            await DefineWinner(team2Id, matchId);
+        }
+        else if(WonSets2 == 3  && ownGoal)
         {
             await DefineWinner(team2Id, matchId);
         }
         
     }
     private async Task<int> DefineWinner(int teamId, int matchId)
-        => await _dbService.EditData("UPDATE matches SET Winner = @teamId WHERE id = @matchId returning id", new {teamId, matchId});
+    {
+        var id = await _dbService.EditData("UPDATE matches SET Winner = @teamId WHERE id = @matchId returning id", new {teamId, matchId});
+        var match = await GetMatchById(matchId);
+        if(await CheckIfMatchesOfCurrentPhaseHaveEnded(match.ChampionshipId, match.Phase) && match.Phase != Phase.Finals)
+        {
+            var matches = await _dbService.GetAll<Match>("SELECT * from matches WHERE ChampionshipId = @championshipId AND Phase = @phase", new {match.ChampionshipId, match.Phase});
+            var newPhase = match.Phase + 1;
+            for (int i = 0; i <= matches.Count() / 2; i = i + 2)
+            {
+                var newMatch = new Match(match.ChampionshipId, matches[i].Winner, matches[i+1].Winner, newPhase);
+                await CreateMatchSend(newMatch);
+            }
 
+        }
+        return id;
+    }
+    private async Task<Match> CreateMatchSend(Match match)
+	{
+		var id = await _dbService.EditData(
+			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase) VALUES(@ChampionshipId, @Home, @Visitor, @Phase) returning id", match
+			);
+		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
+	}
+    private async Task<bool> CheckIfMatchesOfCurrentPhaseHaveEnded(int championshipId, Phase phase)
+    {
+        var numberOfMatches = await _dbService.GetAsync<int>("SELECT Count(*) from matches WHERE ChampionshipId = @championshipId AND Phase = @phase", new {championshipId, phase});
+        var numberOfMatchesClosed = await _dbService.GetAsync<int>("SELECT Count(*) from matches WHERE ChampionshipId = @championshipId AND Phase = @phase AND Winner IS NOT NULL", new {championshipId, phase});
+        
+        if(numberOfMatches != numberOfMatchesClosed)
+        {
+            return false;
+        }
+        return true;
+    }
     private async Task<bool> IsItFirstSet(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM goals WHERE MatchId = @matchId);", new {matchId});
 
@@ -266,4 +341,34 @@ public class MatchService
         => await _dbService.EditData(
 			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal) RETURNING Id;",
 			goal);
+    
+    public async Task EndGameValidationAsync(int matchId)
+    {
+        if(!await CheckIfMatchExists(matchId))
+        {
+            throw new ApplicationException("Partida passada não existe.");
+        }
+        var match = await GetMatchById(matchId);
+        //ver se já há um vencedor
+        var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
+        var homePoints = await GetPointsFromTeamById(matchId, match.Home);
+        if(homePoints > visitorPoints)
+        {
+            await DefineWinner(match.Home, matchId);
+        }
+        else if(homePoints < visitorPoints)
+        {
+            await DefineWinner(match.Visitor, matchId);
+        } 
+        else 
+        {
+            //Lançar exceção informando que a partida não pode ser encerrada sem um vencedor
+        }
+    }
+    private async Task<bool> CheckIfMatchExists(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId)", new {matchId});
+    private async Task<Match> GetMatchById(int matchId)
+        => await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @matchId", new{matchId});
+    private async Task<int> GetPointsFromTeamById(int matchId, int teamId)
+        => await _dbService.GetAsync<int>("SELECT COUNT(*) FROM goals WHERE MatchId = @matchId AND (TeamId = @teamId OR TeamId <> @teamId AND OwnGoal = true)", new {matchId, teamId});
 }

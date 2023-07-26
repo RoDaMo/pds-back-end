@@ -38,4 +38,24 @@ public class MatchController : ApiBaseController
             return ApiBadRequest(result);
         }   
     }
+
+    [HttpPut]
+    [Route("/matches/end-game")]
+    public async Task<IActionResult> EndGame([FromBody] int matchId)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            await _matchService.EndGameValidationAsync(matchId);
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }   
+    }
 }
