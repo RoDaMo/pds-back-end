@@ -21,8 +21,17 @@ public class BracketingService
 
 	public async Task<List<Match>> CreateSimpleknockoutValidationAsync(int championshipId)
 	{
+		if(!await CheckIfChampionhipExists(championshipId))
+        {
+            throw new ApplicationException("Campeonato passado não existe.");
+        }
 		var championship = await GetByIdSend(championshipId);
 		var teams = await GetAllTeamsOfChampionshipSend(championshipId);
+
+		if( ((teams.Count() & (teams.Count() - 1)) != 0) || teams.Count() > 64 ||  teams.Count() == 0)
+		{
+            throw new ApplicationException("Campeonato passado com quantidade inválida de times.");
+        }
 
 		var matches = new List<Match>();
 		var number = 64;
@@ -72,5 +81,7 @@ public class BracketingService
 		=> await _dbService.GetAsync<Championship>("SELECT format, teamquantity, numberofplayers FROM championships WHERE id = @id", new { id });
 	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)
 		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId;", new { championshipId });
+	private async Task<bool> CheckIfChampionhipExists(int championshipId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM championships WHERE id = @championshipId)", new {championshipId});
 
 }
