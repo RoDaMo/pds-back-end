@@ -28,6 +28,14 @@ public class BackgroundService
                 if (job is not null)
                 {
                     var jobDeserialized = JsonSerializer.Deserialize<BackgroundJob>(job);
+                    
+                    if (!jobDeserialized.ScheduledDate.Equals(DateTime.MinValue) && jobDeserialized.ScheduledDate > DateTime.UtcNow)
+                    {
+                        await dataBase.PushItemToListAsync("jobs", job);
+                        await Task.Delay(TimeSpan.FromSeconds(30));
+                        continue;
+                    }
+                    
                     var paramList = (from param in jobDeserialized.Params let type = Type.GetType(param.Type) select param.Value.Deserialize(type!)).ToArray();
 
                     GetType().GetMethod(jobDeserialized.MethodName)!.Invoke(this, paramList);
@@ -43,13 +51,14 @@ public class BackgroundService
             }
         }
     }
-    
-    public async Task EnqueueJob(string methodName, object[] parameters)
+
+    public async Task EnqueueJob(string methodName, object[] parameters, TimeSpan? period = null)
     {
         var jobObject = new BackgroundJob
         {
             MethodName = methodName, 
-            Params = parameters.Select(param => new BackgroundJobParameter { Type = param.GetType().AssemblyQualifiedName, Value = JsonSerializer.SerializeToElement(param, param.GetType()) }).ToArray()
+            Params = parameters.Select(param => new BackgroundJobParameter { Type = param.GetType().AssemblyQualifiedName, Value = JsonSerializer.SerializeToElement(param, param.GetType()) }).ToArray(),
+            ScheduledDate =  period is null ? DateTime.MinValue : DateTime.UtcNow.Add(period.Value)
         };
 
         var jobObjectSerialized = JsonSerializer.Serialize(jobObject);
@@ -57,7 +66,7 @@ public class BackgroundService
 
         await database.PushItemToListAsync("jobs", jobObjectSerialized);
     }
-    
+
     // cant use scoped service inside singleton
     private async Task HandleExceptionAsync(Exception exception) =>
         await _dbService.EditData("INSERT INTO ErrorLog (Message, StackTrace, TimeOfError) VALUES (@Message, @StackTrace, @TimeOfError)", new ErrorLog
