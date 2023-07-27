@@ -2,8 +2,10 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
+using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using BackgroundService = PlayOffsApi.Services.BackgroundService;
 using Resource = PlayOffsApi.Resources.Championship;
 
 namespace PlayOffsApi.Controllers;
@@ -13,14 +15,14 @@ namespace PlayOffsApi.Controllers;
 public class ChampionshipController : ApiBaseController
 {
   private readonly ChampionshipService _championshipService;
-  private readonly RedisService _redisService;
+  private readonly BackgroundService _backgroundService;
   private readonly AuthService _authService;	
   private readonly ErrorLogService _error;
 
-  public ChampionshipController(ChampionshipService championshipService, RedisService redisService, AuthService authService, ErrorLogService error)
+  public ChampionshipController(ChampionshipService championshipService, BackgroundService backgroundService, AuthService authService, ErrorLogService error)
   {
     _championshipService = championshipService;
-    _redisService = redisService;
+    _backgroundService = backgroundService;
     _authService = authService;
     _error = error;
   }
@@ -144,6 +146,23 @@ public class ChampionshipController : ApiBaseController
       
       await _championshipService.DeleteValidation(championship);
       return ApiOk(Resource.DeleteDeleted);
+    }
+    catch (ApplicationException ex)
+    {
+      await _error.HandleExceptionValidationAsync(HttpContext, ex);
+      return ApiBadRequest(ex.Message);
+    }
+  }
+
+  [HttpPut]
+  [Route("/championship/{id:int}/{status}")]
+  [Authorize]
+  public async Task<IActionResult> ChangeChampionshipStatus(int id, ChampionshipStatus status)
+  {
+    try
+    {
+      await _backgroundService.EnqueueJob(nameof(_backgroundService.ChangeChampionshipStatusValidation), new object[] { id, status });
+      return ApiOk();
     }
     catch (ApplicationException ex)
     {
