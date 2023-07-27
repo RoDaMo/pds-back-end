@@ -6,6 +6,7 @@ using ServiceStack;
 using System.Globalization;
 using System.Text;
 using PlayOffsApi.Middleware;
+using BackgroundService = PlayOffsApi.Services.BackgroundService;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -67,6 +68,7 @@ builder.Services.AddScoped<PenaltyService>();
 builder.Services.AddScoped<ImageService>();
 builder.Services.AddSingleton<EmailService>();
 builder.Services.AddScoped<ErrorLogService>();
+builder.Services.AddSingleton<BackgroundService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<EmailService>()));
 
