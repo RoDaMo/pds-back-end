@@ -1,5 +1,6 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Search;
+using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
 using Generic = PlayOffsApi.Resources.Generic;
@@ -11,14 +12,16 @@ public class ChampionshipService
 {
 	private readonly DbService _dbService;
 	private readonly ElasticService _elasticService;
-	private readonly AuthService _authService;
+	private readonly AuthService _authService;  
+	private readonly BackgroundService _backgroundService;
 	private const string INDEX = "championships";
 
-	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService)
+	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, BackgroundService backgroundService)
 	{
 		_dbService = dbService;
 		_elasticService = elasticService;
 		_authService = authService;
+		_backgroundService = backgroundService;
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
 	{
@@ -66,6 +69,8 @@ public class ChampionshipService
 
 		if (!resultado.IsValidResponse)
 			throw new ApplicationException(Generic.GenericErrorMessage);
+
+		await _backgroundService.EnqueueJob(nameof(_backgroundService.ChangeChampionshipStatusValidation), new object[] { championship.Id, ChampionshipStatus.Inactive }, TimeSpan.FromDays(14));
 	}
 
 	public async Task<(List<Championship> campionships, long total)> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort)

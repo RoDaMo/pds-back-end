@@ -15,14 +15,12 @@ namespace PlayOffsApi.Controllers;
 public class ChampionshipController : ApiBaseController
 {
   private readonly ChampionshipService _championshipService;
-  private readonly BackgroundService _backgroundService;
   private readonly AuthService _authService;	
   private readonly ErrorLogService _error;
 
-  public ChampionshipController(ChampionshipService championshipService, BackgroundService backgroundService, AuthService authService, ErrorLogService error)
+  public ChampionshipController(ChampionshipService championshipService, AuthService authService, ErrorLogService error)
   {
     _championshipService = championshipService;
-    _backgroundService = backgroundService;
     _authService = authService;
     _error = error;
   }
@@ -146,23 +144,6 @@ public class ChampionshipController : ApiBaseController
       
       await _championshipService.DeleteValidation(championship);
       return ApiOk(Resource.DeleteDeleted);
-    }
-    catch (ApplicationException ex)
-    {
-      await _error.HandleExceptionValidationAsync(HttpContext, ex);
-      return ApiBadRequest(ex.Message);
-    }
-  }
-
-  [HttpPut]
-  [Route("/championship/{id:int}/{status}")]
-  [Authorize]
-  public async Task<IActionResult> ChangeChampionshipStatus(int id, ChampionshipStatus status)
-  {
-    try
-    {
-      await _backgroundService.EnqueueJob(nameof(_backgroundService.ChangeChampionshipStatusValidation), new object[] { id, status });
-      return ApiOk();
     }
     catch (ApplicationException ex)
     {
