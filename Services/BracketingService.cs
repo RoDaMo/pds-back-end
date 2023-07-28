@@ -33,6 +33,11 @@ public class BracketingService
             throw new ApplicationException("Campeonato passado com quantidade inválida de times.");
         }
 
+		if(championship.Format != Format.Knockout)
+		{
+			throw new ApplicationException("Campeonato passado não apresenta o formato de eliminatórias com partida única.");
+		}
+
 		var matches = new List<Match>();
 		var number = 64;
 		var phase = Phase.ThirtySecondOfFinal;
@@ -73,7 +78,7 @@ public class BracketingService
 	private async Task<Match> CreateMatchSend(Match match)
 	{
 		var id = await _dbService.EditData(
-			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase) VALUES(@ChampionshipId, @Home, @Visitor, @Phase) returning id", match
+			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase, Round) VALUES(@ChampionshipId, @Home, @Visitor, @Phase, @Round) returning id", match
 			);
 		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
 	}
@@ -84,4 +89,76 @@ public class BracketingService
 	private async Task<bool> CheckIfChampionhipExists(int championshipId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM championships WHERE id = @championshipId)", new {championshipId});
 
+	public async Task<List<Match>> CreateLeagueSystemValidationAsync(int championshipId)
+	{
+		if(!await CheckIfChampionhipExists(championshipId))
+        {
+            throw new ApplicationException("Campeonato passado não existe.");
+        }
+		var championship = await GetByIdSend(championshipId);
+		var teams = await GetAllTeamsOfChampionshipSend(championshipId);
+
+		if(teams.Count() < 4 || teams.Count() > 20 || teams.Count() % 2 != 0)
+		{
+            throw new ApplicationException("Campeonato passado com quantidade inválida de times.");
+        }
+
+		if(championship.Format != Format.LeagueSystem)
+		{
+			throw new ApplicationException("Campeonato passado não apresenta o formato de pontos corridos.");
+		}
+
+		teams.Sort((x, y) => string.Compare(x.Name, y.Name));
+
+		for (int i = 0; i < teams.Count(); i++)
+		{
+			await CreateClassificationSend(new Classification(0, teams[i].Id, championshipId, i+1));
+		}
+
+		var matches = new List<Match>();
+
+		int totalRodadas = teams.Count() - 1;
+        int totalJogosPorRodada = teams.Count() / 2;
+
+        for (int i = 0; i < teams.Count(); i++)
+        {
+            for (int j = i+1; j < teams.Count(); j++)
+            {
+				matches.Add(new Match(championshipId, teams[i].Id, teams[j].Id, 1));
+            }
+        }
+
+		for (int i = 0; i < matches.Count(); i++)
+		{
+			for(int j = i + 1; j < matches.Count() - 1; j++ )
+			{
+				if (
+				(matches[i].Home == matches[j].Home || matches[i].Home == matches[j].Visitor
+				|| matches[i].Visitor == matches[j].Home || matches[i].Visitor == matches[j].Visitor)
+				&& matches[i].Round == matches[j].Round)
+				{
+					matches[j].Round++;
+				}
+			}
+		}
+		var quantidadePartidas = matches.Count();
+		matches.Sort((x, y) => x.Round.CompareTo(y.Round));
+
+		for (int i = 0; i < quantidadePartidas; i++)
+		{
+			matches.Add(new Match(championshipId, matches[i].Visitor, matches[i].Home, matches[i].Round + teams.Count()-1));
+		}
+
+		foreach (var item in matches)
+		{
+			await CreateMatchSend(item);
+		}
+
+		return matches;
+	}
+	private async Task<int> CreateClassificationSend(Classification classification)
+		=> await _dbService.EditData(
+				"INSERT INTO classifications (Points, TeamId, ChampionshipId, Position) VALUES (@Points, @TeamId, @ChampionshipId, @Position) returning id", 
+				classification
+				);
 }
