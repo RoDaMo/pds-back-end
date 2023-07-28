@@ -21,5 +21,12 @@ public class Match
         Phase = phase;
         ChampionshipId = championshipId;
     }
+    public Match(int championshipId, int home, int visitor, int round)
+    {
+        Home = home;
+        Visitor = visitor;
+        Round = round;
+        ChampionshipId = championshipId;
+    }
     public Match() { }
 }

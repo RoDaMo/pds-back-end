@@ -21,13 +21,30 @@ public class BracketingController : ApiBaseController
     }
 
     [HttpPost]
-    [Route("/bracketing/simpleknockout")]
+    [Route("/bracketing/simple-knockout")]
     public async Task<IActionResult> CreateSimpleknockout([FromBody] int championshipId)
     {
         var result = new List<Match>();
         try
         {
             result = await _bracketingService.CreateSimpleknockoutValidationAsync(championshipId);
+            return ApiOk(result);
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(Resource.GenericErrorMessage);
+        }
+    }
+
+    [HttpPost]
+    [Route("/bracketing/league-system")]
+    public async Task<IActionResult> CreateLeagueSystem([FromBody] int championshipId)
+    {
+        var result = new List<Match>();
+        try
+        {
+            result = await _bracketingService.CreateLeagueSystemValidationAsync(championshipId);
             return ApiOk(result);
         }
         catch (ApplicationException ex)
