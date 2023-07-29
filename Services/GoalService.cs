@@ -18,6 +18,7 @@ public class GoalService
         var errorMessages = new List<string>();
         var goalValidator = new GoalValidator();
         var championship = await GetChampionshipByMatchId(goal.MatchId);
+        var match = await GetMatchById(goal.MatchId);
         
 		var result = (championship.SportsId == Sports.Football) 
         ? goalValidator.Validate(goal, options => options.IncludeRuleSets("ValidationSoccer"))
@@ -59,6 +60,19 @@ public class GoalService
             throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
         }
 
+        if(championship.Format == Format.LeagueSystem && await CheckIfLastRoundHasNotFinished(match.Round-1, match.ChampionshipId))
+        {
+            throw new ApplicationException("Rodada anterior ainda não terminou.");
+        }
+        if(await CheckIfThereIsWinner(goal.MatchId))
+        {
+            throw new ApplicationException("Partida já possui um vencedor.");
+        }
+        if(await CheckIfThereIsTie(goal.MatchId))
+        {
+            throw new ApplicationException("Partida já terminou em empate.");
+        }
+
         if(championship.SportsId == Sports.Football)
         {
             if(await CheckIfThereIsAnyPenaltyByMatchId(goal.MatchId))
@@ -98,6 +112,15 @@ public class GoalService
         }
         return errorMessages;
     }
+    private async Task<bool> CheckIfThereIsTie(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND Tied = true)", new {matchId});
+    private async Task<bool> CheckIfThereIsWinner(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND Winner IS NOT NULL)", new {matchId});
+
+    private async Task<bool> CheckIfLastRoundHasNotFinished(int round, int championshipId)
+        => await _dbService.GetAsync<bool>(
+            "SELECT EXISTS(SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Round = @round AND Winner IS NULL AND Tied <> true)",
+            new {championshipId, round});   
     private async Task<Championship> GetChampionshipByMatchId(int matchId)
         => await _dbService.GetAsync<Championship>(
             @"SELECT c.*
@@ -106,7 +129,6 @@ public class GoalService
             WHERE m.Id = @matchId;
             ", 
             new {matchId});
-    
     private async Task<int> GetSportByTeamId(int teamId)
         => await _dbService.GetAsync<int>("SELECT SportsId FROM teams where id = @teamId", new {teamId});
     private async Task<bool> CheckRelationshipBetweenPlayerTempAndTeam(Guid playerTempId, int teamId)
@@ -459,10 +481,10 @@ public class GoalService
                 {
                     var aux2 = classifications[j].Position;
                     classifications[j].Position = classifications[j+1].Position;
-                    classifications[j+1].Position = aux;
+                    classifications[j+1].Position = aux2;
                 }
 
-                for (int j = i; j < classifications.Count() - 1; j++)
+                for (int j = i; j < classifications.Count(); j++)
                 {
                     await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                 }
@@ -483,10 +505,10 @@ public class GoalService
                     {
                         var aux2 = classifications[j].Position;
                         classifications[j].Position = classifications[j+1].Position;
-                        classifications[j+1].Position = aux;
+                        classifications[j+1].Position = aux2;
                     }
 
-                    for (int j = i; j < classifications.Count() - 1; j++)
+                    for (int j = i; j < classifications.Count(); j++)
                     {
                         await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                     }
@@ -504,14 +526,15 @@ public class GoalService
                         var aux = classifications[i].Position;
                         classifications[i].Position = homeClassification.Position;
                         homeClassification.Position = aux;
+                
                         for (int j = i; j < classifications.Count() - 1; j++)
                         {
                             var aux2 = classifications[j].Position;
                             classifications[j].Position = classifications[j+1].Position;
-                            classifications[j+1].Position = aux;
+                            classifications[j+1].Position = aux2;
                         }
 
-                        for (int j = i; j < classifications.Count() - 1; j++)
+                        for (int j = i; j < classifications.Count(); j++)
                         {
                             await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                         }
@@ -533,10 +556,10 @@ public class GoalService
                             {
                                 var aux2 = classifications[j].Position;
                                 classifications[j].Position = classifications[j+1].Position;
-                                classifications[j+1].Position = aux;
+                                classifications[j+1].Position = aux2;
                             }
 
-                            for (int j = i; j < classifications.Count() - 1; j++)
+                            for (int j = i; j < classifications.Count(); j++)
                             {
                                 await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                             }
@@ -565,10 +588,10 @@ public class GoalService
                                 {
                                     var aux2 = classifications[j].Position;
                                     classifications[j].Position = classifications[j+1].Position;
-                                    classifications[j+1].Position = aux;
+                                    classifications[j+1].Position = aux2;
                                 }
 
-                                for (int j = i; j < classifications.Count() - 1; j++)
+                                for (int j = i; j < classifications.Count(); j++)
                                 {
                                     await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                                 }
@@ -590,10 +613,10 @@ public class GoalService
                                     {
                                         var aux2 = classifications[j].Position;
                                         classifications[j].Position = classifications[j+1].Position;
-                                        classifications[j+1].Position = aux;
+                                        classifications[j+1].Position = aux2;
                                     }
 
-                                    for (int j = i; j < classifications.Count() - 1; j++)
+                                    for (int j = i; j < classifications.Count(); j++)
                                     {
                                         await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                                     }
@@ -614,10 +637,10 @@ public class GoalService
                                         {
                                             var aux2 = classifications[j].Position;
                                             classifications[j].Position = classifications[j+1].Position;
-                                            classifications[j+1].Position = aux;
+                                            classifications[j+1].Position = aux2;
                                         }
 
-                                        for (int j = i; j < classifications.Count() - 1; j++)
+                                        for (int j = i; j < classifications.Count(); j++)
                                         {
                                             await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                                         }
