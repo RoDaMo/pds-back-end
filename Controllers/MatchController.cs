@@ -44,14 +44,14 @@ public class MatchController : ApiBaseController
     }
 
     [HttpPut]
-    [Route("/matches/end-game")]
-    public async Task<IActionResult> EndGame([FromBody] int matchId)
+    [Route("/matches/end-game-simple-knockout")]
+    public async Task<IActionResult> EndGameToSimpleKnockout([FromBody] int matchId)
     {
         var result = new List<string>();
 
         try
         {
-            await _matchService.EndGameValidationAsync(matchId);
+            await _matchService.EndGameToSimpleKnockouteValidationAsync(matchId);
             return ApiOk(result);
         }
 
@@ -72,6 +72,26 @@ public class MatchController : ApiBaseController
         {
             result = await _penaltyService.CreatePenaltyValidationAsync(penalty);
             return result.Any() ? ApiBadRequest(result) : ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }   
+    }
+
+    [HttpPut]
+    [Route("/matches/end-game-league-system")]
+    public async Task<IActionResult> EndGameToLeagueSystem([FromBody] int matchId)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            await _matchService.EndGameToLeagueSystemValidationAsync(matchId);
+            return ApiOk(result);
         }
 
         catch (ApplicationException ex)
