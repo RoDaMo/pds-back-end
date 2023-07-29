@@ -6,18 +6,6 @@ using PlayOffsApi.Validations;
 
 namespace PlayOffsApi.Services;
 
-//pegar times de menor posição e com pontuação menor ou igual ao do time atual
-                //fazer um for para percorrer o array e verificar os dados do array[i] com o classification do home
-                    //Vitórias (contar em quantas partidas deste campeonato ele é um winner)
-                    //Saldo de Gols (quantidade de gols feitos no campeonato - quantidade de gols sofridos)
-                    //Gols Pró (todos os gols feitos no campeonato)
-                    //Confronto Direto (quantidade de partidas vencidas por um time entre dois times específicos)
-                    //Cartão (quantidade de cartões sofridos no campeonato)
-                    //Gol Qualificado (quantidade de gols fora de casa)
-                //Se o dado do atual for maior q o dado do array[i]
-                    //troca a posição
-                //Se os dados do atual for igual aos dados do array[i], vai para o próximo critério
-
 public class MatchService
 {
     private readonly DbService _dbService;
@@ -122,6 +110,14 @@ public class MatchService
         {
             throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
         }
+        if(await CheckIfThereIsWinner(matchId))
+        {
+            throw new ApplicationException("Partida já possui um vencedor.");
+        }
+        if(await CheckIfThereIsTie(matchId))
+        {
+            throw new ApplicationException("Partida já terminou em empate.");
+        }
 
         var match = await GetMatchById(matchId);
 
@@ -146,18 +142,20 @@ public class MatchService
         }
 
     }
-
+    private async Task<bool> CheckIfThereIsTie(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND Tied = true)", new {matchId});
     private async Task<bool> CheckIfLastRoundHasNotFinished(int round, int championshipId)
         => await _dbService.GetAsync<bool>(
-            "SELECT EXISTS(SELECT COUNT(*) FROM matches WHERE ChampionshipId = @championshipId AND Round = @Round AND Winner = null)",
-            new {championshipId, round});
+            "SELECT EXISTS(SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Round = @round AND Winner IS NULL AND Tied <> true)",
+            new {championshipId, round});  
 
     private async Task<int> DefineWinnerToLeagueSystem(int winnerTeamId, Match match)
     {
         if(winnerTeamId == 0)
         {
-            await UpdateMatchToDefineWinner(winnerTeamId, match.Id);
+            await UpdateMatchToDefineTie(match.Id);
             var homeClassificationId = await AssignPoints(match.Home, match.ChampionshipId, 1);
+            var visitorClassificationId = await AssignPoints(match.Visitor, match.ChampionshipId, 1);
             var homeClassification = await GetClassificationById(homeClassificationId);
             var classifications = await PickUpTeamsToChangePositions(
                     homeClassification.Points, 
@@ -166,7 +164,6 @@ public class MatchService
                     );
             await ChangePosition(classifications, homeClassification);
 
-            var visitorClassificationId = await AssignPoints(match.Visitor, match.ChampionshipId, 1);
             var visitorClassification = await GetClassificationById(visitorClassificationId);
             var classifications2 = await PickUpTeamsToChangePositions(
                     visitorClassification.Points, 
@@ -189,8 +186,17 @@ public class MatchService
         return winnerTeamId;
     }
     private async Task<int> UpdateMatchToDefineWinner(int teamId, int matchId)
-        => await _dbService.EditData("UPDATE matches SET Winner = @teamId WHERE id = @matchId returning id", new {teamId, matchId});
-    
+    {
+        if(teamId == 0)
+        {
+            return await _dbService.EditData("UPDATE matches SET Tied = true WHERE id = @matchId returning id", new {teamId, matchId});
+        }
+        return await _dbService.EditData("UPDATE matches SET Winner = @teamId WHERE id = @matchId returning id", new {teamId, matchId});
+    }
+    private async Task UpdateMatchToDefineTie(int matchId)
+    {
+        await _dbService.EditData("UPDATE matches SET Tied = true WHERE Id = @matchId", new {matchId});
+    }
     private async Task<int> AssignPoints(int teamId, int championshipId, int points)
         => await _dbService.EditData(
             "UPDATE classifications SET Points = Points + @points WHERE ChampionshipId = @championshipId AND TeamId = @teamId returning Id",
@@ -217,9 +223,9 @@ public class MatchService
     {
         var goalsScored = await ProGoals(teamId, championshipId);
         var goalsConceded = await _dbService.GetAsync<int>(
-            @"SELECT g.TeamId, COUNT(g.Id)
-            FROM Goal g
-            JOIN Match m ON g.MatchId = m.Id
+            @"SELECT COUNT(g.Id)
+            FROM Goals g
+            JOIN Matches m ON g.MatchId = m.Id
             WHERE m.ChampionshipId = @championshipId AND
             (m.Visitor = @teamId OR m.Home = @teamId) AND 
             (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
@@ -229,9 +235,9 @@ public class MatchService
     }
     private async Task<int> ProGoals(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
-            @"SELECT g.TeamId, COUNT(g.Id)
-            FROM Goal g
-            JOIN Match m ON g.MatchId = m.Id
+            @"SELECT COUNT(g.Id)
+            FROM Goals g
+            JOIN Matches m ON g.MatchId = m.Id
             WHERE m.ChampionshipId = @championshipId AND 
             (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true)
             GROUP BY g.TeamId;",
@@ -245,9 +251,9 @@ public class MatchService
             new {championshipId, teamId1, teamId2});
     private async Task<int> QualifyingGoal(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
-            @"SELECT g.TeamId, COUNT(g.Id)
-            FROM Goal g
-            JOIN Match m ON g.MatchId = m.Id
+            @"SELECT COUNT(g.Id)
+            FROM Goals g
+            JOIN Matches m ON g.MatchId = m.Id
             WHERE m.ChampionshipId = @championshipId AND 
             (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true) AND
             m.Visitor = @TeamId
@@ -266,10 +272,10 @@ public class MatchService
                 {
                     var aux2 = classifications[j].Position;
                     classifications[j].Position = classifications[j+1].Position;
-                    classifications[j+1].Position = aux;
+                    classifications[j+1].Position = aux2;
                 }
 
-                for (int j = i; j < classifications.Count() - 1; j++)
+                for (int j = i; j < classifications.Count(); j++)
                 {
                     await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                 }
@@ -290,10 +296,10 @@ public class MatchService
                     {
                         var aux2 = classifications[j].Position;
                         classifications[j].Position = classifications[j+1].Position;
-                        classifications[j+1].Position = aux;
+                        classifications[j+1].Position = aux2;
                     }
 
-                    for (int j = i; j < classifications.Count() - 1; j++)
+                    for (int j = i; j < classifications.Count(); j++)
                     {
                         await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                     }
@@ -302,7 +308,7 @@ public class MatchService
                 }
 
                 else if(arrayTeamWins == homeTeamWins)
-                {
+                {                    
                     var arrayTeamGoalDifference = await GoalDifference(classifications[i].TeamId, classifications[i].ChampionshipId);
                     var homeTeamGoalDifference = await GoalDifference(homeClassification.TeamId, homeClassification.ChampionshipId);
 
@@ -311,14 +317,15 @@ public class MatchService
                         var aux = classifications[i].Position;
                         classifications[i].Position = homeClassification.Position;
                         homeClassification.Position = aux;
+                
                         for (int j = i; j < classifications.Count() - 1; j++)
                         {
                             var aux2 = classifications[j].Position;
                             classifications[j].Position = classifications[j+1].Position;
-                            classifications[j+1].Position = aux;
+                            classifications[j+1].Position = aux2;
                         }
 
-                        for (int j = i; j < classifications.Count() - 1; j++)
+                        for (int j = i; j < classifications.Count(); j++)
                         {
                             await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                         }
@@ -340,10 +347,10 @@ public class MatchService
                             {
                                 var aux2 = classifications[j].Position;
                                 classifications[j].Position = classifications[j+1].Position;
-                                classifications[j+1].Position = aux;
+                                classifications[j+1].Position = aux2;
                             }
 
-                            for (int j = i; j < classifications.Count() - 1; j++)
+                            for (int j = i; j < classifications.Count(); j++)
                             {
                                 await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                             }
@@ -352,7 +359,7 @@ public class MatchService
                         }
 
                         else if(arrayTeamProGoals == homeTeamProGoals)
-                        {
+                        {  
                             var arrayTeamDirectConfrontation = await HeadToHeadWins(
                                     classifications[i].TeamId,
                                     homeClassification.TeamId,
@@ -372,10 +379,10 @@ public class MatchService
                                 {
                                     var aux2 = classifications[j].Position;
                                     classifications[j].Position = classifications[j+1].Position;
-                                    classifications[j+1].Position = aux;
+                                    classifications[j+1].Position = aux2;
                                 }
 
-                                for (int j = i; j < classifications.Count() - 1; j++)
+                                for (int j = i; j < classifications.Count(); j++)
                                 {
                                     await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                                 }
@@ -384,7 +391,7 @@ public class MatchService
                             }
                             //cards would be here
                             else if(arrayTeamDirectConfrontation == homeTeamDirectConfrontation)
-                            {
+                            {                               
                                 var arrayTeamQualifyingGoal = await QualifyingGoal(classifications[i].TeamId, classifications[i].ChampionshipId);
                                 var homeTeamQualifyingGoal = await QualifyingGoal(homeClassification.TeamId, homeClassification.ChampionshipId);
 
@@ -397,10 +404,10 @@ public class MatchService
                                     {
                                         var aux2 = classifications[j].Position;
                                         classifications[j].Position = classifications[j+1].Position;
-                                        classifications[j+1].Position = aux;
+                                        classifications[j+1].Position = aux2;
                                     }
 
-                                    for (int j = i; j < classifications.Count() - 1; j++)
+                                    for (int j = i; j < classifications.Count(); j++)
                                     {
                                         await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                                     }
@@ -421,10 +428,10 @@ public class MatchService
                                         {
                                             var aux2 = classifications[j].Position;
                                             classifications[j].Position = classifications[j+1].Position;
-                                            classifications[j+1].Position = aux;
+                                            classifications[j+1].Position = aux2;
                                         }
 
-                                        for (int j = i; j < classifications.Count() - 1; j++)
+                                        for (int j = i; j < classifications.Count(); j++)
                                         {
                                             await UpdatePositionClassification(classifications[j].Id, classifications[j].Position);
                                         }

@@ -13,6 +13,7 @@ public class Match
     public DateTime Date { get; set; }
     public int Round { get; set; }
     public Phase Phase { get; set; }
+    public bool Tied { get; set; }
 
     public Match(int championshipId, int home, int visitor, Phase phase)
     {
