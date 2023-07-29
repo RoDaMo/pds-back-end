@@ -28,7 +28,7 @@ public class BracketingService
 		var championship = await GetByIdSend(championshipId);
 		var teams = await GetAllTeamsOfChampionshipSend(championshipId);
 
-		if( ((teams.Count() & (teams.Count() - 1)) != 0) || teams.Count() > 64 ||  teams.Count() == 0)
+		if(championship.TeamQuantity != teams.Count())
 		{
             throw new ApplicationException("Campeonato passado com quantidade inválida de times.");
         }
@@ -98,7 +98,7 @@ public class BracketingService
 		var championship = await GetByIdSend(championshipId);
 		var teams = await GetAllTeamsOfChampionshipSend(championshipId);
 
-		if(teams.Count() < 4 || teams.Count() > 20 || teams.Count() % 2 != 0)
+		if(championship.TeamQuantity != teams.Count())
 		{
             throw new ApplicationException("Campeonato passado com quantidade inválida de times.");
         }
