@@ -237,7 +237,7 @@ public class GoalService
         for (int i = 0;  i < lastSet; i++)
         {
             pointsForSet.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId = @teamId And OwnGoal = false OR TeamId <> @teamId And OwnGoal = true) AND Set = @j", new {matchId, teamId, j = i+1}));
-            pointsForSet2.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId <> @teamId And OwnGoal = false OR TeamId = TeamId And OwnGoal = true) AND Set = @j", new {matchId, teamId, j = i+1}));
+            pointsForSet2.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId <> @teamId And OwnGoal = false OR TeamId = @teamId And OwnGoal = true) AND Set = @j", new {matchId, teamId, j = i+1}));
         }
 
         for (int i = 0;  i < lastSet; i++)
@@ -371,29 +371,6 @@ public class GoalService
 
     private async Task<int> DefineWinnerToLeagueSystem(int winnerTeamId, Match match)
     {
-        if(winnerTeamId == 0)
-        {
-            await UpdateMatchToDefineWinner(winnerTeamId, match.Id);
-            var homeClassificationId = await AssignPoints(match.Home, match.ChampionshipId, 1);
-            var homeClassification = await GetClassificationById(homeClassificationId);
-            var classifications = await PickUpTeamsToChangePositions(
-                    homeClassification.Points, 
-                    homeClassification.Position, 
-                    homeClassification.ChampionshipId
-                    );
-            await ChangePosition(classifications, homeClassification);
-
-            var visitorClassificationId = await AssignPoints(match.Visitor, match.ChampionshipId, 1);
-            var visitorClassification = await GetClassificationById(visitorClassificationId);
-            var classifications2 = await PickUpTeamsToChangePositions(
-                    visitorClassification.Points, 
-                    visitorClassification.Position, 
-                    visitorClassification.ChampionshipId
-                    );
-            await ChangePosition(classifications2, visitorClassification);
-            return winnerTeamId;
-        }
-
         await UpdateMatchToDefineWinner(winnerTeamId, match.Id);
         var winnerClassificationId = await AssignPoints(winnerTeamId, match.ChampionshipId, 3);
         var winnerClassification = await GetClassificationById(winnerClassificationId);
@@ -428,48 +405,189 @@ public class GoalService
         => await _dbService.GetAsync<int>(
             "SELECT COUNT(*) FROM matches WHERE ChampionshipId = @championshipId AND Winner = @teamId", 
             new {teamId, championshipId});
-    private async Task<int> GoalDifference(int teamId, int championshipId)
+    private async Task<int> ProGoals(int teamId, int championshipId)
+        => await _dbService.GetAsync<int>(
+            @"SELECT COUNT(g.Id)
+            FROM Goals g
+            JOIN Matches m ON g.MatchId = m.Id
+            WHERE m.ChampionshipId = @championshipId AND 
+            (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true)
+            GROUP BY g.TeamId;",
+            new { championshipId, teamId });
+    private async Task<int> WinningSets(int teamId, int championshipId)
     {
-        var goalsScored = await ProGoals(teamId, championshipId);
-        var goalsConceded = await _dbService.GetAsync<int>(
-            @"SELECT g.TeamId, COUNT(g.Id)
-            FROM Goal g
-            JOIN Match m ON g.MatchId = m.Id
+        var matches = await _dbService.GetAll<Match>(
+            "SELECT * FROM Matches WHERE (Visitor = @teamId OR Home = @teamId) AND ChampionshipId = @championshipId",
+            new {teamId, championshipId});
+        var allSetsWon = 0;
+         
+        foreach (var match in matches)
+        {
+            var pointsForSet = new List<int>();
+            var pointsForSet2 = new List<int>();
+            var WonSets = 0;
+            var WonSets2 = 0;
+            var lastSet = 0;
+            lastSet = (!(await IsItFirstSet(match.Id))) ? 1 : await GetLastSet(match.Id);
+            var team2Id = await _dbService.GetAsync<int>("SELECT CASE WHEN home <> @teamId THEN home ELSE visitor END AS selected_team FROM matches WHERE id = @matchId;", new {teamId, matchId = match.Id});
+
+            for (int i = 0;  i < lastSet; i++)
+            {
+                pointsForSet.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId = @teamId And OwnGoal = false OR TeamId <> @teamId And OwnGoal = true) AND Set = @j", new {matchId = match.Id, teamId, j = i+1}));
+                pointsForSet2.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId <> @teamId And OwnGoal = false OR TeamId = @teamId And OwnGoal = true) AND Set = @j", new {matchId = match.Id, teamId, j = i+1}));
+            }
+
+            for (int i = 0;  i < lastSet; i++)
+            {
+                if(i != 4)
+                {
+                    if(pointsForSet[i] == 25 && pointsForSet2[i] < 24)
+                    {
+                        WonSets++;
+                    }
+                    else if(pointsForSet[i] < 24 && pointsForSet2[i] == 25)
+                    {
+                        WonSets2++;
+                    }
+                    else if(pointsForSet[i] >= 24 && pointsForSet2[i] >= 24)
+                    {
+                        if(pointsForSet[i] - pointsForSet2[i] == 2)
+                        {
+                            WonSets++;
+                        }
+                        else if(pointsForSet[i] - pointsForSet2[i] == -2)
+                        {
+                            WonSets2++;
+
+                        }
+                    }
+                }
+
+                else
+                {
+                    if(pointsForSet[i] == 15 && pointsForSet2[i] < 14)
+                    {
+                        WonSets++;
+                    }
+                    else if(pointsForSet[i] < 14 && pointsForSet2[i] == 15)
+                    {
+                        WonSets2++;
+                    }
+                    else if(pointsForSet[i] >= 14 && pointsForSet2[i] >= 14)
+                    {
+                        if(pointsForSet[i] - pointsForSet2[i] == 2)
+                        {
+                            WonSets++;
+                        }
+                        else if(pointsForSet[i] - pointsForSet2[i] == -2)
+                        {
+                            WonSets2++;
+
+                        }
+                    }
+
+                }
+            }
+
+            allSetsWon = allSetsWon + WonSets;  
+        }
+        return allSetsWon;
+    }
+
+    private async Task<int> LosingSets(int teamId, int championshipId)
+    {
+        var matches = await _dbService.GetAll<Match>(
+            "SELECT * FROM Matches WHERE (Visitor = @teamId OR Home = @teamId) AND ChampionshipId = @championshipId",
+            new {teamId, championshipId});
+        var allLosingSets = 0;
+         
+        foreach (var match in matches)
+        {
+            var pointsForSet = new List<int>();
+            var pointsForSet2 = new List<int>();
+            var WonSets = 0;
+            var WonSets2 = 0;
+            var lastSet = 0;
+            lastSet = (!(await IsItFirstSet(match.Id))) ? 1 : await GetLastSet(match.Id);
+            var team2Id = await _dbService.GetAsync<int>("SELECT CASE WHEN home <> @teamId THEN home ELSE visitor END AS selected_team FROM matches WHERE id = @matchId;", new {teamId, matchId = match.Id});
+
+            for (int i = 0;  i < lastSet; i++)
+            {
+                pointsForSet.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId = @teamId And OwnGoal = false OR TeamId <> @teamId And OwnGoal = true) AND Set = @j", new {matchId = match.Id, teamId, j = i+1}));
+                pointsForSet2.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId <> @teamId And OwnGoal = false OR TeamId = @teamId And OwnGoal = true) AND Set = @j", new {matchId = match.Id, teamId, j = i+1}));
+            }
+
+            for (int i = 0;  i < lastSet; i++)
+            {
+                if(i != 4)
+                {
+                    if(pointsForSet[i] == 25 && pointsForSet2[i] < 24)
+                    {
+                        WonSets++;
+                    }
+                    else if(pointsForSet[i] < 24 && pointsForSet2[i] == 25)
+                    {
+                        WonSets2++;
+                    }
+                    else if(pointsForSet[i] >= 24 && pointsForSet2[i] >= 24)
+                    {
+                        if(pointsForSet[i] - pointsForSet2[i] == 2)
+                        {
+                            WonSets++;
+                        }
+                        else if(pointsForSet[i] - pointsForSet2[i] == -2)
+                        {
+                            WonSets2++;
+
+                        }
+                    }
+                }
+
+                else
+                {
+                    if(pointsForSet[i] == 15 && pointsForSet2[i] < 14)
+                    {
+                        WonSets++;
+                    }
+                    else if(pointsForSet[i] < 14 && pointsForSet2[i] == 15)
+                    {
+                        WonSets2++;
+                    }
+                    else if(pointsForSet[i] >= 14 && pointsForSet2[i] >= 14)
+                    {
+                        if(pointsForSet[i] - pointsForSet2[i] == 2)
+                        {
+                            WonSets++;
+                        }
+                        else if(pointsForSet[i] - pointsForSet2[i] == -2)
+                        {
+                            WonSets2++;
+
+                        }
+                    }
+
+                }
+                
+            }
+
+            allLosingSets = allLosingSets + WonSets2;  
+        }
+        return allLosingSets;
+    }
+    private async Task<int> PointsAgainst(int teamId, int championshipId)
+        => await _dbService.GetAsync<int>(
+            @"SELECT COUNT(g.Id)
+            FROM Goals g
+            JOIN Matches m ON g.MatchId = m.Id
             WHERE m.ChampionshipId = @championshipId AND
             (m.Visitor = @teamId OR m.Home = @teamId) AND 
             (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
             GROUP BY g.TeamId;",
             new { championshipId, teamId });
-        return goalsScored - goalsConceded;
-    }
-    private async Task<int> ProGoals(int teamId, int championshipId)
-        => await _dbService.GetAsync<int>(
-            @"SELECT g.TeamId, COUNT(g.Id)
-            FROM Goal g
-            JOIN Match m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND 
-            (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
-            new { championshipId, teamId });
-    private async Task<int> HeadToHeadWins(int teamId1, int teamId2, int championshipId)
-        => await _dbService.GetAsync<int>(
-            @"SELECT COUNT(*) FROM matches 
-            WHERE ChampionshipId = @championshipId AND
-            Winner = @teamId1 AND
-            (Visitor = @teamId2 OR Home = @teamId2)", 
-            new {championshipId, teamId1, teamId2});
-    private async Task<int> QualifyingGoal(int teamId, int championshipId)
-        => await _dbService.GetAsync<int>(
-            @"SELECT g.TeamId, COUNT(g.Id)
-            FROM Goal g
-            JOIN Match m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND 
-            (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true) AND
-            m.Visitor = @TeamId
-            GROUP BY g.TeamId;",
-            new { championshipId, teamId });
+
+        
     private async Task ChangePosition(List<Classification> classifications, Classification homeClassification)
-    {
+    {   
         for (int i = 0; i < classifications.Count(); i++)
         {
             if(classifications[i].Points < homeClassification.Points)
@@ -518,10 +636,10 @@ public class GoalService
 
                 else if(arrayTeamWins == homeTeamWins)
                 {
-                    var arrayTeamGoalDifference = await GoalDifference(classifications[i].TeamId, classifications[i].ChampionshipId);
-                    var homeTeamGoalDifference = await GoalDifference(homeClassification.TeamId, homeClassification.ChampionshipId);
+                    var arrayTeamWinningSets = await WinningSets(classifications[i].TeamId, classifications[i].ChampionshipId);
+                    var homeTeamWinningSets = await WinningSets(homeClassification.TeamId, homeClassification.ChampionshipId);
 
-                    if(arrayTeamGoalDifference < homeTeamGoalDifference)
+                    if(arrayTeamWinningSets < homeTeamWinningSets)
                     {
                         var aux = classifications[i].Position;
                         classifications[i].Position = homeClassification.Position;
@@ -542,12 +660,12 @@ public class GoalService
                         break;
                     }
 
-                    else if(arrayTeamGoalDifference == homeTeamGoalDifference)
-                    { 
-                        var arrayTeamProGoals = await ProGoals(classifications[i].TeamId, classifications[i].ChampionshipId);
-                        var homeTeamProGoals = await ProGoals(homeClassification.TeamId, homeClassification.ChampionshipId);
+                    else if(arrayTeamWinningSets == homeTeamWinningSets)
+                    {
+                        var arrayTeamLosingSets = await LosingSets(classifications[i].TeamId, classifications[i].ChampionshipId);
+                        var homeTeamLosingSets = await LosingSets(homeClassification.TeamId, homeClassification.ChampionshipId);
 
-                        if(arrayTeamProGoals < homeTeamProGoals)
+                        if(arrayTeamLosingSets > homeTeamLosingSets)
                         {
                             var aux = classifications[i].Position;
                             classifications[i].Position = homeClassification.Position;
@@ -567,19 +685,12 @@ public class GoalService
                             break;
                         }
 
-                        else if(arrayTeamProGoals == homeTeamProGoals)
+                        else if(arrayTeamLosingSets == homeTeamLosingSets)
                         {
-                            var arrayTeamDirectConfrontation = await HeadToHeadWins(
-                                    classifications[i].TeamId,
-                                    homeClassification.TeamId,
-                                    classifications[i].ChampionshipId
-                                );
-                            var homeTeamDirectConfrontation = await HeadToHeadWins(
-                                    homeClassification.TeamId,
-                                    classifications[i].TeamId,
-                                    homeClassification.ChampionshipId
-                                );
-                            if(arrayTeamDirectConfrontation < homeTeamDirectConfrontation)
+                            var arrayTeamProGoals = await ProGoals(classifications[i].TeamId, classifications[i].ChampionshipId);
+                            var homeTeamProGoals = await ProGoals(homeClassification.TeamId, homeClassification.ChampionshipId);
+
+                            if(arrayTeamProGoals < homeTeamProGoals)
                             {
                                 var aux = classifications[i].Position;
                                 classifications[i].Position = homeClassification.Position;
@@ -598,13 +709,13 @@ public class GoalService
                                 await UpdatePositionClassification(homeClassification.Id, homeClassification.Position);
                                 break;
                             }
-                            //cards would be here
-                            else if(arrayTeamDirectConfrontation == homeTeamDirectConfrontation)
+                            
+                            else if(arrayTeamProGoals == homeTeamProGoals)
                             {
-                                var arrayTeamQualifyingGoal = await QualifyingGoal(classifications[i].TeamId, classifications[i].ChampionshipId);
-                                var homeTeamQualifyingGoal = await QualifyingGoal(homeClassification.TeamId, homeClassification.ChampionshipId);
+                                var arrayTeamPointsAgainst = await PointsAgainst(classifications[i].TeamId, classifications[i].ChampionshipId);
+                                var homeTeamPointsAgainst = await PointsAgainst(homeClassification.TeamId, homeClassification.ChampionshipId);
 
-                                if(arrayTeamQualifyingGoal < homeTeamQualifyingGoal)
+                                if(arrayTeamPointsAgainst > homeTeamPointsAgainst)
                                 {
                                     var aux = classifications[i].Position;
                                     classifications[i].Position = homeClassification.Position;
@@ -624,7 +735,7 @@ public class GoalService
                                     break;
                                 }
 
-                                else if(arrayTeamQualifyingGoal == homeTeamQualifyingGoal)
+                                else if(arrayTeamPointsAgainst == homeTeamPointsAgainst)
                                 {
                                     Random random = new Random();
                                     int randomNumber = random.Next(0, 1);
