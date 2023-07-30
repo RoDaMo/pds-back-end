@@ -132,4 +132,10 @@
   <data name="RemoveTeamFromChampionshipUnlinked" xml:space="preserve">
     <value>Team successfully unlinked</value>
   </data>
+  <data name="TeamSuccessfullyUpdated" xml:space="preserve">
+    <value>Team successfully updated.</value>
+  </data>
+  <data name="TeamDeleted" xml:space="preserve">
+    <value>Team deleted successfully.</value>
+  </data>
 </root>

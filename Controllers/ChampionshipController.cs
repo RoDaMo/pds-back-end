@@ -2,8 +2,10 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
+using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using BackgroundService = PlayOffsApi.Services.BackgroundService;
 using Resource = PlayOffsApi.Resources.Championship;
 
 namespace PlayOffsApi.Controllers;
@@ -13,16 +15,16 @@ namespace PlayOffsApi.Controllers;
 public class ChampionshipController : ApiBaseController
 {
   private readonly ChampionshipService _championshipService;
-  private readonly RedisService _redisService;
   private readonly AuthService _authService;	
   private readonly ErrorLogService _error;
+  private readonly ChampionshipActivityLogService _activityLogService;
 
-  public ChampionshipController(ChampionshipService championshipService, RedisService redisService, AuthService authService, ErrorLogService error)
+  public ChampionshipController(ChampionshipService championshipService, AuthService authService, ErrorLogService error, ChampionshipActivityLogService activityLogService)
   {
     _championshipService = championshipService;
-    _redisService = redisService;
     _authService = authService;
     _error = error;
+    _activityLogService = activityLogService;
   }
 
   [Authorize]
@@ -55,7 +57,7 @@ public class ChampionshipController : ApiBaseController
 
 
   [HttpGet(Name = "index")]
-  public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new(), DateTime finish = new(), [FromHeader]string pitId = "", [FromHeader]string sort = "")
+  public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new(), DateTime finish = new(), ChampionshipStatus status = ChampionshipStatus.Active, [FromHeader]string pitId = "", [FromHeader]string sort = "")
   {
     try
     {
@@ -63,12 +65,12 @@ public class ChampionshipController : ApiBaseController
       var sortArray = string.IsNullOrEmpty(sort) ? null : sort.Split(',');
       try
       {
-        results = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
+        results = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray, status);
       }
       catch (Exception)
       {
         pitId = string.Empty;
-        results = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray);
+        results = await _championshipService.GetByFilterValidationAsync(name, sport, start, finish, pitId, sortArray, status);
       }
       var totalPaginas = Math.Ceiling(results.total / 15m);
 
@@ -105,7 +107,17 @@ public class ChampionshipController : ApiBaseController
       var results = await _championshipService.UpdateValidate(championship);
       if (results.Any())
         return ApiBadRequest(results);
-
+      
+      var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+      
+      await _activityLogService.InsertValidation(new()
+      {
+        DateOfActivity = DateTime.UtcNow,
+        ChampionshipId = championship.Id,
+        TypeOfActivity = TypeOfActivity.EditedInfo,
+        OrganizerId = userId
+      });
+      
       return ApiOk(Resource.UpdateCampeonatoAtualizadoComSucesso);
     }
     catch (ApplicationException ex)
