@@ -30,7 +30,8 @@ public class PlayerTempProfileService
 		var team = await _teamService.GetByIdSendAsync(playerTempProfile.TeamsId);
 
 		var playerTempProfileValidator = new PlayerTempProfileValidator();
-
+		playerTempProfile.Picture ??= "https://playoffs-api.up.railway.app/img/e82930b9-b71c-442a-9bc9-95b189c19afb";
+		
 		var result = await playerTempProfileValidator.ValidateAsync(playerTempProfile);
 
 		if (!result.IsValid)
@@ -79,7 +80,7 @@ public class PlayerTempProfileService
     private async Task CreateSendAsync(PlayerTempProfile playerTempProfile)
 	{
 		await _dbService.EditData(
-			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, playerPosition) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @PlayerPosition)", playerTempProfile);
+			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, playerPosition, picture) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @PlayerPosition, @Picture)", playerTempProfile);
 	}
 
 	private async Task<bool> ChecksIfUserIsManager(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NULL);", new {userId});
