@@ -19,11 +19,12 @@ public class TeamController : ApiBaseController
     private readonly ChampionshipService _championshipService;
     private readonly ErrorLogService _error;
     private readonly ChampionshipActivityLogService _activityLogService;
-    public TeamController(TeamService teamService, ChampionshipService championshipService, ErrorLogService error)
+    public TeamController(TeamService teamService, ChampionshipService championshipService, ErrorLogService error, ChampionshipActivityLogService activityLogService)
     {
         _teamService = teamService;
         _championshipService = championshipService;
         _error = error;
+        _activityLogService = activityLogService;
     }
 
     [HttpPost]
