@@ -1,6 +1,7 @@
 using Dapper;
 using Npgsql;
 using System.Data;
+using Resource = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Services;
 
@@ -37,7 +38,7 @@ public class DbService
 		}
 		catch (Exception)
 		{
-			throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+			throw new ApplicationException(Resource.GenericErrorMessage);
 		}
 	}
 
@@ -51,7 +52,7 @@ public class DbService
 		}
 		catch (Exception)
 		{
-			throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+			throw new ApplicationException(Resource.GenericErrorMessage);
 		}
 
 	}
@@ -67,7 +68,7 @@ public class DbService
 		}
 		catch (Exception)
 		{
-			throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+			throw new ApplicationException(Resource.GenericErrorMessage);
 		}
 
 	}
@@ -83,7 +84,7 @@ public class DbService
 		}
 		catch (Exception)
 		{
-			throw new ApplicationException("Houve um erro de conexão, tente novamente mais tarde.");
+			throw new ApplicationException(Resource.GenericErrorMessage);
 		}
 
 	}
