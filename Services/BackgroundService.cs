@@ -8,10 +8,12 @@ public class BackgroundService
 {
     private readonly RedisService _redisService;	
     private readonly DbService _dbService;
-    public BackgroundService(RedisService redisService, DbService dbService)
+    private readonly ElasticService _elasticService;
+    public BackgroundService(RedisService redisService, DbService dbService, ElasticService elasticService)
     {
         _redisService = redisService;
         _dbService = dbService;
+        _elasticService = elasticService;
 
         Task.Run(StartBackgroundJobs);
     }
@@ -54,6 +56,7 @@ public class BackgroundService
 
     public async Task EnqueueJob(string methodName, object[] parameters, TimeSpan? period = null)
     {
+
         var jobObject = new BackgroundJob
         {
             MethodName = methodName, 
@@ -63,7 +66,7 @@ public class BackgroundService
 
         var jobObjectSerialized = JsonSerializer.Serialize(jobObject);
         var database = await _redisService.GetDatabase();
-
+        
         await database.PushItemToListAsync("jobs", jobObjectSerialized);
     }
 
@@ -77,8 +80,31 @@ public class BackgroundService
         });
 
     
-    public async Task ChangeChampionshipStatusValidation(int championshipId, int status) 
-        => await ChangeChampionshipStatusSend(championshipId, (ChampionshipStatus)status);
+    public async Task ChangeChampionshipStatusValidation(int championshipId, int status)
+    {
+        var activityLogService = new ChampionshipActivityLogService(_dbService);
+        var activityFromChampionship = await activityLogService.GetAllFromChampionshipValidation(championshipId);
+        
+        var database = await _redisService.GetDatabase();
+        var cancelJob = await database.GetValueAsync($"cancelJob_championship:{championshipId}");
+        var championship = await _dbService.GetAsync<Championship>("SELECT * FROM championships WHERE id = @id", new { championshipId });
+
+        if (cancelJob is not null)
+        {
+            if (DateTime.Parse(cancelJob) != championship.InitialDate) return;
+        }
+
+        var statusEnum = (ChampionshipStatus)status;
+        if (activityFromChampionship.Any() && statusEnum == ChampionshipStatus.Inactive)
+        {
+            var lastActivity = activityFromChampionship.OrderByDescending(d => d.DateOfActivity).Last();
+            if (DateTime.UtcNow - lastActivity.DateOfActivity < TimeSpan.FromDays(14)) return;
+        }
+
+        await ChangeChampionshipStatusSend(championshipId, statusEnum);
+        championship.Status = statusEnum;
+        await _elasticService._client.IndexAsync(championship, "championships");
+    }
 
     private async Task ChangeChampionshipStatusSend(int championshipId, ChampionshipStatus status) 
         => await _dbService.EditData("UPDATE championships SET status = @status WHERE id = @id", new { id = championshipId, status });

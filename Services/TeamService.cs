@@ -132,4 +132,67 @@ public class TeamService
 
 	private async Task RemoveTeamFromChampionshipSend(int teamId, int championshipId)
 		=> await _dbService.EditData("DELETE FROM championships_teams WHERE teamId = @teamId AND championshipId = @championshipId", new { teamId, championshipId });
+
+	public async Task<List<Championship>> GetChampionshipsOfTeamValidation(int id) => await GetChampionshipsOfTeamSend(id);
+
+	private async Task<List<Championship>> GetChampionshipsOfTeamSend(int id)
+		=> await _dbService.GetAll<Championship>("SELECT c.id, c.name, c.logo, c.description, c.format, c.sportsid FROM championships c JOIN championships_teams ct ON c.id = ct.championshipid WHERE ct.teamid = @id", new { id });
+
+	public async Task<List<string>> UpdateTeamValidation(TeamDTO teamDto, Guid userId)
+	{
+		var errorMessages = new List<string>();
+		var teamValidator = new TeamValidator();
+		
+		var result = await teamValidator.ValidateAsync(teamDto);
+		var user = await _authService.GetUserByIdAsync(userId);
+		if (!user.TeamManagementId.Equals(teamDto.Id))
+			throw new ApplicationException(Resource.UserNotAllowedToUpdate);
+		
+		
+		if (!result.IsValid)
+		{
+			errorMessages = result.Errors.Select(x => x.ErrorMessage).ToList();
+			return errorMessages;
+		}
+
+		var team = ToTeam(teamDto);
+		team.Id = teamDto.Id;
+		await UpdateTeamSend(team);
+		
+		var resultado = await _elasticService._client.IndexAsync(team, INDEX);
+		if (!resultado.IsValidResponse)
+			throw new ApplicationException(Generic.GenericErrorMessage);
+		
+		return errorMessages;
+	}
+
+	private async Task UpdateTeamSend(Team team) => await _dbService.EditData("UPDATE teams SET emblem = @emblem, uniformHome = @uniformHome, uniformAway = @uniformAway, deleted = @deleted, sportsid = @sportsid, name = @name WHERE id = @id", team);
+
+	public async Task DeleteTeamValidation(int id, Guid userId)
+	{
+		var team = await GetByIdValidationAsync(id);
+		if (team is null)
+			throw new ApplicationException(Resource.TeamDoesNotExist);
+
+		var user = await _authService.GetUserByIdAsync(userId);
+		if (user.TeamManagementId != team.Id)
+			throw new ApplicationException(Resource.UserNotAllowedToDelete);
+
+		if (team.Deleted)
+			throw new ApplicationException(Resource.TeamAlreadyDeleted);
+
+		await DeleteTeamSend(id);
+	}
+
+	private async Task DeleteTeamSend(int id) => await _dbService.EditData("UPDATE teams SET deleted = true WHERE id = @id", new { id });
+
+	public async Task<List<User>> GetPlayersOfTeamValidation(int id) => await GetPlayersOfteamSend(id);
+
+	private async Task<List<User>> GetPlayersOfteamSend(int id) =>
+		await _dbService.GetAll<User>(
+			@"
+			SELECT id, name, artisticname, number, email, teamsid, playerposition, false as iscaptain FROM playertempprofiles WHERE teamsid = @id
+			UNION ALL
+			SELECT id, name, artisticname, number, email, playerteamid as teamsid, playerposition, iscaptain FROM users WHERE playerteamid = @id;",
+			new { id });
 }

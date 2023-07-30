@@ -27,4 +27,7 @@
   <data name="CreateValidationAsyncInvalidSport" xml:space="preserve">
     <value>Esporte inválido!</value>
   </data>
+  <data name="InvalidChampionship" xml:space="preserve">
+    <value>Campeonato inválido.</value>
+  </data>
 </root>

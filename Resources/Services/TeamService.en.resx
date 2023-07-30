@@ -132,4 +132,19 @@
   <data name="AddTeamToChampionshipValidationLimitReached" xml:space="preserve">
     <value>The limit of linked teams of this championship has already been reached.</value>
   </data>
+  <data name="UserNotAllowedToUpdate" xml:space="preserve">
+    <value>You don't have the permission to update this team.</value>
+  </data>
+  <data name="TeamDoesNotExist" xml:space="preserve">
+    <value>Team does not exist.</value>
+  </data>
+  <data name="UserNotAllowedToDelete" xml:space="preserve">
+    <value>You're not allowed to delete this team.</value>
+  </data>
+  <data name="TeamAlreadyDeleted" xml:space="preserve">
+    <value>Team already deleted.</value>
+  </data>
+  <data name="ChampionshipTeamLimitReached" xml:space="preserve">
+    <value>The limit of teams for this championship has already been met.</value>
+  </data>
 </root>
