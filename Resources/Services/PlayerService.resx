@@ -121,4 +121,13 @@
   <data name="CreateValidationAsyncAlreadyBelongsTeam" xml:space="preserve">
     <value>Jogador passado já pertence a um time.</value>
   </data>
+  <data name="UserNotAllowedRemovePlayer" xml:space="preserve">
+	  <value>Você não possui permissão para remover este jogador do time.</value>
+  </data>
+  <data name="TeamDoesntExist" xml:space="preserve">
+	  <value>Time não existe.</value>
+  </data>
+  <data name="UserIsNotInteam" xml:space="preserve">
+	  <value>Usuário não pertence a este time.</value>
+  </data>
 </root>
