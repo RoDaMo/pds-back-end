@@ -228,8 +228,11 @@ public class AuthService
 		user.PlayerPosition = player.PlayerPosition;
 		user.PlayerTeamId = player.TeamsId;
 		user.PasswordHash = EncryptPassword(user.Password);
+		
+		var guidPlayer = await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, ArtisticName, Number, PlayerPosition, PlayerTeamId) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, 'false', @ArtisticName, @Number, @PlayerPositionsId, @PlayerTeamId) RETURNING Id;", user);
+		await _dbService.EditData("DELETE FROM playertempprofiles WHERE id = @id", new { id = player.Id });
 
-		return await _dbService.EditData2("INSERT INTO users (Name, Username, PasswordHash, Email, Deleted, Birthday, ConfirmEmail, ArtisticName, Number, PlayerPositionsId, PlayerTeamId) VALUES (@Name, @Username, @PasswordHash, @Email, @Deleted, @Birthday, 'false', @ArtisticName, @Number, @PlayerPositionsId, @PlayerTeamId) RETURNING Id;", user);
+		return guidPlayer;
 	}
 
 	private async Task DeletePlayerTempProfile(Guid id)

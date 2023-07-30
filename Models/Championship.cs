@@ -40,4 +40,7 @@ public class Championship
 	public int NumberOfPlayers { get; set; }
 	public bool Deleted { get; set; }
 	public List<Team> Teams { get; set; }
+	
+	[JsonConverter(typeof(StatusAsNumberConverter))]
+	public ChampionshipStatus Status { get; set; }
 }

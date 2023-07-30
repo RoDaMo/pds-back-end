@@ -112,4 +112,19 @@
   <data name="AddTeamToChampionshipValidationLimitReached" xml:space="preserve">
     <value>O limite de times para esse campeonato já foi atingido</value>
   </data>
+  <data name="UserNotAllowedToUpdate" xml:space="preserve">
+    <value>Você não tem permissão para atualizar este team.</value>
+  </data>
+  <data name="TeamDoesNotExist" xml:space="preserve">
+	  <value>Time não existe.</value>
+  </data>
+  <data name="UserNotAllowedToDelete" xml:space="preserve">
+	  <value>Você não tem permissão para excluir esse time.</value>
+  </data>
+  <data name="TeamAlreadyDeleted" xml:space="preserve">
+	  <value>Time já excluído.</value>
+  </data>
+  <data name="ChampionshipTeamLimitReached" xml:space="preserve">
+	  <value>O limite de times para esse campeonato já foi atingido.</value>
+  </data>
 </root>

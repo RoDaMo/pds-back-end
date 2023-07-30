@@ -12,16 +12,18 @@ public class ChampionshipService
 {
 	private readonly DbService _dbService;
 	private readonly ElasticService _elasticService;
+	private readonly RedisService _redisService;
 	private readonly AuthService _authService;  
 	private readonly BackgroundService _backgroundService;
 	private const string INDEX = "championships";
 
-	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, BackgroundService backgroundService)
+	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, BackgroundService backgroundService, RedisService redisService)
 	{
 		_dbService = dbService;
 		_elasticService = elasticService;
 		_authService = authService;
 		_backgroundService = backgroundService;
+		_redisService = redisService;
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
 	{
@@ -39,6 +41,8 @@ public class ChampionshipService
 		if (!await _authService.UserHasCpfValidationAsync(championship.Organizer.Id))
 			throw new ApplicationException(Resource.CreateValidationAsyncCpfNotNull);
 
+		championship.Status = ChampionshipStatus.Pendent;
+		
 		switch (championship.SportsId)
 		{
 			case Sports.Football when championship.NumberOfPlayers < 11:
@@ -57,8 +61,8 @@ public class ChampionshipService
 	{
 		championship.Id = await _dbService.EditData(
 			@"
-			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId, numberofplayers, teamquantity) 
-			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId, @NumberOfPlayers, @TeamQuantity) RETURNING Id;",
+			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId, numberofplayers, teamquantity, status) 
+			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId, @NumberOfPlayers, @TeamQuantity, @Status) RETURNING Id;",
 			championship);
 
 		await _dbService.EditData(
@@ -71,9 +75,10 @@ public class ChampionshipService
 			throw new ApplicationException(Generic.GenericErrorMessage);
 
 		await _backgroundService.EnqueueJob(nameof(_backgroundService.ChangeChampionshipStatusValidation), new object[] { championship.Id, ChampionshipStatus.Inactive }, TimeSpan.FromDays(14));
+		await _backgroundService.EnqueueJob(nameof(_backgroundService.ChangeChampionshipStatusValidation), new object[] { championship.Id, ChampionshipStatus.Active }, championship.InitialDate - DateTime.UtcNow);
 	}
 
-	public async Task<(List<Championship> campionships, long total)> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort)
+	public async Task<(List<Championship> campionships, long total)> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort, ChampionshipStatus status)
 	{
 		finish = finish == DateTime.MinValue ? DateTime.MaxValue : finish;
 		var pit = string.IsNullOrEmpty(pitId)
@@ -84,7 +89,7 @@ public class ChampionshipService
 		if (sort is not null && sort.Any())
 			listSort = sort.Select(FieldValue.String).ToList();
 		
-		var response = await GetByFilterSendAsync(name, sport, start, finish, pit, listSort);
+		var response = await GetByFilterSendAsync(name, sport, start, finish, pit, listSort, status);
 		var documents = response.Documents.ToList();
 		if (!documents.Any()) return (documents, 0);
 		
@@ -94,7 +99,9 @@ public class ChampionshipService
 		return (documents, response.Total);
 	}
 
-	private async Task<SearchResponse<Championship>> GetByFilterSendAsync(string name, Sports sport, DateTime start, DateTime finish, PointInTimeReference pitId, ICollection<FieldValue> sort)
+	private async Task<SearchResponse<Championship>> GetByFilterSendAsync(string name, Sports sport, DateTime start,
+		DateTime finish, PointInTimeReference pitId, ICollection<FieldValue> sort,
+		ChampionshipStatus championshipStatus)
 		=> await _elasticService.SearchAsync<Championship>(el =>
 		{
 			el.Index(INDEX).From(0).Size(15).Pit(pitId).Sort(config => config.Score(new ScoreSort { Order = SortOrder.Desc }));
@@ -117,7 +124,11 @@ public class ChampionshipService
 								.DateRange(d => d.Field(f => f.InitialDate).Gte(start).Lte(finish))
 							),
 						must3 => must3
-							.Term(t => t.Field(f => f.Deleted).Value(false))
+							.Term(t => t.Field(f => f.Deleted).Value(false)),
+						must4 => must4.Term(t => t.Field(f => f.Status).Value((int)championshipStatus)),
+						must5 => must5.Range(r => r
+							.DateRange(d => d.Field(f => f.FinalDate).Gte(start).Lte(finish))
+						)
 					)
 					.Filter(fi =>
 						{
@@ -139,12 +150,23 @@ public class ChampionshipService
 	private async Task<Championship> GetByIdSend(int id) 
 		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid, teamquantity, numberofplayers FROM championships WHERE id = @id", new { id });
 	
-  private async Task<int> GetNumberOfPlayers(int championshipId)
+	private async Task<int> GetNumberOfPlayers(int championshipId)
 		=> await _dbService.GetAsync<int>("SELECT numberofplayers FROM championships WHERE id = @championshipId", new {championshipId});
 		
 	public async Task<List<string>> UpdateValidate(Championship championship)
 	{
 		var oldChamp = await GetByIdValidation(championship.Id);
+		if (oldChamp is null)
+			throw new ApplicationException(Resource.InvalidChampionship);
+
+		if (oldChamp.Status == ChampionshipStatus.Pendent && oldChamp.InitialDate != championship.InitialDate)
+		{
+			var redisDatabase = await _redisService.GetDatabase();
+			await redisDatabase.AddAsync($"cancelJob_championship:{championship.Id}", oldChamp.InitialDate);
+			
+			await _backgroundService.EnqueueJob(nameof(_backgroundService.ChangeChampionshipStatusValidation), new object[] { championship.Id, ChampionshipStatus.Active }, championship.InitialDate - DateTime.UtcNow);
+		}
+
 		var result = await new ChampionshipValidator().ValidateAsync(championship);
 		
 		if (!result.IsValid)
@@ -152,7 +174,7 @@ public class ChampionshipService
 		
 		await UpdateSend(championship);
 		await _elasticService._client.IndexAsync(championship, INDEX);
-		
+
 		return new();
 	}
 
@@ -189,4 +211,13 @@ public class ChampionshipService
 		await GetAllTeamsLinkedToSend(championshipId);
 
 	private async Task<List<int>> GetAllTeamsLinkedToSend(int championshipId) => await _dbService.GetAll<int>("SELECT teamid FROM championships_teams WHERE championshipid = @championshipid;", new { championshipId });
+
+	public async Task IndexAllChampionshipsValidation()
+	{
+		var championships = await GetAllChampionshipsForIndexingSend();
+		foreach (var championship in championships)
+			await _elasticService._client.IndexAsync(championship, INDEX);
+	}
+
+	private async Task<List<Championship>> GetAllChampionshipsForIndexingSend() => await _dbService.GetAll<Championship>("SELECT * FROM championships", new {});
 }

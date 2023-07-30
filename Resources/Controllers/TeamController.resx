@@ -112,4 +112,10 @@
   <data name="RemoveTeamFromChampionshipUnlinked" xml:space="preserve">
     <value>Time desvinculado com sucesso</value>
   </data>
+  <data name="TeamSuccessfullyUpdated" xml:space="preserve">
+	  <value>Time atualizado com sucesso.</value>
+  </data>
+  <data name="TeamDeleted" xml:space="preserve">
+	  <value>Time excluido com sucesso.</value>
+  </data>
 </root>

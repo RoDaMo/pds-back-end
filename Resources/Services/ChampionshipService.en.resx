@@ -129,4 +129,7 @@
   <data name="CreateValidationAsyncInvalidVolleyPlayers" xml:space="preserve">
     <value>Invalid amount of players for volleyball. There must be at least 6 players in a volleyball team.</value>
   </data>
+  <data name="InvalidChampionship" xml:space="preserve">
+    <value>Invalid championship.</value>
+  </data>
 </root>
