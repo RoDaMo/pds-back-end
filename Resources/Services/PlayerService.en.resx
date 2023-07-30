@@ -141,4 +141,13 @@
   <data name="CreateValidationAsyncAlreadyBelongsTeam" xml:space="preserve">
     <value>Past player already belongs to a team.</value>
   </data>
+  <data name="UserNotAllowedRemovePlayer" xml:space="preserve">
+    <value>You are not allowed to remove this player from the team.</value>
+  </data>
+  <data name="TeamDoesntExist" xml:space="preserve">
+    <value>Team doesn't exist.</value>
+  </data>
+  <data name="UserIsNotInteam" xml:space="preserve">
+    <value>User isn't on this team.</value>
+  </data>
 </root>

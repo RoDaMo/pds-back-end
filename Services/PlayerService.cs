@@ -89,11 +89,48 @@ public class PlayerService
 	}
 
     private async Task<bool> ChecksIfUserIsManager(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NULL);", new {userId});
-	private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number, int teamsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number AND teamsid = @teamsId);", new {number, teamsId});
+    private async Task<bool> ChecksIfUserIsManager(Guid userId, int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId = @teamId);", new { userId, teamId });
+    private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number, int teamsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number AND teamsid = @teamsId);", new {number, teamsId});
 	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number, int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number AND playerteamid = @teamId);", new {number, teamId});
     private async Task<bool> ChecksIfTeamAlreadyHasCaptain() => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE iscaptain = true);", new {});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
     private async Task<bool> ChecksIfUserPassedExists(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email);", new {email});
     private async Task<bool> ChecksIfUserPassedAlreadHasTeam(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email AND playerteamid IS NOT NULL);", new {email});
 
+    public async Task RemovePlayerFromTeamValidation(int teamId, Guid id, Guid organizerId)
+    {
+	    if (!await ChecksIfUserIsManager(organizerId, teamId))
+		    throw new ApplicationException(Resource.UserNotAllowedRemovePlayer);
+	    
+	    var team = await _teamService.GetByIdValidationAsync(teamId);
+	    if (team is null)
+		    throw new ApplicationException(Resource.TeamDoesntExist);
+	    
+	    var (isInTeam, playerTemp) = await UserIsInTeam(teamId, id);
+	    if (!isInTeam)
+		    throw new ApplicationException("Usuário não pertence a este time.");
+
+	    if (playerTemp is not null)
+	    {
+		    await RemovePlayerTempFromTeamSend(teamId, id);
+		    return;
+	    }
+	    
+	    await RemovePlayerFromTeamSend(teamId, id);
+    }
+
+    private async Task RemovePlayerFromTeamSend(int userTeamManagementId, Guid id) =>
+	    await _dbService.EditData($"UPDATE users SET playerteamid = null WHERE Id = @Id AND playerteamid = @teamId", new { teamId = userTeamManagementId, id });
+    private async Task RemovePlayerTempFromTeamSend(int userTeamManagementId, Guid id) =>
+	    await _dbService.EditData($"DELETE FROM playertempprofiles WHERE Id = @Id AND teamsid = @teamId", new { teamId = userTeamManagementId, id });
+    private async Task<(bool, PlayerTempProfile)> UserIsInTeam(int teamId, Guid id)
+    {
+	    var playerUser = await _dbService.GetAsync<User>("SELECT Id FROM users WHERE Id = @id AND playerteamid = @teamId", new { id, teamId });
+	    var playerExists = playerUser is not null;
+
+	    var playerTemp = await _dbService.GetAsync<PlayerTempProfile>("SELECT Id FROM playertempprofiles WHERE Id = @id AND teamsid = @teamId", new { id, teamId });
+	    playerExists = playerExists || playerTemp is not null;
+
+	    return (playerExists, playerTemp);
+    }
 }
