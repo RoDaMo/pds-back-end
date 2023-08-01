@@ -116,10 +116,6 @@ public class BracketingService
 		}
 
 		var matches = new List<Match>();
-
-		int totalRodadas = teams.Count() - 1;
-        int totalJogosPorRodada = teams.Count() / 2;
-
         for (int i = 0; i < teams.Count(); i++)
         {
             for (int j = i+1; j < teams.Count(); j++)
@@ -141,10 +137,10 @@ public class BracketingService
 				}
 			}
 		}
-		var quantidadePartidas = matches.Count();
+		var quantityMatches = matches.Count();
 		matches.Sort((x, y) => x.Round.CompareTo(y.Round));
 
-		for (int i = 0; i < quantidadePartidas; i++)
+		for (int i = 0; i < quantityMatches; i++)
 		{
 			matches.Add(new Match(championshipId, matches[i].Visitor, matches[i].Home, matches[i].Round + teams.Count()-1));
 		}
@@ -161,4 +157,74 @@ public class BracketingService
 				"INSERT INTO classifications (Points, TeamId, ChampionshipId, Position) VALUES (@Points, @TeamId, @ChampionshipId, @Position) returning id", 
 				classification
 				);
+	public async Task<List<Match>> CreateSimpleKnockoutGroupStage(int championshipId)
+	{
+		if(!await CheckIfChampionhipExists(championshipId))
+        {
+            throw new ApplicationException("Campeonato passado não existe.");
+        }
+		var championship = await GetByIdSend(championshipId);
+		var teams = await GetAllTeamsOfChampionshipSend(championshipId);
+
+		if(championship.TeamQuantity != teams.Count())
+		{
+            throw new ApplicationException("Campeonato passado com quantidade inválida de times.");
+        }
+
+		if(championship.Format != Format.GroupStage)
+		{
+			throw new ApplicationException("Campeonato passado não apresenta o formato de eliminatórias com fase de grupos.");
+		}
+
+		teams.Sort((x, y) => string.Compare(x.Name, y.Name));
+
+		int position = 1;
+
+		for (int i = 0; i < teams.Count(); i++)
+		{
+			if(position == 5)
+				position = 1;
+			await CreateClassificationSend(new Classification(0, teams[i].Id, championshipId, position));
+			position++;
+		}
+
+		var matches = new List<Match>();
+
+
+        for (int i = 0; i < teams.Count(); i++)
+        {
+            for (int j = i+1; j < teams.Count(); j++)
+            {
+				double calculation = (i/4);
+				double calculation2 = (j/4);
+				if(Math.Ceiling(calculation) != Math.Ceiling(calculation2))
+				{
+					break;
+				}
+				matches.Add(new Match(championshipId, teams[i].Id, teams[j].Id, 1));
+            }
+        }
+
+		for (int i = 0; i < matches.Count(); i++)
+		{
+			for(int j = i + 1; j < matches.Count() - 1; j++ )
+			{
+				if (
+				(matches[i].Home == matches[j].Home || matches[i].Home == matches[j].Visitor
+				|| matches[i].Visitor == matches[j].Home || matches[i].Visitor == matches[j].Visitor)
+				&& matches[i].Round == matches[j].Round)
+				{
+					matches[j].Round++;
+				}
+			}
+		}
+		var quantityMatches = matches.Count();
+		matches.Sort((x, y) => x.Round.CompareTo(y.Round));
+
+		foreach (var item in matches)
+		{
+			await CreateMatchSend(item);
+		}
+		return matches;
+	}
 }
