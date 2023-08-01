@@ -65,4 +65,21 @@ public class BracketingController : ApiBaseController
             return ApiBadRequest(Resource.GenericErrorMessage);
         }
     }
+
+    [HttpPost]
+    [Route("/bracketing/simple-knockout-group-stage")]
+    public async Task<IActionResult> CreateSimpleKnockoutGroupStage([FromBody] int championshipId)
+    {
+        var result = new List<Match>();
+        try
+        {
+            result = await _bracketingService.CreateSimpleKnockoutGroupStage(championshipId);
+            return ApiOk(result);
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(Resource.GenericErrorMessage);
+        }
+    }
 }
