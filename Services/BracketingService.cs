@@ -1,7 +1,5 @@
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
-using PlayOffsApi.Validations;
-using Resource = PlayOffsApi.Resources.Services.PlayerService;
 
 namespace PlayOffsApi.Services;
 
@@ -157,7 +155,7 @@ public class BracketingService
 				"INSERT INTO classifications (Points, TeamId, ChampionshipId, Position) VALUES (@Points, @TeamId, @ChampionshipId, @Position) returning id", 
 				classification
 				);
-	public async Task<List<Match>> CreateSimpleKnockoutGroupStage(int championshipId)
+	public async Task<List<Match>> CreateGroupStage(int championshipId)
 	{
 		if(!await CheckIfChampionhipExists(championshipId))
         {
@@ -220,6 +218,51 @@ public class BracketingService
 		}
 		var quantityMatches = matches.Count();
 		matches.Sort((x, y) => x.Round.CompareTo(y.Round));
+
+		foreach (var item in matches)
+		{
+			await CreateMatchSend(item);
+		}
+		return matches;
+	}
+
+	public async Task<List<Match>> CreateSimpleknockoutToGroupStageValidationAsync(List<int> teamsId, int championshipId)
+	{
+		var matches = new List<Match>();
+		var number = 64;
+		var phase = Phase.ThirtySecondOfFinal;
+		var teamQuantityInitial = teamsId.Count()/2;
+		
+		for (int i = 1; i < 7; i++)
+		{
+			if(!(teamsId.Count() == number))
+			{
+				phase++;
+				number = number / 2;
+			} 
+		}
+
+		var aux = 1;		
+		for (int i = 0; i < teamQuantityInitial; i++)
+		{
+			if(aux == 1)
+			{
+				matches.Add(new Match(championshipId, teamsId[0], teamsId[(teamsId.Count()/2)+1], phase));
+				var j = teamsId.Count()/2;
+				teamsId.RemoveAt(0);
+				teamsId.RemoveAt(j);
+				aux = 2;
+			}
+
+			else
+			{
+				matches.Add(new Match(championshipId, teamsId[0], teamsId[teamsId.Count()/2], phase));
+				var j = (teamsId.Count()/2)-1;
+				teamsId.RemoveAt(0);
+				teamsId.RemoveAt(j);
+				aux = 1;
+			}
+		}
 
 		foreach (var item in matches)
 		{

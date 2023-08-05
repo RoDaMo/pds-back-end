@@ -8,9 +8,11 @@ namespace PlayOffsApi.Services;
 public class GoalService
 {
     private readonly DbService _dbService;
-    public GoalService(DbService dbService)
+    private readonly BracketingService _bracketingService;
+    public GoalService(DbService dbService, BracketingService bracketingService)
     {
         _dbService = dbService;
+        _bracketingService = bracketingService;
     }
 
     public async Task<List<string>> CreateGoalValidationAsync(Goal goal)
@@ -60,10 +62,20 @@ public class GoalService
             throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
         }
 
-        if(championship.Format == Format.LeagueSystem && await CheckIfLastRoundHasNotFinished(match.Round-1, match.ChampionshipId))
-        {
-            throw new ApplicationException("Rodada anterior ainda não terminou.");
-        }
+        // if(championship.Format == Format.LeagueSystem && await CheckIfLastRoundHasNotFinished(match.Round-1, match.ChampionshipId))
+        // {
+        //     throw new ApplicationException("Rodada anterior ainda não terminou.");
+        // }
+       
+        // if(championship.Format == Format.GroupStage)
+        // {
+        //     var teamsIdInGroup = await GetTeamsInGroup(goal.TeamId, match.ChampionshipId);
+        //     if(await CheckIfLastRoundHasNotFinishedInGroupStage(match.Round-1, match.ChampionshipId, teamsIdInGroup))
+        //     {
+        //         Console.WriteLine("oi");
+        //         throw new ApplicationException("Rodada anterior ainda não terminou.");
+        //     }
+        // }
         if(await CheckIfThereIsWinner(goal.MatchId))
         {
             throw new ApplicationException("Partida já possui um vencedor.");
@@ -87,7 +99,6 @@ public class GoalService
             {
                 await CreateGoalToPlayerSend(goal);
             }
-            
         }
         else
         {
@@ -112,15 +123,48 @@ public class GoalService
         }
         return errorMessages;
     }
+    //  private async Task<bool> CheckIfLastRoundHasNotFinishedInGroupStage(int round, int championshipId, List<int> teamsId)
+    //   => await _dbService.GetAsync<bool>(
+    //         @"SELECT EXISTS(
+    //             SELECT * FROM matches 
+    //             WHERE ChampionshipId = @championshipId AND 
+    //             Round = @round AND 
+    //             Winner IS NULL AND 
+    //             Tied <> true AND
+    //             Home = ANY(@teamsId)
+    //         )",
+    //         new {championshipId, round, teamsId}); 
+    private async Task<List<int>> GetTeamsInGroup(int teamId, int championshipId)
+    {
+        var teamsId = await _dbService.GetAll<int>("SELECT TeamId FROM classifications WHERE ChampionshipId = @championshipId ORDER BY Id", new {championshipId});
+        var teamsIdInGroup = new List<int>();
+        var position = 0;
+        for (int i = 0; i < teamsId.Count(); i++)
+        {
+            if(teamsId[i] == teamId)
+                position = i;
+        }
+        for (int i = 0; i < teamsId.Count(); i++)
+        {
+            double calculation = i/4;
+            double calculation2 = position/4;
+            if(Math.Ceiling(calculation) == Math.Ceiling(calculation2))
+            {
+               teamsIdInGroup.Add(teamsId[i]);
+            }
+        }
+
+        return teamsIdInGroup;
+    }
     private async Task<bool> CheckIfThereIsTie(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND Tied = true)", new {matchId});
     private async Task<bool> CheckIfThereIsWinner(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND Winner IS NOT NULL)", new {matchId});
 
-    private async Task<bool> CheckIfLastRoundHasNotFinished(int round, int championshipId)
-        => await _dbService.GetAsync<bool>(
-            "SELECT EXISTS(SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Round = @round AND Winner IS NULL AND Tied <> true)",
-            new {championshipId, round});   
+    // private async Task<bool> CheckIfLastRoundHasNotFinished(int round, int championshipId)
+    //     => await _dbService.GetAsync<bool>(
+    //         "SELECT EXISTS(SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Round = @round AND Winner IS NULL AND Tied <> true)",
+    //         new {championshipId, round});   
     private async Task<Championship> GetChampionshipByMatchId(int matchId)
         => await _dbService.GetAsync<Championship>(
             @"SELECT c.*
@@ -230,8 +274,7 @@ public class GoalService
         var pointsForSet2 = new List<int>();
         var WonSets = 0;
         var WonSets2 = 0;
-        var lastSet = 0;
-        lastSet = (!(await IsItFirstSet(matchId))) ? 1 : await GetLastSet(matchId);
+        var lastSet = (!(await IsItFirstSet(matchId))) ? 1 : await GetLastSet(matchId);
         var team2Id = await _dbService.GetAsync<int>("SELECT CASE WHEN home <> @teamId THEN home ELSE visitor END AS selected_team FROM matches WHERE id = @matchId;", new {teamId, matchId});
 
         for (int i = 0;  i < lastSet; i++)
@@ -293,7 +336,7 @@ public class GoalService
             
         }
 
-        if(format == Format.Knockout)
+        if(format == Format.Knockout || match.Round == 0)
         {
             if(WonSets == 3 && !ownGoal)
             {
@@ -323,6 +366,51 @@ public class GoalService
                 await DefineWinnerToLeagueSystem(team2Id, match);
             }
         }
+        else if(format == Format.GroupStage)
+        {
+            if(WonSets == 3 && !ownGoal)
+            {
+                await DefineWinnerToGroupStage(teamId, match);
+            }
+            else if(WonSets2 == 3  && !ownGoal)
+            {
+                await DefineWinnerToGroupStage(team2Id, match);
+            }
+            else if(WonSets2 == 3  && ownGoal)
+            {
+                await DefineWinnerToGroupStage(team2Id, match);
+            }
+
+            if(!await CheckIfGroupStageEnded(match.ChampionshipId))
+            {
+                var classifications = await _dbService.GetAll<Classification>("SELECT * FROM classifications WHERE ChampionshipId = @championshipId ORDER BY Id", 
+                new {match.ChampionshipId});
+                var teamsId =  classifications.Where(c => c.Position == 1 || c.Position == 2).OrderBy(c => c.Position).Select(c => c.TeamId).ToList();   
+                await _bracketingService.CreateSimpleknockoutToGroupStageValidationAsync(teamsId, match.ChampionshipId);
+            }
+        }
+    }
+    private async Task<bool> CheckIfGroupStageEnded(int championshipId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Winner IS NULL AND Tied <> true)",
+        new {championshipId});
+    private async Task<List<Classification>> PickUpTeamsToChangePositions(int points, int position, int championshipId, List<int> group)
+        => await _dbService.GetAll<Classification>(
+            "SELECT * FROM classifications WHERE ChampionshipId = @championshipId AND Position < @position AND Points <= @points AND TeamId = ANY(@group) ORDER BY Position", 
+            new {championshipId, position, points, group});
+    private async Task<int> DefineWinnerToGroupStage(int winnerTeamId, Match match)
+    {
+        await UpdateMatchToDefineWinner(winnerTeamId, match.Id);
+        var winnerClassificationId = await AssignPoints(winnerTeamId, match.ChampionshipId, 3);
+        var winnerClassification = await GetClassificationById(winnerClassificationId);
+        var winnerGroup = await GetTeamsInGroup(winnerTeamId, match.ChampionshipId);
+        var classifications3 = await PickUpTeamsToChangePositions(
+                winnerClassification.Points, 
+                winnerClassification.Position, 
+                winnerClassification.ChampionshipId,
+                winnerGroup
+                );
+        await ChangePosition(classifications3, winnerClassification);
+        return winnerTeamId;
     }
     private async Task<bool> IsItFirstSet(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM goals WHERE MatchId = @matchId);", new {matchId});
@@ -334,7 +422,7 @@ public class GoalService
         var match = await GetMatchById(matchId);
         if(await CheckIfMatchesOfCurrentPhaseHaveEnded(match.ChampionshipId, match.Phase) && match.Phase != Phase.Finals)
         {
-            var matches = await _dbService.GetAll<Match>("SELECT * from matches WHERE ChampionshipId = @championshipId AND Phase = @phase", new {match.ChampionshipId, match.Phase});
+            var matches = await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Id", new {match.ChampionshipId, match.Phase});
             var newPhase = match.Phase + 1;
             for (int i = 0; i <= matches.Count() / 2; i = i + 2)
             {

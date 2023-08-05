@@ -74,7 +74,7 @@ public class BracketingController : ApiBaseController
         var result = new List<Match>();
         try
         {
-            result = await _bracketingService.CreateSimpleKnockoutGroupStage(championshipId);
+            result = await _bracketingService.CreateGroupStage(championshipId);
             return ApiOk(result);
         }
         catch (ApplicationException ex)
