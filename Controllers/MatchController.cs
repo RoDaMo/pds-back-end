@@ -29,18 +29,18 @@ public class MatchController : ApiBaseController
     {
         var result = new List<string>();
 
-        try
-        {
+        // try
+        // {
             result = await _goalService.CreateGoalValidationAsync(goal);
             return result.Any() ? ApiBadRequest(result) : ApiOk(result);
-        }
+        // }
 
-        catch (ApplicationException ex)
-        {
-            await _error.HandleExceptionValidationAsync(HttpContext, ex);
-            result.Add(ex.Message);
-            return ApiBadRequest(result);
-        }   
+        // catch (ApplicationException ex)
+        // {
+        //     await _error.HandleExceptionValidationAsync(HttpContext, ex);
+        //     result.Add(ex.Message);
+        //     return ApiBadRequest(result);
+        // }   
     }
 
     [HttpPut]
@@ -91,6 +91,26 @@ public class MatchController : ApiBaseController
         try
         {
             await _matchService.EndGameToLeagueSystemValidationAsync(matchId);
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }   
+    }
+
+    [HttpPut]
+    [Route("/matches/end-game-simple-knockout-group-stage")]
+    public async Task<IActionResult> CreateSimpleKnockoutGroupStage([FromBody] int matchId)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            await _matchService.EndGameToSimpleKnockoutGroupStageValidationAsync(matchId);
             return ApiOk(result);
         }
 

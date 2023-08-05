@@ -2,16 +2,18 @@
 using FluentValidation;
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
-using PlayOffsApi.Validations;
 
 namespace PlayOffsApi.Services;
 
 public class MatchService
 {
     private readonly DbService _dbService;
-    public MatchService(DbService dbService)
+    private readonly BracketingService _bracketingService;
+
+    public MatchService(DbService dbService, BracketingService bracketingService)
     {
         _dbService = dbService;
+        _bracketingService = bracketingService;
     }
 
     public async Task EndGameToSimpleKnockouteValidationAsync(int matchId)
@@ -54,7 +56,7 @@ public class MatchService
         var match = await GetMatchById(matchId);
         if(await CheckIfMatchesOfCurrentPhaseHaveEnded(match.ChampionshipId, match.Phase) && match.Phase != Phase.Finals)
         {
-            var matches = await _dbService.GetAll<Match>("SELECT * from matches WHERE ChampionshipId = @championshipId AND Phase = @phase", new {match.ChampionshipId, match.Phase});
+            var matches = await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Id", new {match.ChampionshipId, match.Phase});
             var newPhase = match.Phase + 1;
             for (int i = 0; i <= matches.Count() / 2; i = i + 2)
             {
@@ -121,10 +123,10 @@ public class MatchService
 
         var match = await GetMatchById(matchId);
 
-        if(await CheckIfLastRoundHasNotFinished(match.Round-1, match.ChampionshipId))
-        {
-            throw new ApplicationException("Rodada anterior ainda não terminou.");
-        }
+        // if(await CheckIfLastRoundHasNotFinished(match.Round-1, match.ChampionshipId))
+        // {
+        //     throw new ApplicationException("Rodada anterior ainda não terminou.");
+        // }
 
         var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
         var homePoints = await GetPointsFromTeamById(matchId, match.Home);
@@ -144,10 +146,21 @@ public class MatchService
     }
     private async Task<bool> CheckIfThereIsTie(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND Tied = true)", new {matchId});
-    private async Task<bool> CheckIfLastRoundHasNotFinished(int round, int championshipId)
-        => await _dbService.GetAsync<bool>(
-            "SELECT EXISTS(SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Round = @round AND Winner IS NULL AND Tied <> true)",
-            new {championshipId, round});  
+    // private async Task<bool> CheckIfLastRoundHasNotFinished(int round, int championshipId)
+    //     => await _dbService.GetAsync<bool>(
+    //         "SELECT EXISTS(SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Round = @round AND Winner IS NULL AND Tied <> true)",
+    //         new {championshipId, round});  
+    //  private async Task<bool> CheckIfLastRoundHasNotFinishedInGroupStage(int round, int championshipId, List<int> teamsId)
+    //   => await _dbService.GetAsync<bool>(
+    //         @"SELECT EXISTS(
+    //             SELECT * FROM matches 
+    //             WHERE ChampionshipId = @championshipId AND 
+    //             Round = @round AND 
+    //             Winner IS NULL AND 
+    //             Tied <> true AND
+    //             Home = ANY(@teamsId)
+    //         )",
+    //         new {championshipId, round, teamsId});  
 
     private async Task<int> DefineWinnerToLeagueSystem(int winnerTeamId, Match match)
     {
@@ -205,6 +218,10 @@ public class MatchService
         => await _dbService.GetAll<Classification>(
             "SELECT * FROM classifications WHERE ChampionshipId = @championshipId AND Position < @position AND Points <= @points ORDER BY Position", 
             new {championshipId, position, points});
+    private async Task<List<Classification>> PickUpTeamsToChangePositions(int points, int position, int championshipId, List<int> group)
+        => await _dbService.GetAll<Classification>(
+            "SELECT * FROM classifications WHERE ChampionshipId = @championshipId AND Position < @position AND Points <= @points AND TeamId = ANY(@group) ORDER BY Position", 
+            new {championshipId, position, points, group});
     private async Task<Classification> GetClassificationById(int classificationId)
         => await _dbService.GetAsync<Classification>(
             "SELECT * FROM classifications WHERE Id = @classificationId",
@@ -438,7 +455,6 @@ public class MatchService
                                         await UpdatePositionClassification(homeClassification.Id, homeClassification.Position);
                                         break;
                                     }
-
                                 }
                             }
                         }
@@ -446,6 +462,130 @@ public class MatchService
                 }
             }
         }
+    }
 
+    public async Task EndGameToSimpleKnockoutGroupStageValidationAsync(int matchId)
+    {
+        if(!await CheckIfMatchExists(matchId))
+        {
+            throw new ApplicationException("Partida passada não existe.");
+        }
+        if(await DepartureDateNotSet(matchId))
+        {
+            throw new ApplicationException("Data da partida não definida.");
+        }
+        if(await DidMatchNotStart(matchId))
+        {
+            throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
+        }
+        if(await CheckIfThereIsWinner(matchId))
+        {
+            throw new ApplicationException("Partida já possui um vencedor.");
+        }
+        if(await CheckIfThereIsTie(matchId))
+        {
+            throw new ApplicationException("Partida já terminou em empate.");
+        }
+
+        var match = await GetMatchById(matchId);
+        // var teamsIdInGroup = await GetTeamsInGroup(match.Home, match.ChampionshipId);
+
+        // if(await CheckIfLastRoundHasNotFinishedInGroupStage(match.Round-1, match.ChampionshipId, teamsIdInGroup))
+        // {
+        //     throw new ApplicationException("Rodada anterior ainda não terminou.");
+        // }
+
+        var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
+        var homePoints = await GetPointsFromTeamById(matchId, match.Home);
+        if(homePoints > visitorPoints)
+        {
+            await DefineWinnerToGroupStage(match.Home, match);
+        }
+        else if(homePoints < visitorPoints)
+        {
+            await DefineWinnerToGroupStage(match.Visitor, match);
+        } 
+        else 
+        {
+            await DefineWinnerToGroupStage(0, match);
+        }
+
+        if(!await CheckIfGroupStageEnded(match.ChampionshipId))
+        {
+            var classifications = await _dbService.GetAll<Classification>("SELECT * FROM classifications WHERE ChampionshipId = @championshipId ORDER BY Id", 
+            new {match.ChampionshipId});
+            var teamsId =  classifications.Where(c => c.Position == 1 || c.Position == 2).OrderBy(c => c.Position).Select(c => c.TeamId).ToList();   
+            await _bracketingService.CreateSimpleknockoutToGroupStageValidationAsync(teamsId, match.ChampionshipId);
+        }
+    }
+
+    private async Task<bool> CheckIfGroupStageEnded(int championshipId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Winner IS NULL AND Tied <> true)",
+        new {championshipId});
+
+    private async Task<int> DefineWinnerToGroupStage(int winnerTeamId, Match match)
+    {
+        if(winnerTeamId == 0)
+        {
+            await UpdateMatchToDefineTie(match.Id);
+            var homeClassificationId = await AssignPoints(match.Home, match.ChampionshipId, 1);
+            var visitorClassificationId = await AssignPoints(match.Visitor, match.ChampionshipId, 1);
+            var homeClassification = await GetClassificationById(homeClassificationId);
+            var homeGroup = await GetTeamsInGroup(match.Home, match.ChampionshipId);
+            var classifications = await PickUpTeamsToChangePositions(
+                    homeClassification.Points, 
+                    homeClassification.Position, 
+                    homeClassification.ChampionshipId,
+                    homeGroup
+                    );
+            await ChangePosition(classifications, homeClassification);
+
+            var visitorClassification = await GetClassificationById(visitorClassificationId);
+            var visitorGroup = await GetTeamsInGroup(match.Home, match.ChampionshipId);
+            var classifications2 = await PickUpTeamsToChangePositions(
+                    visitorClassification.Points, 
+                    visitorClassification.Position, 
+                    visitorClassification.ChampionshipId,
+                    visitorGroup
+                    );
+            await ChangePosition(classifications2, visitorClassification);
+            return winnerTeamId;
+        }
+
+        await UpdateMatchToDefineWinner(winnerTeamId, match.Id);
+        var winnerClassificationId = await AssignPoints(winnerTeamId, match.ChampionshipId, 3);
+        var winnerClassification = await GetClassificationById(winnerClassificationId);
+        var winnerGroup = await GetTeamsInGroup(winnerTeamId, match.ChampionshipId);
+        var classifications3 = await PickUpTeamsToChangePositions(
+                winnerClassification.Points, 
+                winnerClassification.Position, 
+                winnerClassification.ChampionshipId,
+                winnerGroup
+                );
+        await ChangePosition(classifications3, winnerClassification);
+        return winnerTeamId;
+    }
+
+    private async Task<List<int>> GetTeamsInGroup(int teamId, int championshipId)
+    {
+        var teamsId = await _dbService.GetAll<int>("SELECT TeamId FROM classifications WHERE ChampionshipId = @championshipId ORDER BY Id", new {championshipId});
+        var teamsIdInGroup = new List<int>();
+        var position = 0;
+        for (int i = 0; i < teamsId.Count(); i++)
+        {
+            if(teamsId[i] == teamId)
+                position = i;
+        }
+        for (int i = 0; i < teamsId.Count(); i++)
+        {
+            double calculation = i/4;
+            double calculation2 = position/4;
+            if(Math.Ceiling(calculation) == Math.Ceiling(calculation2))
+            {
+               teamsIdInGroup.Add(teamsId[i]);
+            }
+        }
+
+        return teamsIdInGroup;
     }
 }
