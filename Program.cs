@@ -1,12 +1,12 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Localization;
-using Microsoft.IdentityModel.Tokens;
-using PlayOffsApi.Services;
-using ServiceStack;
 using System.Globalization;
 using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using PlayOffsApi.HostedService;
 using PlayOffsApi.Middleware;
-using BackgroundService = PlayOffsApi.Services.BackgroundService;
+using PlayOffsApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -54,10 +54,12 @@ builder.Services.AddAuthorization();
 // Add services to the container.
 builder.Services.AddControllers();
 
-builder.Services.AddSingleton<DbService>();
-builder.Services.AddScoped<ChampionshipService>();
+builder.Services.AddHostedService<BackgroundJobs>();
+builder.Services.AddSingleton<IBackgroundJobsService, BackgroundJobs>();
 builder.Services.AddSingleton<RedisService>();
-builder.Services.AddSingleton<ElasticService>();
+builder.Services.AddScoped<DbService>();
+builder.Services.AddScoped<ChampionshipService>();
+builder.Services.AddScoped<ElasticService>();
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<PlayerTempProfileService>();
 builder.Services.AddScoped<PlayerService>();
@@ -66,12 +68,11 @@ builder.Services.AddScoped<MatchService>();
 builder.Services.AddScoped<GoalService>();
 builder.Services.AddScoped<PenaltyService>();
 builder.Services.AddScoped<ImageService>();
-builder.Services.AddSingleton<EmailService>();
+builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<ErrorLogService>();
-builder.Services.AddSingleton<BackgroundService>();
 builder.Services.AddScoped<ChampionshipActivityLogService>();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddSingleton(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<EmailService>()));
+builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>()));
 
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
@@ -118,7 +119,7 @@ app.UseCors("cors");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseRequestLocalization(app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<RequestLocalizationOptions>>().Value);
+app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
 app.UseMiddleware<ErrorMiddleware>();
 
 app.MapControllers();

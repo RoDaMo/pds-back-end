@@ -3,10 +3,12 @@ using PlayOffsApi.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Elastic.Clients.Elasticsearch;
 using PlayOffsApi.Validations;
 using FluentValidation;
 using PlayOffsApi.DTO;
 using Resource = PlayOffsApi.Resources.Services.AuthService;
+using Generic = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Services;
 
@@ -16,15 +18,16 @@ public class AuthService
 	private readonly string _issuer;
 	private readonly string _audience;
 	private readonly DbService _dbService;
-	private readonly EmailService _emailService;
+	private readonly ElasticService _elastic;
+	private const string Index = "users";
 	
-	public AuthService(string secretKey, string issuer, string audience, DbService dbService, EmailService emailService) 
+	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic) 
 	{
 		_secretKey = secretKey;
 		_issuer = issuer;
 		_audience = audience;
 		_dbService = dbService;
-		_emailService = emailService;
+		_elastic = elastic;
 	}
 
 	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate, string role = "user")
@@ -93,6 +96,7 @@ public class AuthService
 			newUser.ConfirmEmail = true;
 		
 		newUser.Id = await RegisterUserAsync(newUser);
+		await _elastic._client.IndexAsync(newUser, Index);
 		resultId.Add(newUser.Id.ToString());
 
 		return resultId;
@@ -200,6 +204,7 @@ public class AuthService
 
         user.ConfirmEmail = true;
         await UpdateConfirmEmailAsync(user);
+        await _elastic._client.IndexAsync(user, Index);
 
 		if (user.PlayerTeamId != 0)
 		{
@@ -312,8 +317,10 @@ public class AuthService
 		var actualUser = await _dbService.GetAsync<User>("SELECT * FROM users WHERE Email = @Email;", new { Email = user.Email });
 		
 		actualUser.PasswordHash = EncryptPassword(user.Password);
-
+		
 		await UpdatePasswordSendAsync(actualUser);
+		await _elastic._client.IndexAsync(actualUser, Index);
+
 		return errorMessages;
 	}
 
@@ -371,6 +378,7 @@ public class AuthService
 		
 
 		await UpdateProfileSendAsync(actualUser);
+		await _elastic._client.IndexAsync(actualUser, Index);
 
 		return errorMessages;
 	}
@@ -404,6 +412,7 @@ public class AuthService
 		actualUser.PasswordHash = EncryptPassword(updatePasswordDTO.NewPassword);
 
 		await UpdatePasswordSendAsync(actualUser);
+		await _elastic._client.IndexAsync(actualUser, Index);
 
 		return errorMessages;
 	}
@@ -465,4 +474,39 @@ public class AuthService
 
 	private async Task DeleteCurrentUserSend(Guid userId) =>
 		await _dbService.EditData("UPDATE users SET deleted = true WHERE id =  @userId", new { userId });
+	
+	public async Task IndexAllUsersValidation()
+	{
+		var users = await GetAllUsersForIndexingSend();
+		foreach (var user in users)
+			await _elastic._client.IndexAsync(user, Index);
+	}
+
+	private async Task<List<User>> GetAllUsersForIndexingSend() => await _dbService.GetAll<User>("SELECT * FROM users", new {});
+
+	public async Task<List<User>> GetUsersByUsernameValidation(string username)
+	{
+		var searchResponse = await GetUsersByUsernameSend(username);
+
+		if (!searchResponse.IsValidResponse)
+			throw new ApplicationException(Generic.GenericErrorMessage);
+
+		return searchResponse.Documents.ToList();
+	}
+	
+	private async Task<SearchResponse<User>> GetUsersByUsernameSend(string username) => 
+		await _elastic.SearchAsync<User>(el => 
+			el.Query(q =>
+				q.Bool(b => 
+					b.Must(
+						m => m.MatchPhrasePrefix(mpp => mpp.Field(f => f.Name).Query(username)), 
+						m2 => m2.Term(t => t.Field(f => f.ChampionshipId).Value(0)), 
+						m3 => m3.Term(t => t.Field(f => f.PlayerTeamId).Value(0)),
+						m4 => m4.Term(t => t.Field(f => f.TeamManagementId).Value(0)),
+						m5 => m5.Term(t => t.Field(f => f.Deleted).Value(false)),
+						m6 => m6.Term(t => t.Field(f => f.ConfirmEmail).Value(true))
+					)
+				)
+			).Index(Index)
+		);
 }
