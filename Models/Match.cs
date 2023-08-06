@@ -14,6 +14,7 @@ public class Match
     public int Round { get; set; }
     public Phase Phase { get; set; }
     public bool Tied { get; set; }
+    public int PreviousMatch { get; set; }
 
     public Match(int championshipId, int home, int visitor, Phase phase)
     {
@@ -28,6 +29,14 @@ public class Match
         Visitor = visitor;
         Round = round;
         ChampionshipId = championshipId;
+    }
+    public Match(int championshipId, int home, int visitor, Phase phase, int previousMatch)
+    {
+        Home = home;
+        Visitor = visitor;
+        Phase = phase;
+        ChampionshipId = championshipId;
+        PreviousMatch = previousMatch;
     }
     public Match() { }
 }

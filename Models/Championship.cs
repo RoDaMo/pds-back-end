@@ -43,4 +43,8 @@ public class Championship
 	
 	[JsonConverter(typeof(StatusAsNumberConverter))]
 	public ChampionshipStatus Status { get; set; }
+	public bool DoubleMatchGroupStage { get; set; }
+	public bool DoubleMatchEliminations { get; set; }
+	public bool DoubleStartLeagueSystem { get; set; }
+	public bool FinalDoubleMatch { get; set; }
 }
