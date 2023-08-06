@@ -1,9 +1,11 @@
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using PlayOffsApi.HostedService;
 using PlayOffsApi.Middleware;
 using PlayOffsApi.Services;
@@ -59,7 +61,7 @@ builder.Services.AddSingleton<IBackgroundJobsService, BackgroundJobs>();
 builder.Services.AddSingleton<RedisService>();
 builder.Services.AddScoped<DbService>();
 builder.Services.AddScoped<ChampionshipService>();
-builder.Services.AddScoped<ElasticService>();
+builder.Services.AddSingleton<ElasticService>();
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<PlayerTempProfileService>();
 builder.Services.AddScoped<PlayerService>();
@@ -92,7 +94,37 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+	c.SwaggerDoc("v1", new OpenApiInfo
+	{
+		Version = "v1",
+		Title = "PlayOffs API",
+		Description = "Uma API ASP.NET Core de administração esportiva",
+		TermsOfService = new Uri("https://www.playoffs.app.br/pages/termos-de-uso.html"),
+		Contact = new OpenApiContact
+		{
+			Name = "Email",
+			Email = "equiperodamo@gmail.com"
+		},
+		License = new OpenApiLicense
+		{
+			Name = "Licença MIT",
+			Url = new Uri("https://github.com/RoDaMo/pds-back-end/blob/main/LICENSE")
+		}
+	});
+	c.UseAllOfToExtendReferenceSchemas();
+	c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+	{
+		Description = "JWT Authorization header. É necessário fazer uma requsição POST /auth para obter o token de autenticação.",
+		Name = "Authorization",
+		In = ParameterLocation.Header,
+		Type = SecuritySchemeType.Http,
+		Scheme = "Bearer"
+	});
+	var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+	c.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+});
 builder.Services.AddCors(options =>
 {
 	options.AddPolicy("cors", policy =>
@@ -107,10 +139,14 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+	c.SwaggerEndpoint("/swagger/v1/swagger.json", "PlayOffs API V1");
+});
+
 if (app.Environment.IsDevelopment())
 {
-	app.UseSwagger();
-	app.UseSwaggerUI();
 	app.UseHsts();
 }
 

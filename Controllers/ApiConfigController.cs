@@ -6,6 +6,10 @@ using GenericError = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Controllers;
 
+/// <summary>
+/// Endpoints restritos à admins, com o proposito de administrar a API.
+/// </summary>
+[ApiExplorerSettings(IgnoreApi = true)]
 [Route("/api/config")]
 [ApiController]
 [Authorize(Roles = "admin")]
@@ -14,6 +18,8 @@ public class ApiConfigController : ApiBaseController
     private readonly ChampionshipService _championshipService;
     private readonly AuthService _authService;
     private readonly ErrorLogService _error;
+
+    /// <inheritdoc />
     public ApiConfigController(ChampionshipService championshipService, ErrorLogService error, AuthService authService)
     {
         _championshipService = championshipService;
@@ -23,6 +29,7 @@ public class ApiConfigController : ApiBaseController
 
     [HttpPut]
     [Route("/api/config/championship")]
+#pragma warning disable CS1591
     public async Task<IActionResult> IndexAllChampionships()
     {
         try
@@ -52,4 +59,5 @@ public class ApiConfigController : ApiBaseController
             return ApiBadRequest(ex.Message, GenericError.GenericErrorMessage);
         } 
     }
+#pragma warning restore CS1591
 }
