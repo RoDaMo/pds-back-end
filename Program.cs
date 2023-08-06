@@ -73,6 +73,7 @@ builder.Services.AddScoped<ImageService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddScoped<ErrorLogService>();
 builder.Services.AddScoped<ChampionshipActivityLogService>();
+builder.Services.AddScoped<CaptchaService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>()));
 
