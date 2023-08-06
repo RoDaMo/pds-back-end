@@ -91,8 +91,11 @@ public class TeamService
 		{
 			el.Index(INDEX);
 			el.Query(q => q.Bool(b => b.
-					Must(must => must.MatchPhrasePrefix(mpp => mpp.Field(f => f.Name).Query(query))).
-					Filter(f => f.Term(t => t.Field(ff => ff.SportsId).Value((int)sports)))
+					Must(
+						must => must.MatchPhrasePrefix(mpp => mpp.Field(f => f.Name).Query(query)),
+						must2 => must2.Term(t => t.Field(f => f.Deleted).Value(false)),
+						must3 => must3.Term(t => t.Field(f => f.SportsId).Value((int)sports))
+					)
 				)
 			);
 		});
