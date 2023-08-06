@@ -182,6 +182,7 @@ public class TeamService
 			throw new ApplicationException(Resource.TeamAlreadyDeleted);
 
 		await DeleteTeamSend(id);
+		await UpdateUser(userId, id);
 	}
 
 	private async Task DeleteTeamSend(int id) => await _dbService.EditData("UPDATE teams SET deleted = true WHERE id = @id", new { id });
