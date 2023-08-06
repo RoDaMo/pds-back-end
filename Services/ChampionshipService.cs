@@ -206,7 +206,7 @@ public class ChampionshipService
 
 	public async Task<bool> CanMoreTeamsBeAddedValidation(int championshipId) => await CanMoreTeamsBeAddedSend(championshipId);
 
-	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT COALESCE((SELECT COUNT(*) FROM championships_teams WHERE championshipid = @championshipId) <= teamquantity, 'true') FROM championships WHERE id = @championshipId;", new { championshipId });
+	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT COALESCE((SELECT COUNT(*) FROM championships_teams WHERE championshipid = @championshipId) < teamquantity, 'true') FROM championships WHERE id = @championshipId;", new { championshipId });
 
 	public async Task<List<int>> GetAllTeamsLinkedToValidation(int championshipId) =>
 		await GetAllTeamsLinkedToSend(championshipId);
