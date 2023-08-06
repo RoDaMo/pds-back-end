@@ -90,12 +90,13 @@ public class AuthService
 			return resultId;
 		}
 
+		newUser.Id = await RegisterUserAsync(newUser);
+		
 		if (newUser.Role != "admin")
 			await SendEmailToConfirmAccount(newUser.Id);
 		else
 			newUser.ConfirmEmail = true;
 		
-		newUser.Id = await RegisterUserAsync(newUser);
 		await _elastic._client.IndexAsync(newUser, Index);
 		resultId.Add(newUser.Id.ToString());
 

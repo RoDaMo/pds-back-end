@@ -20,15 +20,17 @@ public class AuthController : ApiBaseController
 	private readonly AuthService _authService;
 	private readonly RedisService _redisService;
 	private readonly CookieOptions _cookieOptions;
+	private readonly CaptchaService _captcha;
 	private readonly DateTime _expires = DateTime.UtcNow.AddDays(1);
 	private readonly ErrorLogService _error;
 
 	/// <inheritdoc />
-	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error)
+	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error, CaptchaService captcha)
 	{
 		_authService = authService;
 		_redisService = redisService;
 		_error = error;
+		_captcha = captcha;
 		_cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
@@ -149,13 +151,15 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
+			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
+				throw new ApplicationException("Captcha inválido!");
+			
 			user.Role = superSecretPassword == Environment.GetEnvironmentVariable("SUPER_SECRET_PASSWORD") ? "admin" : "user";
 			var errors = await _authService.RegisterValidationAsync(user);
 			
 			if(errors[0].Length == 36)
 				return ApiOk(errors[0], true, Resource.RegisterUserCadastroRealizadoSucesso);
 			
-
 			return ApiBadRequest(errors);
 		}
 		catch (ApplicationException ex)

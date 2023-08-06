@@ -32,4 +32,7 @@ public class User
 	public PlayerPosition PlayerPosition { get; set; }
 	public int ChampionshipId { get; set; }
 	public string Role { get; set; } = "user";
+	
+	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+	public string CaptchaToken { get; set; }
 }
