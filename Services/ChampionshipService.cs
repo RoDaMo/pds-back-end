@@ -1,6 +1,7 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Search;
 using PlayOffsApi.Enum;
+using PlayOffsApi.HostedService;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
 using Generic = PlayOffsApi.Resources.Generic;
@@ -14,15 +15,15 @@ public class ChampionshipService
 	private readonly ElasticService _elasticService;
 	private readonly RedisService _redisService;
 	private readonly AuthService _authService;  
-	private readonly BackgroundService _backgroundService;
+	private readonly IBackgroundJobsService _backgroundJobs;
 	private const string INDEX = "championships";
 
-	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, BackgroundService backgroundService, RedisService redisService)
+	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, IBackgroundJobsService backgroundJobs, RedisService redisService)
 	{
 		_dbService = dbService;
 		_elasticService = elasticService;
 		_authService = authService;
-		_backgroundService = backgroundService;
+		_backgroundJobs = backgroundJobs;
 		_redisService = redisService;
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
@@ -74,8 +75,8 @@ public class ChampionshipService
 		if (!resultado.IsValidResponse)
 			throw new ApplicationException(Generic.GenericErrorMessage);
 
-		await _backgroundService.EnqueueJob(nameof(_backgroundService.ChangeChampionshipStatusValidation), new object[] { championship.Id, ChampionshipStatus.Inactive }, TimeSpan.FromDays(14));
-		await _backgroundService.EnqueueJob(nameof(_backgroundService.ChangeChampionshipStatusValidation), new object[] { championship.Id, ChampionshipStatus.Active }, championship.InitialDate - DateTime.UtcNow);
+		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Inactive), TimeSpan.FromDays(14));
+		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Active), championship.InitialDate - DateTime.UtcNow);
 	}
 
 	public async Task<(List<Championship> campionships, long total)> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort, ChampionshipStatus status)
@@ -161,10 +162,10 @@ public class ChampionshipService
 
 		if (oldChamp.Status == ChampionshipStatus.Pendent && oldChamp.InitialDate != championship.InitialDate)
 		{
-			var redisDatabase = await _redisService.GetDatabase();
+			await using var redisDatabase = await _redisService.GetDatabase();
 			await redisDatabase.AddAsync($"cancelJob_championship:{championship.Id}", oldChamp.InitialDate);
 			
-			await _backgroundService.EnqueueJob(nameof(_backgroundService.ChangeChampionshipStatusValidation), new object[] { championship.Id, ChampionshipStatus.Active }, championship.InitialDate - DateTime.UtcNow);
+			await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Active), championship.InitialDate - DateTime.UtcNow);
 		}
 
 		var result = await new ChampionshipValidator().ValidateAsync(championship);
@@ -205,7 +206,7 @@ public class ChampionshipService
 
 	public async Task<bool> CanMoreTeamsBeAddedValidation(int championshipId) => await CanMoreTeamsBeAddedSend(championshipId);
 
-	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT COALESCE((SELECT COUNT(*) FROM championships_teams) <= teamquantity, 'true') FROM championships WHERE id = @championshipId;", new { championshipId });
+	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT COALESCE((SELECT COUNT(*) FROM championships_teams WHERE championshipid = @championshipId) <= teamquantity, 'true') FROM championships WHERE id = @championshipId;", new { championshipId });
 
 	public async Task<List<int>> GetAllTeamsLinkedToValidation(int championshipId) =>
 		await GetAllTeamsLinkedToSend(championshipId);

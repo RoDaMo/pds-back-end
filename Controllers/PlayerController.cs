@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using Generic = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Controllers;
 
@@ -60,6 +61,22 @@ public class PlayerController : ApiBaseController
         {
             await _error.HandleExceptionValidationAsync(HttpContext, ex);
             return ApiBadRequest(ex.Message);
+        }
+    }
+    
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetByQuery(string username)
+    {
+        try
+        {
+            var users = await _authService.GetUsersByUsernameValidation(username);
+            return ApiOk(users.Select(s => new { s.Name, s.Picture, s.Id }));
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(Generic.GenericErrorMessage);
         }
     }
 }

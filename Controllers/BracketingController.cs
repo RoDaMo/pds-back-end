@@ -17,10 +17,11 @@ public class BracketingController : ApiBaseController
     private readonly BracketingService _bracketingService;
     private readonly ErrorLogService _error;
     private readonly ChampionshipActivityLogService _activityLogService;
-    public BracketingController(BracketingService bracketingService, ErrorLogService error)
+    public BracketingController(BracketingService bracketingService, ErrorLogService error, ChampionshipActivityLogService activityLogService)
     {
         _bracketingService = bracketingService;
         _error = error;
+        _activityLogService = activityLogService;
     }
 
     [HttpPost]
