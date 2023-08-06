@@ -9,8 +9,12 @@ using GenericError = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Controllers;
 
+/// <summary>
+/// Endpoints destinados ao CRUD de usuários, e o sistema de autenticação.
+/// </summary>
 [Route("/auth")]
 [ApiController]
+[Produces("application/json")]
 public class AuthController : ApiBaseController
 {
 	private readonly AuthService _authService;
@@ -19,6 +23,7 @@ public class AuthController : ApiBaseController
 	private readonly DateTime _expires = DateTime.UtcNow.AddDays(1);
 	private readonly ErrorLogService _error;
 
+	/// <inheritdoc />
 	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error)
 	{
 		_authService = authService;
@@ -33,7 +38,34 @@ public class AuthController : ApiBaseController
 		};
 	}
 
+	/// <summary>
+	/// Usado para gerar tokens de acesso para usuários
+	/// </summary>
+	/// <param name="user"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth
+	///		{
+	///			"Username": "UsuarioDeTeste22",
+	///			"Password": "Ab123",
+	///			"RememberMe": true
+	///		}
+	/// </remarks>
+	/// <response code="200">Retorna o token recém-criado</response>
+	/// <response code="401">Retorna um erro indicando algum erro cometido na requisição</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": "Autenticado com sucesso"
+	///		}
+	/// </returns>
 	[HttpPost]
+	[ProducesResponseType(StatusCodes.Status200OK)]
+	[ProducesResponseType(StatusCodes.Status401Unauthorized)]
 	public async Task<IActionResult> GenerateToken([FromBody] User user)
 	{
 		try
@@ -151,6 +183,7 @@ public class AuthController : ApiBaseController
 	[Authorize]
 	[HttpGet]
 	[Obsolete("Useless")]
+	[ApiExplorerSettings(IgnoreApi = true)]
 	public IActionResult IsLoggedIn()
 	{
 		return ApiOk(true);

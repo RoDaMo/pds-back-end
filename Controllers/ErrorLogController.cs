@@ -6,6 +6,7 @@ using Resource = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Controllers;
 
+[ApiExplorerSettings(IgnoreApi = true)]
 [Route("/error")]
 [ApiController]  
 [Authorize(Roles = "admin")]
