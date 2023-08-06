@@ -72,6 +72,9 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
+			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
+				throw new ApplicationException(Resource.InvalidCaptcha);
+			
 			await using var redis = await _redisService.GetDatabase();
 			user = await _authService.VerifyCredentials(user);
 
@@ -152,7 +155,7 @@ public class AuthController : ApiBaseController
 		try
 		{
 			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
-				throw new ApplicationException("Captcha inválido!");
+				throw new ApplicationException(Resource.InvalidCaptcha);
 			
 			user.Role = superSecretPassword == Environment.GetEnvironmentVariable("SUPER_SECRET_PASSWORD") ? "admin" : "user";
 			var errors = await _authService.RegisterValidationAsync(user);

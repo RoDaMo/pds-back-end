@@ -160,4 +160,7 @@
   <data name="InvalidPasswordToken" xml:space="preserve">
     <value>Token de redefinição de senha inválido.</value>
   </data>
+  <data name="InvalidCaptcha" xml:space="preserve">
+    <value>Captcha inválido</value>
+  </data>
 </root>
