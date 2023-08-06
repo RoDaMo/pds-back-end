@@ -180,4 +180,7 @@
   <data name="InvalidPasswordToken" xml:space="preserve">
     <value>Invalid password reset token.</value>
   </data>
+  <data name="InvalidCaptcha" xml:space="preserve">
+    <value>Invalid captcha!</value>
+  </data>
 </root>

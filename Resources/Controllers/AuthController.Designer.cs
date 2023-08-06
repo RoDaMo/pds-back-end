@@ -141,6 +141,15 @@ namespace PlayOffsApi.Resources.Controllers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Captcha inválido.
+        /// </summary>
+        public static string InvalidCaptcha {
+            get {
+                return ResourceManager.GetString("InvalidCaptcha", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Token de redefinição de senha inválido..
         /// </summary>
         public static string InvalidPasswordToken {
