@@ -25,12 +25,12 @@ public class BracketingController : ApiBaseController
     }
 
     [HttpPost]
-    [Route("/bracketing/simple-knockout")]
-    public async Task<IActionResult> CreateSimpleknockout([FromBody] int championshipId)
+    [Route("/bracketing/knockout")]
+    public async Task<IActionResult> CreateKnockout([FromBody] int championshipId)
     {
         try
         {
-            var result = await _bracketingService.CreateSimpleknockoutValidationAsync(championshipId);
+            var result = await _bracketingService.CreateKnockoutValidationAsync(championshipId);
             
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
             await _activityLogService.InsertValidation(new()
@@ -68,8 +68,8 @@ public class BracketingController : ApiBaseController
     }
 
     [HttpPost]
-    [Route("/bracketing/simple-knockout-group-stage")]
-    public async Task<IActionResult> CreateSimpleKnockoutGroupStage([FromBody] int championshipId)
+    [Route("/bracketing/group-stage")]
+    public async Task<IActionResult> CreateGroupStage([FromBody] int championshipId)
     {
         var result = new List<Match>();
         try

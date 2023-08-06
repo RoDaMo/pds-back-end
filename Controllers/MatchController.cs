@@ -29,29 +29,29 @@ public class MatchController : ApiBaseController
     {
         var result = new List<string>();
 
-        // try
-        // {
+        try
+        {
             result = await _goalService.CreateGoalValidationAsync(goal);
             return result.Any() ? ApiBadRequest(result) : ApiOk(result);
-        // }
+        }
 
-        // catch (ApplicationException ex)
-        // {
-        //     await _error.HandleExceptionValidationAsync(HttpContext, ex);
-        //     result.Add(ex.Message);
-        //     return ApiBadRequest(result);
-        // }   
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }   
     }
 
     [HttpPut]
-    [Route("/matches/end-game-simple-knockout")]
-    public async Task<IActionResult> EndGameToSimpleKnockout([FromBody] int matchId)
+    [Route("/matches/end-game-knockout")]
+    public async Task<IActionResult> EndGameToKnockout([FromBody] int matchId)
     {
         var result = new List<string>();
 
         try
         {
-            await _matchService.EndGameToSimpleKnockouteValidationAsync(matchId);
+            await _matchService.EndGameToKnockoutValidationAsync(matchId);
             return ApiOk(result);
         }
 
@@ -103,14 +103,14 @@ public class MatchController : ApiBaseController
     }
 
     [HttpPut]
-    [Route("/matches/end-game-simple-knockout-group-stage")]
-    public async Task<IActionResult> CreateSimpleKnockoutGroupStage([FromBody] int matchId)
+    [Route("/matches/end-game-group-stage")]
+    public async Task<IActionResult> CreateGroupStage([FromBody] int matchId)
     {
         var result = new List<string>();
 
         try
         {
-            await _matchService.EndGameToSimpleKnockoutGroupStageValidationAsync(matchId);
+            await _matchService.EndGameToGroupStageValidationAsync(matchId);
             return ApiOk(result);
         }
 

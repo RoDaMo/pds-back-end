@@ -17,7 +17,7 @@ public class BracketingService
 		_championshipService = championshipService;
 	}
 
-	public async Task<List<Match>> CreateSimpleknockoutValidationAsync(int championshipId)
+	public async Task<List<Match>> CreateKnockoutValidationAsync(int championshipId)
 	{
 		if(!await CheckIfChampionhipExists(championshipId))
         {
@@ -47,30 +47,56 @@ public class BracketingService
 				phase++;
 				number = number / 2;
 			} 
-			
 		}
 
-		for (int i = 0; i < teamQuantityInitial; i++)
+		if((phase != Phase.Finals && championship.DoubleMatchEliminations) || (phase == Phase.Finals && championship.FinalDoubleMatch))
 		{
-			var numberRandom = new Random().Next(0, teams.Count());
-			var numberRandom2 = new Random().Next(0, teams.Count());
-			while (numberRandom2 == numberRandom)
+			for (int i = 0, j= 0; i < teamQuantityInitial; i++, j = j+2)
 			{
-				numberRandom2 = new Random().Next(0, teams.Count());
-			}
+				var numberRandom = new Random().Next(0, teams.Count());
+				var numberRandom2 = new Random().Next(0, teams.Count());
+				while (numberRandom2 == numberRandom)
+				{
+					numberRandom2 = new Random().Next(0, teams.Count());
+				}
 
-			var match = new Match(championshipId, teams[numberRandom].Id, teams[numberRandom2].Id, phase);
-			teams.RemoveAt(numberRandom);
-			if(numberRandom2 > numberRandom)
-			{
-				teams.RemoveAt(numberRandom2 - 1);
-			} else {
-				teams.RemoveAt(numberRandom2);
-			}			
-			matches.Add(await CreateMatchSend(match));
-			
+				var match = new Match(championshipId, teams[numberRandom].Id, teams[numberRandom2].Id, phase);
+				
+				teams.RemoveAt(numberRandom);
+				if(numberRandom2 > numberRandom)
+				{
+					teams.RemoveAt(numberRandom2 - 1);
+				} else {
+					teams.RemoveAt(numberRandom2);
+				}			
+				matches.Add(await CreateMatchSend(match));
+				var match2 = new Match(championshipId, matches[j].Visitor, matches[j].Home, phase, matches[j].Id);
+				matches.Add(await CreateMatchSend2(match2));
+			}
 		}
 
+		else
+		{
+			for (int i = 0; i < teamQuantityInitial; i++)
+			{
+				var numberRandom = new Random().Next(0, teams.Count());
+				var numberRandom2 = new Random().Next(0, teams.Count());
+				while (numberRandom2 == numberRandom)
+				{
+					numberRandom2 = new Random().Next(0, teams.Count());
+				}
+
+				var match = new Match(championshipId, teams[numberRandom].Id, teams[numberRandom2].Id, phase);
+				teams.RemoveAt(numberRandom);
+				if(numberRandom2 > numberRandom)
+				{
+					teams.RemoveAt(numberRandom2 - 1);
+				} else {
+					teams.RemoveAt(numberRandom2);
+				}			
+				matches.Add(await CreateMatchSend(match));
+			}
+		}
 		return matches;
 	}
 	private async Task<Match> CreateMatchSend(Match match)
@@ -80,8 +106,15 @@ public class BracketingService
 			);
 		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
 	}
+	private async Task<Match> CreateMatchSend2(Match match)
+	{
+		var id = await _dbService.EditData(
+			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase, Round, PreviousMatch) VALUES(@ChampionshipId, @Home, @Visitor, @Phase, @Round, @PreviousMatch) returning id", match
+			);
+		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
+	}
 	private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT format, teamquantity, numberofplayers FROM championships WHERE id = @id", new { id });
+		=> await _dbService.GetAsync<Championship>("SELECT format, teamquantity, numberofplayers, DoubleMatchGroupStage, DoubleMatchEliminations, DoubleStartLeagueSystem, FinalDoubleMatch FROM championships WHERE id = @id", new { id });
 	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)
 		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId;", new { championshipId });
 	private async Task<bool> CheckIfChampionhipExists(int championshipId)
@@ -135,12 +168,16 @@ public class BracketingService
 				}
 			}
 		}
-		var quantityMatches = matches.Count();
+		
 		matches.Sort((x, y) => x.Round.CompareTo(y.Round));
 
-		for (int i = 0; i < quantityMatches; i++)
+		if(championship.DoubleStartLeagueSystem)
 		{
-			matches.Add(new Match(championshipId, matches[i].Visitor, matches[i].Home, matches[i].Round + teams.Count()-1));
+			var quantityMatches = matches.Count();
+			for (int i = 0; i < quantityMatches; i++)
+			{
+				matches.Add(new Match(championshipId, matches[i].Visitor, matches[i].Home, matches[i].Round + teams.Count()-1));
+			}
 		}
 
 		foreach (var item in matches)
@@ -193,8 +230,8 @@ public class BracketingService
         {
             for (int j = i+1; j < teams.Count(); j++)
             {
-				double calculation = (i/4);
-				double calculation2 = (j/4);
+				double calculation = i/4;
+				double calculation2 = j/4;
 				if(Math.Ceiling(calculation) != Math.Ceiling(calculation2))
 				{
 					break;
@@ -216,8 +253,17 @@ public class BracketingService
 				}
 			}
 		}
-		var quantityMatches = matches.Count();
+		
 		matches.Sort((x, y) => x.Round.CompareTo(y.Round));
+
+		if(championship.DoubleMatchGroupStage)
+		{
+			var quantityMatches = matches.Count();
+			for (int i = 0; i < quantityMatches; i++)
+			{
+				matches.Add(new Match(championshipId, matches[i].Visitor, matches[i].Home, matches[i].Round + teams.Count()-1));
+			}
+		}
 
 		foreach (var item in matches)
 		{
@@ -226,8 +272,9 @@ public class BracketingService
 		return matches;
 	}
 
-	public async Task<List<Match>> CreateSimpleknockoutToGroupStageValidationAsync(List<int> teamsId, int championshipId)
+	public async Task<List<Match>> CreateKnockoutToGroupStageValidationAsync(List<int> teamsId, int championshipId)
 	{
+		var championship = await GetByIdSend(championshipId);
 		var matches = new List<Match>();
 		var number = 64;
 		var phase = Phase.ThirtySecondOfFinal;
@@ -264,9 +311,24 @@ public class BracketingService
 			}
 		}
 
-		foreach (var item in matches)
+		if((championship.DoubleMatchEliminations && phase != Phase.Finals) ||
+			(championship.FinalDoubleMatch && phase == Phase.Finals))
 		{
-			await CreateMatchSend(item);
+			var matchesQuantity = matches.Count();
+
+			for(int i = 0; i < matchesQuantity; i++)
+			{
+				var match = await CreateMatchSend(matches[i]);
+				matches.Add(await CreateMatchSend2(new Match(matches[i].ChampionshipId, matches[i].Visitor, matches[i].Home, phase, match.Id)));
+			}
+		}
+
+		else
+		{
+			foreach (var item in matches)
+			{
+				await CreateMatchSend(item);
+			}
 		}
 		return matches;
 	}
