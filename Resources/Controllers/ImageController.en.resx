@@ -120,4 +120,7 @@
   <data name="SendImageImagemEnviadaSucesso" xml:space="preserve">
     <value>Image sent successfully</value>
   </data>
+  <data name="SendImageTooManyUploads" xml:space="preserve">
+    <value>You're making too many uploads. Wait for a while to proceed.</value>
+  </data>
 </root>

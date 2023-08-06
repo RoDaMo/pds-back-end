@@ -38,7 +38,7 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			var redis = await _redisService.GetDatabase();
+			await using var redis = await _redisService.GetDatabase();
 			user = await _authService.VerifyCredentials(user);
 
 			if (user.Id == Guid.Empty)
@@ -79,7 +79,7 @@ public class AuthController : ApiBaseController
 			if (string.IsNullOrEmpty(oldToken))
 				return ApiUnauthorizedRequest(Resource.UpdateAccesTokenNaoAutenticado);
 
-			var redis = await _redisService.GetDatabase();
+			await using var redis = await _redisService.GetDatabase();
 			var token = await redis.GetAsync<RefreshToken>(oldToken);
 
 			if (token is null || token.ExpirationDate < DateTime.Now)
@@ -150,6 +150,7 @@ public class AuthController : ApiBaseController
 
 	[Authorize]
 	[HttpGet]
+	[Obsolete("Useless")]
 	public IActionResult IsLoggedIn()
 	{
 		return ApiOk(true);

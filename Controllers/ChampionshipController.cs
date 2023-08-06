@@ -5,7 +5,6 @@ using PlayOffsApi.API;
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
-using BackgroundService = PlayOffsApi.Services.BackgroundService;
 using Resource = PlayOffsApi.Resources.Championship;
 
 namespace PlayOffsApi.Controllers;
@@ -144,6 +143,7 @@ public class ChampionshipController : ApiBaseController
   }
 
   [HttpDelete]
+  [Authorize]
   [Route("/championships/{id:int}")]
   public async Task<IActionResult> Delete(int id)
   {

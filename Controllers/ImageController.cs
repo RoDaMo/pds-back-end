@@ -15,10 +15,12 @@ public class ImageController : ApiBaseController
 {
     private readonly ImageService _imageService;
     private readonly ErrorLogService _error;
-    public ImageController(ImageService imageService, ErrorLogService error)
+    private readonly RedisService _redisService;
+    public ImageController(ImageService imageService, ErrorLogService error, RedisService redisService)
     {
         _imageService = imageService;
         _error = error;
+        _redisService = redisService;
     }
     
     [HttpGet]
@@ -36,8 +38,20 @@ public class ImageController : ApiBaseController
     {
         try
         {
-            await using var stream = file.OpenReadStream();
+            await using var redis = await _redisService.GetDatabase();
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            
+            var keyUser = $"rate-limit-image-{userId.ToString()}";
+
+            var currentCount = await redis.GetValueAsync(keyUser);
+            if (currentCount is null)
+                await redis.SetAsync(keyUser, 0, TimeSpan.FromMinutes(3));
+            else if (int.Parse(currentCount) >= 10)
+                throw new ApplicationException(Resource.SendImageTooManyUploads);
+            
+            await redis.IncrementValueAsync(keyUser);
+            
+            await using var stream = file.OpenReadStream();
             
             var memoryStream = new MemoryStream();
             await stream.CopyToAsync(memoryStream);
