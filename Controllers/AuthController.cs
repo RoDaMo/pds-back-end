@@ -258,7 +258,8 @@ public class AuthController : ApiBaseController
 		{
 			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 			var user = await _authService.GetUserByIdAsync(userId);
-			return ApiOk(new
+
+			return ApiOk(new 
 			{
 				email = user.Email,
 				userName = user.Username,
@@ -268,7 +269,8 @@ public class AuthController : ApiBaseController
 				name = user.Name,
 				id = user.Id,
 				championshipId = user.ChampionshipId,
-				teamManagementId = user.TeamManagementId
+				teamManagementId = user.TeamManagementId,
+				role = user.Role
 			});
 		}
 		catch (ApplicationException ex)
