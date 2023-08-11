@@ -69,6 +69,20 @@ public class GoalService
         {
             throw new ApplicationException("Partida já terminou em empate.");
         }
+        if(goal.AssisterPlayerId != Guid.Empty)
+        {
+            if(!await CheckIfAssisterPlayerAndMarkerAreFromSameTeam(goal.AssisterPlayerId, goal.TeamId))
+            {
+                throw new ApplicationException("Jogador que fez assistência não pertence ao mesmo time do jogador que fez o gol.");
+            }
+        }
+        else if(goal.AssisterPlayerTempId != Guid.Empty)
+        {
+            if(!await CheckIfAssisterPlayerTempAndMarkerAreFromSameTeam(goal.AssisterPlayerTempId, goal.TeamId))
+            {
+                throw new ApplicationException("Jogador que fez assistência não pertence ao mesmo time do jogador que fez o gol.");
+            }
+        }
 
         if(championship.SportsId == Sports.Football)
         {
@@ -108,6 +122,22 @@ public class GoalService
         }
         return errorMessages;
     }
+    private async Task<bool> CheckIfAssisterPlayerTempAndMarkerAreFromSameTeam(Guid assisterId, int teamId)
+        => await _dbService.GetAsync<bool>(
+            @"SELECT EXISTS (
+                    SELECT *
+                    FROM PlayerTempProfiles
+                    WHERE Id = @assisterId AND TeamsId = @teamId
+                )", 
+            new {assisterId, teamId});
+    private async Task<bool> CheckIfAssisterPlayerAndMarkerAreFromSameTeam(Guid assisterId, int teamId)
+        => await _dbService.GetAsync<bool>(
+            @"SELECT EXISTS (
+                    SELECT *
+                    FROM Users
+                    WHERE Id = @assisterId AND PlayerTeamId = @teamId
+                )", 
+            new {assisterId, teamId});
     private async Task<List<int>> GetTeamsInGroup(int teamId, int championshipId)
     {
         var teamsId = await _dbService.GetAll<int>("SELECT TeamId FROM classifications WHERE ChampionshipId = @championshipId ORDER BY Id", new {championshipId});
@@ -155,13 +185,53 @@ public class GoalService
     private async Task<bool> CheckIfThereIsAnyPenaltyByMatchId(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM penalties WHERE MatchId = @matchId)", new {matchId});
     private async Task<int> CreateGoalToPlayerTempSend(Goal goal)
-        => await _dbService.EditData(
-			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal) RETURNING Id;",
+    {
+        var id = 0;
+        if(goal.AssisterPlayerId == Guid.Empty && goal.AssisterPlayerTempId != Guid.Empty)
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerTempId, AssisterPlayerId) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, @AssisterPlayerTempId, null) RETURNING Id;",
 			goal);
+        }
+        else if(goal.AssisterPlayerId != Guid.Empty)
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, @AssisterPlayerId, null) RETURNING Id;",
+			goal);
+        }
+        else
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, null, null) RETURNING Id;",
+			goal);
+        }
+        return id;
+    }
+        
     private async Task<int> CreateGoalToPlayerSend(Goal goal)
-        => await _dbService.EditData(
-			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal) RETURNING Id;",
+    {
+        var id = 0;
+        if(goal.AssisterPlayerId == Guid.Empty && goal.AssisterPlayerTempId != Guid.Empty)
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerTempId, AssisterPlayerId) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, @AssisterPlayerTempId, null) RETURNING Id;",
 			goal);
+        }
+        else if(goal.AssisterPlayerId != Guid.Empty)
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, @AssisterPlayerId, null) RETURNING Id;",
+			goal);
+        }
+        else
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, null, null) RETURNING Id;",
+			goal);
+        }
+        return id;
+    }
+        
     private async Task<bool> ThereIsAWinner(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND winner IS NOT NULL);", new {matchId});
     private async Task<bool> SetIsInvalid(int matchId, int teamId, int set)

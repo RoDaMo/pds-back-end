@@ -27,6 +27,16 @@ public class GoalValidator : AbstractValidator<Goal>
                 .InclusiveBetween(1, 5)
                 .WithMessage("Set inválido.")
                 .When(g => g.PlayerId == Guid.Empty);
+            RuleFor(goal => goal.PlayerId)
+                .NotEqual(goal => goal.AssisterPlayerId)
+                .NotEqual(goal => goal.AssisterPlayerTempId)
+                .When(g => g.PlayerId != Guid.Empty)
+                .WithMessage("O jogador que marcou o gol não pode ser também o assistente.");
+            RuleFor(goal => goal.PlayerTempId)
+                .NotEqual(goal => goal.AssisterPlayerId)
+                .NotEqual(goal => goal.AssisterPlayerTempId)
+                .When(g => g.PlayerTempId != Guid.Empty)
+                .WithMessage("O jogador que marcou o gol não pode ser também o assistente.");
 		});
 
         RuleSet("ValidationSoccer", () => 
@@ -48,6 +58,16 @@ public class GoalValidator : AbstractValidator<Goal>
             RuleFor(g => g.Set)
                 .Must(set => set == 0)
                 .WithMessage("Futebol não possui sets.");
+            RuleFor(goal => goal.PlayerId)
+                .NotEqual(goal => goal.AssisterPlayerId)
+                .NotEqual(goal => goal.AssisterPlayerTempId)
+                .When(g => g.PlayerId != Guid.Empty)
+                .WithMessage("O jogador que marcou o gol não pode ser também o assistente.");
+            RuleFor(goal => goal.PlayerTempId)
+                .NotEqual(goal => goal.AssisterPlayerId)
+                .NotEqual(goal => goal.AssisterPlayerTempId)
+                .When(g => g.PlayerTempId != Guid.Empty)
+                .WithMessage("O jogador que marcou o gol não pode ser também o assistente.");
 		});
     }
     
