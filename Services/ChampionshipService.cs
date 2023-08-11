@@ -149,7 +149,7 @@ public class ChampionshipService
 	}
 
 	private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid, teamquantity, numberofplayers FROM championships WHERE id = @id", new { id });
+		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid, teamquantity, numberofplayers, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch FROM championships WHERE id = @id", new { id });
 	
 	private async Task<int> GetNumberOfPlayers(int championshipId)
 		=> await _dbService.GetAsync<int>("SELECT numberofplayers FROM championships WHERE id = @championshipId", new {championshipId});
@@ -173,16 +173,28 @@ public class ChampionshipService
 		if (!result.IsValid)
 			return result.Errors.Select(x => x.ErrorMessage).ToList();
 		
+		if(oldChamp.DoubleMatchEliminations != championship.DoubleMatchEliminations ||
+			oldChamp.DoubleMatchGroupStage != championship.DoubleMatchGroupStage ||
+			oldChamp.DoubleStartLeagueSystem != championship.DoubleStartLeagueSystem ||
+			oldChamp.FinalDoubleMatch != championship.FinalDoubleMatch ||
+			oldChamp.Format != championship.Format)
+		{
+			if(await CheckIfChampionshipHasAnyMatch(oldChamp.Id))
+				throw new ApplicationException("Não é possível alterar o formato da competição após a definição do chaveamento.");
+		}
+		
 		await UpdateSend(championship);
 		await _elasticService._client.IndexAsync(championship, INDEX);
 
 		return new();
 	}
 
+	private async Task<bool> CheckIfChampionshipHasAnyMatch(int championshipId)
+		=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM Matches WHERE championshipId = @championshipId)", new {championshipId});
 	private async Task UpdateSend(Championship championship) =>
 		await _dbService.EditData(
 			"UPDATE championships SET " +
-			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, nation = @nation, state = @state, city = @city, neighborhood = @neighborhood, teamquantity = @teamquantity, numberofplayers = @numberofplayers " +
+			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, nation = @nation, state = @state, city = @city, neighborhood = @neighborhood, teamquantity = @teamquantity, numberofplayers = @numberofplayers, doublematchgroupstage = @doublematchgroupstage, doublematcheliminations = @doublematcheliminations, doublestartleaguesystem = @doublestartleaguesystem, finaldoublematch = @finaldoublematch " +
 			"WHERE id=@id",
 			championship);
 

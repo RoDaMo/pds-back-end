@@ -9,5 +9,7 @@ public class Goal
     public Guid PlayerTempId { get; set; }
     public int Set { get; set; }
     public bool OwnGoal { get; set; }
+    public Guid AssisterPlayerId { get; set; }
+    public Guid AssisterPlayerTempId { get; set; }
     public Goal() { }
 }
