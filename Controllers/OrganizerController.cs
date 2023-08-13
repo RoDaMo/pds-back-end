@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
+using Generic = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Controllers;
 
@@ -61,7 +62,7 @@ public class OrganizerController  : ApiBaseController
             if (userExists)
                 return ApiBadRequest("Este usuário não existe.");
 
-            var alreadyOrganizer = await _organizerService.IsUserAnOrganizerValidation(new Organizer { ChampionshipId = newOrganizer.ChampionshipId, OrganizerId = newOrganizer.OrganizerId }) is not null;
+            var alreadyOrganizer = await _organizerService.IsUserAnOrganizerValidation(newOrganizer.OrganizerId) is not null;
             if (alreadyOrganizer)
                 return ApiBadRequest("Usuário já é organizador deste campeonato.");
             
@@ -73,7 +74,7 @@ public class OrganizerController  : ApiBaseController
         catch (ApplicationException ex)
         {
             await _error.HandleExceptionValidationAsync(HttpContext, ex);
-            return ApiBadRequest(ex.Message);
+            return ApiBadRequest(Generic.GenericErrorMessage);
         }
 
     }
@@ -116,7 +117,7 @@ public class OrganizerController  : ApiBaseController
         catch (ApplicationException ex)
         {
             await _error.HandleExceptionValidationAsync(HttpContext, ex);
-            return ApiBadRequest(ex.Message);
+            return ApiBadRequest(Generic.GenericErrorMessage);
         }    
     }
 
@@ -145,7 +146,7 @@ public class OrganizerController  : ApiBaseController
         catch (ApplicationException ex)
         {
             await _error.HandleExceptionValidationAsync(HttpContext, ex);
-            return ApiBadRequest(ex.Message);
+            return ApiBadRequest(Generic.GenericErrorMessage);
         }
     }
     
@@ -169,7 +170,28 @@ public class OrganizerController  : ApiBaseController
         catch (ApplicationException ex)
         {
             await _error.HandleExceptionValidationAsync(HttpContext, ex);
-            return ApiBadRequest(ex.Message);
+            return ApiBadRequest(Generic.GenericErrorMessage);
+        }
+    }
+    
+    /// <summary>
+    /// Obtem usuários para adicionar como organizadores de um campeonato.
+    /// </summary>
+    /// <param name="username"></param>
+    /// <returns></returns>
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> GetByQuery(string username)
+    {
+        try
+        {
+            var users = await _authService.GetUsersByUsernameValidation(username, true);
+            return ApiOk(users.Select(s => new { s.Name, s.Username, s.Picture, s.Id }));
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(Generic.GenericErrorMessage);
         }
     }
 }

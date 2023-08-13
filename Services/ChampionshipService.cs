@@ -212,6 +212,7 @@ public class ChampionshipService
 		await DeleteSend(championship);
 		championship.Deleted = true;
 		await _elasticService._client.IndexAsync(championship, INDEX);
+		await _organizerService.DeleteValidation(new() { ChampionshipId = championship.Id, OrganizerId = championship.OrganizerId });
 	}
 
 	private async Task DeleteSend(Championship championship)

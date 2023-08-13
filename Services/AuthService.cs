@@ -139,7 +139,7 @@ public class AuthService
 	}
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
-		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture, teammanagementid, playerteamid, role FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
+		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture, teammanagementid, playerteamid, role, confirmemail FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
 
 	public async Task SendEmailToConfirmAccount(Guid userId)
 	{
@@ -480,14 +480,17 @@ public class AuthService
 	{
 		var users = await GetAllUsersForIndexingSend();
 		foreach (var user in users)
+		{
+			
 			await _elastic._client.IndexAsync(user, Index);
+		}
 	}
 
 	private async Task<List<User>> GetAllUsersForIndexingSend() => await _dbService.GetAll<User>("SELECT * FROM users", new {});
 
-	public async Task<List<User>> GetUsersByUsernameValidation(string username)
+	public async Task<List<User>> GetUsersByUsernameValidation(string username, bool filtrarSuborganizadores = false)
 	{
-		var searchResponse = await GetUsersByUsernameSend(username);
+		var searchResponse = await GetUsersByUsernameSend(username, filtrarSuborganizadores);
 
 		if (!searchResponse.IsValidResponse)
 			throw new ApplicationException(Generic.GenericErrorMessage);
@@ -495,7 +498,7 @@ public class AuthService
 		return searchResponse.Documents.ToList();
 	}
 	
-	private async Task<SearchResponse<User>> GetUsersByUsernameSend(string username) => 
+	private async Task<SearchResponse<User>> GetUsersByUsernameSend(string username, bool filtrarSuborganizadores) => 
 		await _elastic.SearchAsync<User>(el => 
 			el.Query(q =>
 				q.Bool(b => 
@@ -505,8 +508,12 @@ public class AuthService
 						m3 => m3.Term(t => t.Field(f => f.PlayerTeamId).Value(0)),
 						m4 => m4.Term(t => t.Field(f => f.TeamManagementId).Value(0)),
 						m5 => m5.Term(t => t.Field(f => f.Deleted).Value(false)),
-						m6 => m6.Term(t => t.Field(f => f.ConfirmEmail).Value(true))
-					)
+						m6 => m6.Term(t => t.Field(f => f.ConfirmEmail).Value(true)),
+						m7 =>
+						{
+							if (!filtrarSuborganizadores) return;
+							m7.Term(t => t.Field(f => f.IsOrganizer).Value(false));
+						})
 				)
 			).Index(Index)
 		);
