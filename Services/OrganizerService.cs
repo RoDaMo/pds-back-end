@@ -32,7 +32,7 @@ public class OrganizerService
 
     public async Task<bool> IsOrganizerAnywhereValidation(Guid id) => await IsOrganizerAnywhereSend(id);
 
-    private async Task<bool> IsOrganizerAnywhereSend(Guid id) => await _dbService.GetAsync<bool>("SELECT EXISTS (SELECT * FROM organizers WHERE organizerid = @organizerId)", new { organizerId = id });
+    private async Task<bool> IsOrganizerAnywhereSend(Guid id) => await _dbService.GetAsync<bool>("SELECT EXISTS (SELECT * FROM organizers o INNER JOIN championships c on c.id = o.championshipid WHERE o.organizerid = @organizerId AND c.deleted = false)", new { organizerId = id });
 
     public async Task<List<User>> GetAllOrganizersValidation(int championshipId) => await GetAllOrganizersSend(championshipId);
 
