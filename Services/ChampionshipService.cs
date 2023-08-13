@@ -118,9 +118,10 @@ public class ChampionshipService
 						must =>
 						{
 							if (string.IsNullOrEmpty(name)) return;
-							must.MatchPhrasePrefix(mpp => mpp
+							must.Match(mpp => mpp
 								.Field(f => f.Name)
 								.Query(name)
+								.Fuzziness(new Fuzziness("Auto"))
 							);
 						},
 						must2 => must2
