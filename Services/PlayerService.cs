@@ -52,7 +52,7 @@ public class PlayerService
 			throw new ApplicationException(Resource.CreateValidationAsyncOnlyTechnicians);
 		}
 
-        if(!await ChecksIfUserPassedExists(user.Email))
+        if(!await ChecksIfUserPassedExists(user.Id))
 		{
 			throw new ApplicationException(Resource.CreateValidationAsyncUserDoesntExist);
 		}
@@ -72,7 +72,7 @@ public class PlayerService
 			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyHasCaptain);
 		}
 
-		if(await ChecksIfUserPassedAlreadHasTeam(user.Email))
+		if(await ChecksIfUserPassedAlreadHasTeam(user.Id))
 		{
 			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyBelongsTeam);
 		}
@@ -94,8 +94,8 @@ public class PlayerService
 	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number, int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number AND playerteamid = @teamId);", new {number, teamId});
     private async Task<bool> ChecksIfTeamAlreadyHasCaptain() => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE iscaptain = true);", new {});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
-    private async Task<bool> ChecksIfUserPassedExists(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email);", new {email});
-    private async Task<bool> ChecksIfUserPassedAlreadHasTeam(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE email = @email AND playerteamid IS NOT NULL);", new {email});
+    private async Task<bool> ChecksIfUserPassedExists(Guid id) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @id);", new {id});
+    private async Task<bool> ChecksIfUserPassedAlreadHasTeam(Guid id) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @id AND playerteamid IS NOT NULL);", new {id});
 
     public async Task RemovePlayerFromTeamValidation(int teamId, Guid id, Guid organizerId)
     {
