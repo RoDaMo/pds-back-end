@@ -35,4 +35,6 @@ public class User
 	
 	[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 	public string CaptchaToken { get; set; }
+
+	public bool IsOrganizer { get; set; }
 }

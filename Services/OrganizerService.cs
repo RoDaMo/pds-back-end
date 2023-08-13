@@ -5,18 +5,40 @@ namespace PlayOffsApi.Services;
 public class OrganizerService
 {
     private readonly DbService _dbService;
-    public OrganizerService(DbService dbService)
+    private readonly ElasticService _elasticService;
+    private readonly AuthService _authService;
+    public OrganizerService(DbService dbService, ElasticService elasticService, AuthService authService)
     {
         _dbService = dbService;
+        _elasticService = elasticService;
+        _authService = authService;
     }
 
     public async Task InsertValidation(Organizer model) => await InsertSend(model);
 
-    private async Task InsertSend(Organizer model) => await _dbService.EditData("INSERT INTO organizers (organizerId, championshipId, mainOrganizer) VALUES (@OrganizerId, @ChampionshipId, @MainOrganizer)", model);
+    private async Task InsertSend(Organizer model)
+    {
+        await _dbService.EditData(
+            "INSERT INTO organizers (organizerId, championshipId, mainOrganizer) VALUES (@OrganizerId, @ChampionshipId, @MainOrganizer)",
+            model);
+
+        var user = await _authService.GetUserByIdAsync(model.OrganizerId);
+        user.IsOrganizer = true;
+        await _elasticService._client.IndexAsync(user, "users");
+    }
 
     public async Task DeleteValidation(Organizer model) => await DeleteSend(model);
 
-    private async Task DeleteSend(Organizer model) => await _dbService.EditData("DELETE FROM organizers WHERE championshipid = @championshipId AND organizerid = @organizerId", model);
+    private async Task DeleteSend(Organizer model)
+    {
+        await _dbService.EditData(
+            "DELETE FROM organizers WHERE championshipid = @championshipId AND organizerid = @organizerId", model);
+        
+        var user = await _authService.GetUserByIdAsync(model.OrganizerId);
+        user.IsOrganizer = false;
+        user.ChampionshipId = 0;
+        await _elasticService._client.IndexAsync(user, "users");
+    }
 
     public async Task<Organizer> IsUserAnOrganizerValidation(Organizer model) => await IsUserAnOrganizerSend(model);
 
