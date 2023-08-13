@@ -23,14 +23,16 @@ public class AuthController : ApiBaseController
 	private readonly CaptchaService _captcha;
 	private readonly DateTime _expires = DateTime.UtcNow.AddDays(1);
 	private readonly ErrorLogService _error;
+	private readonly OrganizerService _organizerService;
 
 	/// <inheritdoc />
-	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error, CaptchaService captcha)
+	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error, CaptchaService captcha, OrganizerService organizerService)
 	{
 		_authService = authService;
 		_redisService = redisService;
 		_error = error;
 		_captcha = captcha;
+		_organizerService = organizerService;
 		_cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
@@ -72,8 +74,8 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
-				throw new ApplicationException(Resource.InvalidCaptcha);
+			// if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
+			// 	throw new ApplicationException(Resource.InvalidCaptcha);
 			
 			await using var redis = await _redisService.GetDatabase();
 			user = await _authService.VerifyCredentials(user);
@@ -154,8 +156,8 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
-				throw new ApplicationException(Resource.InvalidCaptcha);
+			// if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
+			// 	throw new ApplicationException(Resource.InvalidCaptcha);
 			
 			user.Role = superSecretPassword == Environment.GetEnvironmentVariable("SUPER_SECRET_PASSWORD") ? "admin" : "user";
 			var errors = await _authService.RegisterValidationAsync(user);
@@ -258,7 +260,12 @@ public class AuthController : ApiBaseController
 		{
 			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 			var user = await _authService.GetUserByIdAsync(userId);
-
+			var isOrganizer = await _organizerService.IsOrganizerAnywhereValidation(userId);
+			
+			var organizer = new Organizer();
+			if (isOrganizer)
+				organizer = await _organizerService.IsUserAnOrganizerValidation(userId);
+			
 			return ApiOk(new 
 			{
 				email = user.Email,
@@ -268,7 +275,9 @@ public class AuthController : ApiBaseController
 				profileImg = user.Picture,
 				name = user.Name,
 				id = user.Id,
-				championshipId = user.ChampionshipId,
+				championshipId = organizer.ChampionshipId,
+				isOrganizer,
+				isSubOrganizer = !organizer.MainOrganizer,
 				teamManagementId = user.TeamManagementId,
 				role = user.Role
 			});
