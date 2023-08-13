@@ -16,15 +16,17 @@ public class ChampionshipService
 	private readonly RedisService _redisService;
 	private readonly AuthService _authService;  
 	private readonly IBackgroundJobsService _backgroundJobs;
+	private readonly OrganizerService _organizerService;
 	private const string INDEX = "championships";
 
-	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, IBackgroundJobsService backgroundJobs, RedisService redisService)
+	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, IBackgroundJobsService backgroundJobs, RedisService redisService, OrganizerService organizerService)
 	{
 		_dbService = dbService;
 		_elasticService = elasticService;
 		_authService = authService;
 		_backgroundJobs = backgroundJobs;
 		_redisService = redisService;
+		_organizerService = organizerService;
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
 	{
@@ -62,18 +64,19 @@ public class ChampionshipService
 	{
 		championship.Id = await _dbService.EditData(
 			@"
-			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId, numberofplayers, teamquantity, status, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch) 
-			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId, @NumberOfPlayers, @TeamQuantity, @Status, @DoubleMatchGroupStage, @DoubleMatchEliminations, @DoubleStartLeagueSystem, @FinalDoubleMatch) RETURNING Id;",
+			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId, numberofplayers, teamquantity, status, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch, deleted) 
+			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId, @NumberOfPlayers, @TeamQuantity, @Status, @DoubleMatchGroupStage, @DoubleMatchEliminations, @DoubleStartLeagueSystem, @FinalDoubleMatch, false) RETURNING Id;",
 			championship);
 
-		await _dbService.EditData(
-			"UPDATE users SET championshipId = @championshipId WHERE id = @userId", new
-				{ championshipId = championship.Id, userId = championship.Organizer.Id });
+		// await _dbService.EditData(
+		// 	"UPDATE users SET championshipId = @championshipId WHERE id = @userId", new
+		// 		{ championshipId = championship.Id, userId = championship.Organizer.Id });
 
 		var resultado = await _elasticService._client.IndexAsync(championship, INDEX);
-
 		if (!resultado.IsValidResponse)
 			throw new ApplicationException(Generic.GenericErrorMessage);
+
+		await _organizerService.InsertValidation(new Organizer { ChampionshipId = championship.Id, MainOrganizer = true, OrganizerId = championship.Organizer.Id });
 
 		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Inactive), TimeSpan.FromDays(14));
 		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Active), championship.InitialDate - DateTime.UtcNow);
