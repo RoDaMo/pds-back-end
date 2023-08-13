@@ -511,7 +511,7 @@ public class AuthService
 						m6 => m6.Term(t => t.Field(f => f.ConfirmEmail).Value(true)),
 						m7 =>
 						{
-							if (!filtrarSuborganizadores) return;
+							if (!filtrarSuborganizadores) m7.Term(t => t.Field(f => f.IsCaptain).Value(false));
 							m7.Term(t => t.Field(f => f.IsOrganizer).Value(false));
 						})
 				)
