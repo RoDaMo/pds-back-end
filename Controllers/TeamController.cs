@@ -78,7 +78,7 @@ public class TeamController : ApiBaseController
                 uniformHome = result.UniformHome,
                 uniformAway = result.UniformAway,
                 deleted = result.Deleted,
-                sportsId = result.Id,
+                sportsId = result.SportsId,
                 name = result.Name,
                 technician = new {
                     name = result.Technician.Name,
