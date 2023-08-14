@@ -62,7 +62,8 @@ public class TeamController : ApiBaseController
             return ApiBadRequest(ex.Message);
         }
     }
-
+    
+    [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Show(int id)
     {
@@ -70,7 +71,20 @@ public class TeamController : ApiBaseController
         {
             var result = await _teamService.GetByIdValidationAsync(id);
 
-            return result is null ? ApiBadRequest(Resource.ShowTimeNaoExistente) : ApiOk(result);
+            return result is null ? ApiBadRequest(Resource.ShowTimeNaoExistente) : ApiOk(new
+            {
+                id = result.Id,
+                emblem = result.Emblem,
+                uniformHome = result.UniformHome,
+                uniformAway = result.UniformAway,
+                deleted = result.Deleted,
+                sportsId = result.Id,
+                name = result.Name,
+                technician = new {
+                    name = result.Technician.Name,
+                    picture = result.Technician.Picture
+                }
+            });
         }
         catch (ApplicationException ex)
         {

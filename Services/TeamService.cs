@@ -62,7 +62,12 @@ public class TeamService
 
 	private async Task<List<Team>> GetAllSendAsync(Sports sport) => await _dbService.GetAll<Team>("SELECT * FROM teams WHERE sportId = @sport", new { sport });
 
-	public async Task<Team> GetByIdValidationAsync(int id) => await GetByIdSendAsync(id);
+	public async Task<Team> GetByIdValidationAsync(int id)
+	{
+		var team = await GetByIdSendAsync(id);
+		team.Technician = await GetTechnicianFromTeam(team.Id);
+		return team;
+	}
 
 	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
 
@@ -199,4 +204,6 @@ public class TeamService
 			UNION ALL
 			SELECT id, name, artisticname, number, email, playerteamid as teamsid, playerposition, iscaptain, picture FROM users WHERE playerteamid = @id;",
 			new { id });
+
+	private async Task<User> GetTechnicianFromTeam(int teamId) => await _dbService.GetAsync<User>("SELECT picture, name FROM users WHERE teammanagementId = @teamId", new { teamId });
 }
