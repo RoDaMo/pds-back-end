@@ -2,6 +2,7 @@
 using FluentValidation;
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
+using PlayOffsApi.Validations;
 
 namespace PlayOffsApi.Services;
 
@@ -703,4 +704,23 @@ public class MatchService
 
         return teamsIdInGroup;
     }
+
+    public async Task<List<string>> UpdateMatchValidationAsync(Match match)
+    {
+        var oldMatch = await GetMatchById(match.Id);
+
+        if(oldMatch is null)
+            throw new ApplicationException("Partida não existe.");
+        
+        var result = await new MatchValidator().ValidateAsync(match);
+		
+		if (!result.IsValid)
+			return result.Errors.Select(x => x.ErrorMessage).ToList();
+
+        await UpdateSend(match);
+        return new();
+    }
+
+    private async Task UpdateSend(Match match)
+		=> await _dbService.EditData("UPDATE Matches SET date = @Date, arbitrator = @Arbitrator WHERE id=@id", match);
 }

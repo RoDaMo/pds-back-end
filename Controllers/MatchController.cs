@@ -121,4 +121,29 @@ public class MatchController : ApiBaseController
             return ApiBadRequest(result);
         }   
     }
+
+    /// <summary>
+	/// Usado para atualizar a data e o árbitro da partida
+	/// </summary>
+	/// <response code="200">Retorna o status de sucesso da requisição</response>
+	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
+    [HttpPut]
+    [Route("/matches")]
+    public async Task<IActionResult> UpdateMatch([FromBody] Match match)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            result = await _matchService.UpdateMatchValidationAsync(match);
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }   
+    }
 }
