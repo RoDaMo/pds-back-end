@@ -112,12 +112,12 @@ public class BracketingController : ApiBaseController
 	/// <response code="200">Retorna um valor booleano</response>
 	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
     [HttpGet]
-    [Route("/bracketing/exists/{id:championshipid}")]
-    public async Task<IActionResult> BracketingExists(int championshipid)
+    [Route("/bracketing/exists/{id:int}")]
+    public async Task<IActionResult> BracketingExists(int id)
     {
         try
         {
-            var result = await _bracketingService.BracketingExists(championshipid);
+            var result = await _bracketingService.BracketingExists(id);
             return ApiOk(result);
         }
         catch (ApplicationException ex)
