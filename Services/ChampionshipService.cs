@@ -62,8 +62,8 @@ public class ChampionshipService
 	{
 		championship.Id = await _dbService.EditData(
 			@"
-			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId, numberofplayers, teamquantity, status, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch) 
-			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId, @NumberOfPlayers, @TeamQuantity, @Status, @DoubleMatchGroupStage, @DoubleMatchEliminations, @DoubleStartLeagueSystem, @FinalDoubleMatch) RETURNING Id;",
+			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, organizerId, numberofplayers, teamquantity, status, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch) 
+			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @OrganizerId, @NumberOfPlayers, @TeamQuantity, @Status, @DoubleMatchGroupStage, @DoubleMatchEliminations, @DoubleStartLeagueSystem, @FinalDoubleMatch) RETURNING Id;",
 			championship);
 
 		await _dbService.EditData(
@@ -149,7 +149,7 @@ public class ChampionshipService
 	}
 
 	private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid, teamquantity, numberofplayers, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch FROM championships WHERE id = @id", new { id });
+		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, organizerid, teamquantity, numberofplayers, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch FROM championships WHERE id = @id", new { id });
 	
 	private async Task<int> GetNumberOfPlayers(int championshipId)
 		=> await _dbService.GetAsync<int>("SELECT numberofplayers FROM championships WHERE id = @championshipId", new {championshipId});
@@ -194,7 +194,7 @@ public class ChampionshipService
 	private async Task UpdateSend(Championship championship) =>
 		await _dbService.EditData(
 			"UPDATE championships SET " +
-			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, nation = @nation, state = @state, city = @city, neighborhood = @neighborhood, teamquantity = @teamquantity, numberofplayers = @numberofplayers, doublematchgroupstage = @doublematchgroupstage, doublematcheliminations = @doublematcheliminations, doublestartleaguesystem = @doublestartleaguesystem, finaldoublematch = @finaldoublematch " +
+			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, teamquantity = @teamquantity, numberofplayers = @numberofplayers, doublematchgroupstage = @doublematchgroupstage, doublematcheliminations = @doublematcheliminations, doublestartleaguesystem = @doublestartleaguesystem, finaldoublematch = @finaldoublematch " +
 			"WHERE id=@id",
 			championship);
 
