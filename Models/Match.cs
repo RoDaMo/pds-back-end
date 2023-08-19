@@ -15,6 +15,9 @@ public class Match
     public Phase Phase { get; set; }
     public bool Tied { get; set; }
     public int PreviousMatch { get; set; }
+    public string Local { get; set; }
+    public string HomeUniform { get; set; }
+    public string VisitorUniform { get; set; }
 
     public Match(int championshipId, int home, int visitor, Phase phase)
     {

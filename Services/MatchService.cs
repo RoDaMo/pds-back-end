@@ -2,6 +2,7 @@
 using FluentValidation;
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
+using PlayOffsApi.Validations;
 
 namespace PlayOffsApi.Services;
 
@@ -26,10 +27,6 @@ public class MatchService
         {
             throw new ApplicationException("Data da partida não definida.");
         }
-        if(await DidMatchNotStart(matchId))
-        {
-            throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
-        }
         if(await CheckIfThereIsWinner(matchId))
         {
             throw new ApplicationException("Partida já possui um vencedor.");
@@ -37,6 +34,12 @@ public class MatchService
 
         var match = await GetMatchById(matchId);
         var championship = await GetByIdSend(match.ChampionshipId);
+
+        if(match.HomeUniform is null || match.VisitorUniform is null)
+            throw new ApplicationException("É necessário definir os uniformes das equipes antes");
+        
+        if (match.Local is null)
+            throw new ApplicationException("É necessário definir o local da partida antes antes");
 
         if(championship.DoubleMatchEliminations && match.Phase != Phase.Finals || 
         championship.FinalDoubleMatch && match.Phase == Phase.Finals)
@@ -204,7 +207,7 @@ public class MatchService
             ", 
             new {matchId});
     private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT format, teamquantity, numberofplayers, DoubleMatchGroupStage, DoubleMatchEliminations, DoubleStartLeagueSystem, FinalDoubleMatch FROM championships WHERE id = @id", new { id });
+		=> await _dbService.GetAsync<Championship>("SELECT format, teamquantity, initialdate, finaldate, numberofplayers, DoubleMatchGroupStage, DoubleMatchEliminations, DoubleStartLeagueSystem, FinalDoubleMatch FROM championships WHERE id = @id", new { id });
     private async Task<Match> CreateMatchSend(Match match)
 	{
 		var id = await _dbService.EditData(
@@ -235,8 +238,6 @@ public class MatchService
             WHERE (MatchId = @matchId OR MatchId = (SELECT Id FROM matches WHERE PreviousMatch = @matchId) OR MatchId =  (SELECT PreviousMatch FROM matches WHERE id = @matchId)) AND 
             (TeamId = @teamId AND OwnGoal = false OR TeamId <> @teamId AND OwnGoal = true)",
         new {matchId, teamId});
-    private async Task<bool> DidMatchNotStart(int matchId)
-        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date <> CURRENT_DATE);", new {matchId});
     private async Task<bool> DepartureDateNotSet(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date IS NULL);", new {matchId});
     private async Task<bool> CheckIfThereIsWinner(int matchId)
@@ -252,10 +253,6 @@ public class MatchService
         {
             throw new ApplicationException("Data da partida não definida.");
         }
-        if(await DidMatchNotStart(matchId))
-        {
-            throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
-        }
         if(await CheckIfThereIsWinner(matchId))
         {
             throw new ApplicationException("Partida já possui um vencedor.");
@@ -266,6 +263,13 @@ public class MatchService
         }
 
         var match = await GetMatchById(matchId);
+
+        if(match.HomeUniform is null || match.VisitorUniform is null)
+            throw new ApplicationException("É necessário definir os uniformes das equipes antes");
+        
+        if (match.Local is null)
+            throw new ApplicationException("É necessário definir o local da partida antes antes");
+
         var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
         var homePoints = await GetPointsFromTeamById(matchId, match.Home);
         if(homePoints > visitorPoints)
@@ -596,10 +600,7 @@ public class MatchService
         {
             throw new ApplicationException("Data da partida não definida.");
         }
-        if(await DidMatchNotStart(matchId))
-        {
-            throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
-        }
+
         if(await CheckIfThereIsWinner(matchId))
         {
             throw new ApplicationException("Partida já possui um vencedor.");
@@ -610,6 +611,13 @@ public class MatchService
         }
 
         var match = await GetMatchById(matchId);
+
+        if(match.HomeUniform is null || match.VisitorUniform is null)
+            throw new ApplicationException("É necessário definir os uniformes das equipes antes");
+        
+        if (match.Local is null)
+            throw new ApplicationException("É necessário definir o local da partida antes antes");
+
         var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
         var homePoints = await GetPointsFromTeamById(matchId, match.Home);
         if(homePoints > visitorPoints)
@@ -703,4 +711,49 @@ public class MatchService
 
         return teamsIdInGroup;
     }
+
+    public async Task<List<string>> UpdateMatchValidationAsync(Match match)
+    {
+        var result = await new MatchValidator().ValidateAsync(match);
+		
+		if (!result.IsValid)
+			return result.Errors.Select(x => x.ErrorMessage).ToList();
+
+        var oldMatch = await GetMatchById(match.Id);
+
+        if(oldMatch is null)
+            throw new ApplicationException("Partida não existe.");
+
+        match.Date = match.Date.ToUniversalTime();
+        var championship = await GetByIdSend(oldMatch.ChampionshipId);
+
+        if(championship.InitialDate.ToUniversalTime() > match.Date.Date || championship.FinalDate.ToUniversalTime() < match.Date.Date)
+            throw new ApplicationException("Partida não pode ser anterior ou posterior ao seu campeonato");
+
+        if(oldMatch.Tied == true || oldMatch.Winner != 0)
+            throw new ApplicationException("Dados da partida não podem ser alterados após o seu encerramento");
+        
+        if(match.HomeUniform is not null)
+        {
+            if(!await CheckIfUniformBelongsToTeam(oldMatch.Home, match.HomeUniform))
+                throw new ApplicationException("Time não apresenta o uniforme passado");
+        }
+
+        if(match.VisitorUniform is not null)
+        {
+            if(!await CheckIfUniformBelongsToTeam(oldMatch.Visitor, match.VisitorUniform))
+                throw new ApplicationException("Time não apresenta o uniforme passado");
+        }
+        
+
+        await UpdateSend(match);
+        return new();
+    }
+    private async Task<bool> CheckIfUniformBelongsToTeam(int teamId, string uniform)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM teams WHERE Id = @teamId AND (UniformHome = @uniform OR UniformAway = @uniform))", new {teamId, uniform});
+
+    private async Task UpdateSend(Match match)
+		=> await _dbService.EditData(
+            "UPDATE Matches SET date = @Date, arbitrator = @Arbitrator, local = @Local, homeuniform = @HomeUniform, visitoruniform = @VisitorUniform WHERE id=@id",
+            match);
 }

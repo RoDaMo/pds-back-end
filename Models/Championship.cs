@@ -31,10 +31,6 @@ public class Championship
 	public string Description { get; set; }
 	[JsonConverter(typeof(FormatAsNumberConverter))]
 	public Format Format { get; set; }
-	public string Nation { get; set; }
-	public string State { get; set; }
-	public string City { get; set; }
-	public string Neighborhood { get; set; }
 	public Guid OrganizerId { get; set; }
 	public User Organizer { get; set; }
 	public int NumberOfPlayers { get; set; }

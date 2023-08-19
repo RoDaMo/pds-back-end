@@ -83,4 +83,47 @@ public class BracketingController : ApiBaseController
             return ApiBadRequest(Resource.GenericErrorMessage);
         }
     }
+
+    /// <summary>
+	/// Usado para deletar chaveamentos
+	/// </summary>
+	/// <response code="200">Retorna o status de sucesso da requisição</response>
+	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
+    [HttpDelete]
+    [Route("/bracketing/delete")]
+    public async Task<IActionResult> DeleteBracketing([FromBody] int championshipId)
+    {
+        var result = new List<Match>();
+        try
+        {
+            await _bracketingService.DeleteBracketing(championshipId);
+            return ApiOk(result);
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(Resource.GenericErrorMessage);
+        }
+    }
+
+    /// <summary>
+	/// Usado para verificar se campeonato já possui um chaveamento criado
+	/// </summary>
+	/// <response code="200">Retorna um valor booleano</response>
+	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
+    [HttpGet]
+    [Route("/bracketing/exists/{id:int}")]
+    public async Task<IActionResult> BracketingExists(int id)
+    {
+        try
+        {
+            var result = await _bracketingService.BracketingExists(id);
+            return ApiOk(result);
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(Resource.GenericErrorMessage);
+        }
+    }
 }
