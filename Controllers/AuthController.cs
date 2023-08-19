@@ -23,14 +23,16 @@ public class AuthController : ApiBaseController
 	private readonly CaptchaService _captcha;
 	private readonly DateTime _expires = DateTime.UtcNow.AddDays(1);
 	private readonly ErrorLogService _error;
+	private readonly OrganizerService _organizerService;
 
 	/// <inheritdoc />
-	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error, CaptchaService captcha)
+	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error, CaptchaService captcha, OrganizerService organizerService)
 	{
 		_authService = authService;
 		_redisService = redisService;
 		_error = error;
 		_captcha = captcha;
+		_organizerService = organizerService;
 		_cookieOptions = new CookieOptions
 		{
 			HttpOnly = true,
@@ -258,7 +260,13 @@ public class AuthController : ApiBaseController
 		{
 			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
 			var user = await _authService.GetUserByIdAsync(userId);
-			return ApiOk(new
+			var isOrganizer = await _organizerService.IsOrganizerAnywhereValidation(userId);
+			
+			var organizer = new Organizer();
+			if (isOrganizer)
+				organizer = await _organizerService.IsUserAnOrganizerValidation(userId);
+			
+			return ApiOk(new 
 			{
 				email = user.Email,
 				userName = user.Username,
@@ -267,8 +275,11 @@ public class AuthController : ApiBaseController
 				profileImg = user.Picture,
 				name = user.Name,
 				id = user.Id,
-				championshipId = user.ChampionshipId,
-				teamManagementId = user.TeamManagementId
+				championshipId = organizer.ChampionshipId,
+				isOrganizer,
+				isSubOrganizer = !organizer.MainOrganizer,
+				teamManagementId = user.TeamManagementId,
+				role = user.Role
 			});
 		}
 		catch (ApplicationException ex)

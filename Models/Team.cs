@@ -9,6 +9,7 @@ public class Team
     public bool Deleted{ get; set; }
     public int SportsId { get; set; }
     public string Name { get; set; }
+    public User Technician { get; set; }
    
 
 	public Team(string emblem, string uniformHome, string uniformAway, string name)

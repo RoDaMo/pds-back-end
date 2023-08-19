@@ -16,15 +16,17 @@ public class ChampionshipService
 	private readonly RedisService _redisService;
 	private readonly AuthService _authService;  
 	private readonly IBackgroundJobsService _backgroundJobs;
+	private readonly OrganizerService _organizerService;
 	private const string INDEX = "championships";
 
-	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, IBackgroundJobsService backgroundJobs, RedisService redisService)
+	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, IBackgroundJobsService backgroundJobs, RedisService redisService, OrganizerService organizerService)
 	{
 		_dbService = dbService;
 		_elasticService = elasticService;
 		_authService = authService;
 		_backgroundJobs = backgroundJobs;
 		_redisService = redisService;
+		_organizerService = organizerService;
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
 	{
@@ -62,18 +64,19 @@ public class ChampionshipService
 	{
 		championship.Id = await _dbService.EditData(
 			@"
-			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, organizerId, numberofplayers, teamquantity, status, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch) 
-			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @OrganizerId, @NumberOfPlayers, @TeamQuantity, @Status, @DoubleMatchGroupStage, @DoubleMatchEliminations, @DoubleStartLeagueSystem, @FinalDoubleMatch) RETURNING Id;",
+			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, nation, state, city, neighborhood, organizerId, numberofplayers, teamquantity, status, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch, deleted) 
+			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @Nation, @State, @City, @Neighborhood, @OrganizerId, @NumberOfPlayers, @TeamQuantity, @Status, @DoubleMatchGroupStage, @DoubleMatchEliminations, @DoubleStartLeagueSystem, @FinalDoubleMatch, false) RETURNING Id;",
 			championship);
 
-		await _dbService.EditData(
-			"UPDATE users SET championshipId = @championshipId WHERE id = @userId", new
-				{ championshipId = championship.Id, userId = championship.Organizer.Id });
+		// await _dbService.EditData(
+		// 	"UPDATE users SET championshipId = @championshipId WHERE id = @userId", new
+		// 		{ championshipId = championship.Id, userId = championship.Organizer.Id });
 
 		var resultado = await _elasticService._client.IndexAsync(championship, INDEX);
-
 		if (!resultado.IsValidResponse)
 			throw new ApplicationException(Generic.GenericErrorMessage);
+
+		await _organizerService.InsertValidation(new Organizer { ChampionshipId = championship.Id, MainOrganizer = true, OrganizerId = championship.Organizer.Id });
 
 		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Inactive), TimeSpan.FromDays(14));
 		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Active), championship.InitialDate - DateTime.UtcNow);
@@ -115,9 +118,10 @@ public class ChampionshipService
 						must =>
 						{
 							if (string.IsNullOrEmpty(name)) return;
-							must.MatchPhrasePrefix(mpp => mpp
+							must.Match(mpp => mpp
 								.Field(f => f.Name)
 								.Query(name)
+								.Fuzziness(new Fuzziness("Auto"))
 							);
 						},
 						must2 => must2
@@ -149,7 +153,7 @@ public class ChampionshipService
 	}
 
 	private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, organizerid, teamquantity, numberofplayers, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch FROM championships WHERE id = @id", new { id });
+		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, nation, state, city, neighborhood, organizerid, teamquantity, numberofplayers, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch FROM championships WHERE id = @id", new { id });
 	
 	private async Task<int> GetNumberOfPlayers(int championshipId)
 		=> await _dbService.GetAsync<int>("SELECT numberofplayers FROM championships WHERE id = @championshipId", new {championshipId});
@@ -194,7 +198,7 @@ public class ChampionshipService
 	private async Task UpdateSend(Championship championship) =>
 		await _dbService.EditData(
 			"UPDATE championships SET " +
-			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, teamquantity = @teamquantity, numberofplayers = @numberofplayers, doublematchgroupstage = @doublematchgroupstage, doublematcheliminations = @doublematcheliminations, doublestartleaguesystem = @doublestartleaguesystem, finaldoublematch = @finaldoublematch " +
+			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, nation = @nation, state = @state, city = @city, neighborhood = @neighborhood, teamquantity = @teamquantity, numberofplayers = @numberofplayers, doublematchgroupstage = @doublematchgroupstage, doublematcheliminations = @doublematcheliminations, doublestartleaguesystem = @doublestartleaguesystem, finaldoublematch = @finaldoublematch " +
 			"WHERE id=@id",
 			championship);
 
@@ -208,6 +212,7 @@ public class ChampionshipService
 		await DeleteSend(championship);
 		championship.Deleted = true;
 		await _elasticService._client.IndexAsync(championship, INDEX);
+		await _organizerService.DeleteValidation(new() { ChampionshipId = championship.Id, OrganizerId = championship.OrganizerId });
 	}
 
 	private async Task DeleteSend(Championship championship)

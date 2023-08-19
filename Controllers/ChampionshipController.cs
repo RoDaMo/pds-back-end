@@ -14,16 +14,18 @@ namespace PlayOffsApi.Controllers;
 public class ChampionshipController : ApiBaseController
 {
   private readonly ChampionshipService _championshipService;
+  private readonly OrganizerService _organizerService;
   private readonly AuthService _authService;	
   private readonly ErrorLogService _error;
   private readonly ChampionshipActivityLogService _activityLogService;
 
-  public ChampionshipController(ChampionshipService championshipService, AuthService authService, ErrorLogService error, ChampionshipActivityLogService activityLogService)
+  public ChampionshipController(ChampionshipService championshipService, AuthService authService, ErrorLogService error, ChampionshipActivityLogService activityLogService, OrganizerService organizerService)
   {
     _championshipService = championshipService;
     _authService = authService;
     _error = error;
     _activityLogService = activityLogService;
+    _organizerService = organizerService;
   }
 
   [Authorize]
@@ -35,6 +37,11 @@ public class ChampionshipController : ApiBaseController
     try
     {
       var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+      var isOrganizer = await _organizerService.IsUserAnOrganizerValidation(userId);
+      if (isOrganizer is not null)
+        return ApiBadRequest("Usuário já possui um campeonato ativo ou pendente!");
+
       var user = await _authService.GetUserByIdAsync(userId);
       championship.Organizer = user;
       championship.OrganizerId = user.Id;
@@ -151,7 +158,9 @@ public class ChampionshipController : ApiBaseController
     {
       var championship = await _championshipService.GetByIdValidation(id);
       var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-      if (championship.OrganizerId != userId)
+      
+      var organizador = await _organizerService.IsUserAnOrganizerValidation(userId);
+      if (organizador is null || !organizador.MainOrganizer)
         return ApiUnauthorizedRequest(Resource.DeleteNotAuthorized);
       
       await _championshipService.DeleteValidation(championship);
