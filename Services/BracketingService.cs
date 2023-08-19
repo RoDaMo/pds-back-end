@@ -113,8 +113,6 @@ public class BracketingService
 			);
 		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
 	}
-	private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT format, teamquantity, numberofplayers, DoubleMatchGroupStage, DoubleMatchEliminations, DoubleStartLeagueSystem, FinalDoubleMatch FROM championships WHERE id = @id", new { id });
 	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)
 		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId;", new { championshipId });
 	private async Task<bool> CheckIfChampionhipExists(int championshipId)
@@ -147,27 +145,23 @@ public class BracketingService
 		}
 
 		var matches = new List<Match>();
-        for (int i = 0; i < teams.Count(); i++)
-        {
-            for (int j = i+1; j < teams.Count(); j++)
-            {
-				matches.Add(new Match(championshipId, teams[i].Id, teams[j].Id, 1));
-            }
-        }
 
-		for (int i = 0; i < matches.Count(); i++)
-		{
-			for(int j = i + 1; j < matches.Count() - 1; j++ )
-			{
-				if (
-				(matches[i].Home == matches[j].Home || matches[i].Home == matches[j].Visitor
-				|| matches[i].Visitor == matches[j].Home || matches[i].Visitor == matches[j].Visitor)
-				&& matches[i].Round == matches[j].Round)
-				{
-					matches[j].Round++;
-				}
-			}
-		}
+		await Shuffle(teams);
+
+		int numberOfCompetitors = teams.Count;
+        int numberOfRounds = numberOfCompetitors - 1;
+
+        for (int round = 1; round <= numberOfRounds; round++)
+        {
+            for (int i = 0; i < numberOfCompetitors / 2; i++)
+            {
+                Team homeTeam = teams[i];
+                Team awayTeam = teams[numberOfCompetitors - 1 - i];
+				matches.Add(new Match(championshipId, homeTeam.Id, awayTeam.Id, round));
+            }
+
+            await RotateTeams(teams);
+        }
 		
 		matches.Sort((x, y) => x.Round.CompareTo(y.Round));
 
@@ -187,6 +181,29 @@ public class BracketingService
 
 		return matches;
 	}
+
+	private async Task RotateTeams(List<Team> teams)
+    {
+        Team temp = teams[teams.Count - 1];
+        for (int i = teams.Count - 1; i > 1; i--)
+        {
+            teams[i] = teams[i - 1];
+        }
+        teams[1] = temp;
+    }
+	private  async Task Shuffle<T>(List<T> list)
+    {
+        Random rng = new Random();
+        int n = list.Count;
+        while (n > 1)
+        {
+            n--;
+            int k = rng.Next(n + 1);
+            T value = list[k];
+            list[k] = list[n];
+            list[n] = value;
+        }
+    }
 	private async Task<int> CreateClassificationSend(Classification classification)
 		=> await _dbService.EditData(
 				"INSERT INTO classifications (Points, TeamId, ChampionshipId, Position) VALUES (@Points, @TeamId, @ChampionshipId, @Position) returning id", 
@@ -211,7 +228,7 @@ public class BracketingService
 			throw new ApplicationException("Campeonato passado não apresenta o formato de eliminatórias com fase de grupos.");
 		}
 
-		teams.Sort((x, y) => string.Compare(x.Name, y.Name));
+		await Shuffle(teams);
 
 		int position = 1;
 
@@ -224,7 +241,6 @@ public class BracketingService
 		}
 
 		var matches = new List<Match>();
-
 
         for (int i = 0; i < teams.Count(); i++)
         {
@@ -261,7 +277,7 @@ public class BracketingService
 			var quantityMatches = matches.Count();
 			for (int i = 0; i < quantityMatches; i++)
 			{
-				matches.Add(new Match(championshipId, matches[i].Visitor, matches[i].Home, matches[i].Round + teams.Count()-1));
+				matches.Add(new Match(championshipId, matches[i].Visitor, matches[i].Home, matches[i].Round + 3));
 			}
 		}
 
@@ -332,4 +348,28 @@ public class BracketingService
 		}
 		return matches;
 	}
+
+	public async Task DeleteBracketing(int championshipId)
+	{
+		var championship = await GetByIdSend(championshipId);
+
+		if(championship.Status == ChampionshipStatus.Pendent)
+			throw new ApplicationException("Não é possível deletar um campeonato que já foi iniciado.");
+		
+		if(championship.Format != Format.Knockout)
+		{
+			await DeleteClassificationsByChampionshipId(championshipId);
+		}
+
+		await DeleteMatchesByChampionshipId(championshipId);
+	}
+	private async Task DeleteMatchesByChampionshipId(int championshipId)
+		=> await _dbService.EditData("DELETE FROM Matches WHERE ChampionshipId = @championshipId", new {championshipId});
+	private async Task DeleteClassificationsByChampionshipId(int championshipId)
+		=> await _dbService.EditData("DELETE FROM Classifications WHERE ChampionshipId = @championshipId", new {championshipId});
+	private async Task<Championship> GetByIdSend(int id) 
+			=> await _dbService.GetAsync<Championship>("SELECT format, status, teamquantity, numberofplayers, DoubleMatchGroupStage, DoubleMatchEliminations, DoubleStartLeagueSystem, FinalDoubleMatch FROM championships WHERE id = @id", new { id });
+	public async Task<bool> BracketingExists(int championshipId)
+	=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM Matches WHERE championshipId = @championshipId)", new {championshipId});	
 }
+

@@ -54,22 +54,6 @@ public class ChampionshipValidator : AbstractValidator<Championship>
 			.Length(10, 10000)
 			.WithMessage(Resource.ChampionshipValidatorAtleast10);
 
-		RuleFor(c => c.Nation)
-			.NotEmpty()
-			.WithMessage(Resource.ChampionshipValidatorNationNotNull);
-
-		RuleFor(c => c.State)
-			.NotEmpty()
-			.WithMessage(Resource.ChampionshipValidatorStateNotNull);
-		
-		RuleFor(c => c.City)
-			.NotEmpty()
-			.WithMessage(Resource.ChampionshipValidatorCityNotNull);
-
-		RuleFor(c => c.Neighborhood)
-			.NotEmpty()
-			.WithMessage(Resource.ChampionshipValidatorNeighborhoodNotNull);
-
 		RuleFor(c => c.NumberOfPlayers)
 			.NotEmpty()
 			.WithMessage(Resource.ChampionshipValidatorNumberOfPlayers);

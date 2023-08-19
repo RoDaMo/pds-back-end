@@ -32,6 +32,12 @@ public class GoalService
 			return errorMessages;
 		}
 
+        if(match.HomeUniform is null || match.VisitorUniform is null)
+            throw new ApplicationException("É necessário definir os uniformes das equipes antes");
+        
+        if (match.Local is null)
+            throw new ApplicationException("É necessário definir o local da partida antes antes");
+
         if(goal.PlayerId == Guid.Empty)
         {
             if(!await CheckRelationshipBetweenPlayerTempAndTeam(goal.PlayerTempId, goal.TeamId))
@@ -55,11 +61,6 @@ public class GoalService
         if(await DepartureDateNotSet(goal.MatchId))
         {
             throw new ApplicationException("Data da partida não definida.");
-        }
-
-        if(await DidMatchNotStart(goal.MatchId))
-        {
-            throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
         }
         if(await CheckIfThereIsWinner(goal.MatchId))
         {
@@ -180,8 +181,6 @@ public class GoalService
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND (home = @teamId OR visitor = @teamId) );", new {matchId, teamId});
     private async Task<bool> DepartureDateNotSet(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date IS NULL);", new {matchId});
-    private async Task<bool> DidMatchNotStart(int matchId)
-        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date <> CURRENT_DATE);", new {matchId});
     private async Task<bool> CheckIfThereIsAnyPenaltyByMatchId(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM penalties WHERE MatchId = @matchId)", new {matchId});
     private async Task<int> CreateGoalToPlayerTempSend(Goal goal)
