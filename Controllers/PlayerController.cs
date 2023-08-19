@@ -71,6 +71,7 @@ public class PlayerController : ApiBaseController
         try
         {
             var users = await _authService.GetUsersByUsernameValidation(username);
+            users = users.OrderBy(u => u.PlayerPosition).ToList();
             return ApiOk(users.Select(s => new { s.Name, s.Picture, s.Id }));
         }
         catch (ApplicationException ex)
