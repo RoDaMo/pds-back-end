@@ -114,9 +114,10 @@ public class AuthController : ApiBaseController
 	/// </summary>
 	/// <remarks>
 	/// Exemplo de requisição:
+	/// 
 	///		Put /auth
 	/// </remarks>
-	/// <response code="200">Retorna o token atualizado</response>
+	/// <response code="200">O token é atualizado</response>
 	/// <response code="401">Retorna um erro indicando algum erro cometido na requisição</response>
 	/// <returns>
 	///	Exemplo de retorno:
@@ -159,6 +160,26 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+	/// <summary>
+	/// Usado para encerrar a sessão do usuário no sistema
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE /auth
+	///
+	/// </remarks>
+	/// <response code="200">A sessão do usuário é encerrada no sistema</response>
+	/// <response code="401">Retorna um erro indicando algum erro cometido na requisição</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": "Usuário deslogado com sucesso"
+	///		}
+	/// </returns>
 	[HttpDelete]
 	[Authorize]
 	public IActionResult LogoutUser()
