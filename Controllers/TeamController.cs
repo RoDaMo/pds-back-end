@@ -217,6 +217,7 @@ public class TeamController : ApiBaseController
         try
         {
             var players = await _teamService.GetPlayersOfTeamValidation(id); 
+            players = players.OrderBy(u => u.PlayerPosition).ToList();
             return ApiOk(players.Select(m => new { id = m.Id, name = m.Name, artisticName = m.ArtisticName, number = m.Number, teamsId = m.PlayerTeamId, playerPosition = m.PlayerPosition, isCaptain = m.IsCaptain, picture = m.Picture }));
         }
         catch (ApplicationException ex)
