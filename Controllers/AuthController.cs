@@ -51,7 +51,7 @@ public class AuthController : ApiBaseController
 	/// 
 	///		POST /auth
 	///		{
-	///			"Username": "UsuarioDeTeste22",
+	///			"Username": "Kaique",
 	///			"Password": "Ab123",
 	///			"RememberMe": true
 	///		}
@@ -109,6 +109,24 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+	/// <summary>
+	/// Usado para atualizar tokens de acesso para usuários
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	///		Put /auth
+	/// </remarks>
+	/// <response code="200">Retorna o token atualizado</response>
+	/// <response code="401">Retorna um erro indicando algum erro cometido na requisição</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "Token atualizado",
+  	///			"succeed": true,
+  	///			"results": ""
+	///		}
+	/// </returns>
 	[HttpPut]
 	public async Task<IActionResult> UpdateAccesToken()
 	{
