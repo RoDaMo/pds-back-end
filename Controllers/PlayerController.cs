@@ -111,6 +111,20 @@ public class PlayerController : ApiBaseController
         }
     }
     
+    /// <summary>
+	/// Usado para obter usuários para vincular a um time.
+	/// </summary>
+    /// <param name="username"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /players?username={username}
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém usuários conforme o username.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> GetByQuery(string username)
