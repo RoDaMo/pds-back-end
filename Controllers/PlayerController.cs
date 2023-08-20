@@ -8,7 +8,7 @@ using Generic = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Controllers;
 /// <summary>
-///Endpoints destinados à configuração do usuário.
+///Endpoints destinados à manuntenção dos jogadores de um time.
 /// </summary>
 
 
@@ -28,6 +28,35 @@ public class PlayerController : ApiBaseController
         _authService = authService;
     }
 
+    /// <summary>
+	/// Usado para atualizar usuário para torná-lo jogador.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /players
+	///		{
+    ///         "artisticName": "Mané",
+    ///         "number": 12,
+    ///         "playerTeamId": 5,
+    ///         "playerPosition": 2,
+    ///         "iscaptain": false,
+    ///         "id": "xxxx-xxxx-xxxx-xxxx"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Usuário passa a ser jogador de um time.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
     [HttpPut]
     public async Task<IActionResult> Update([FromBody] User user)
     {
