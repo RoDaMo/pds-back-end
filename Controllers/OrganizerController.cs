@@ -31,19 +31,22 @@ public class OrganizerController  : ApiBaseController
 
 
     /// <summary>
-    /// Adiciona um sub-organizador ao campeonato.
-    /// </summary>
-    /// <remarks>
-    /// Exemplo de requisição:
+	/// Usado para adicionar novo suborganizador.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
 	/// 
-	///		POST /organizer
-	///		{
-	///			"OrganizerId": "xxxx-xxxx-xxxx-xxxx",
-	///			"ChampionshipId": "51"
-	///		}
+	///		POST organizer
+    ///		{
+    ///         "organizerId": "d7868182-c7ff-4fcc-91dc-c797f4bfd09e",
+    ///         "championshipId": 66
+    ///     }
+	///		
 	/// </remarks>
-    /// <param name="newOrganizer"></param>
-    /// <returns></returns>
+	/// <response code="200">Adiciona um novo suborganizador ao campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpPost]
     public async Task<IActionResult> AddOrganizerToChampionship(Organizer newOrganizer)
     {
