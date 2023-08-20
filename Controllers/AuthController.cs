@@ -324,6 +324,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para reenviar email.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/resend-confirm-email?id={id}
+	///		
+	/// </remarks>
+	/// <response code="200">Reenvia email para confirmação.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/resend-confirm-email")] 
 	public async Task<IActionResult> ResendConfirmEmail(Guid id)
