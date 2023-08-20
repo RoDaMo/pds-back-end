@@ -43,9 +43,8 @@ public class AuthController : ApiBaseController
 	}
 
 	/// <summary>
-	/// Usado para gerar tokens de acesso para usuários
+	/// Usado para gerar tokens de acesso para usuários.
 	/// </summary>
-	/// <param name="user"></param>
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
@@ -55,9 +54,10 @@ public class AuthController : ApiBaseController
 	///			"Password": "Ab123",
 	///			"RememberMe": true
 	///		}
+	///		
 	/// </remarks>
 	/// <response code="200">Retorna o token recém-criado</response>
-	/// <response code="401">Retorna um erro indicando algum erro cometido na requisição</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	///	Exemplo de retorno:
 	///
@@ -66,6 +66,7 @@ public class AuthController : ApiBaseController
 	///			"succeed": true,
 	///			"results": "Autenticado com sucesso"
 	///		}
+	///		
 	/// </returns>
 	[HttpPost]
 	[ProducesResponseType(StatusCodes.Status200OK)]
@@ -110,15 +111,16 @@ public class AuthController : ApiBaseController
 	}
 
 	/// <summary>
-	/// Usado para atualizar tokens de acesso para usuários
+	/// Usado para atualizar tokens de acesso para usuários.
 	/// </summary>
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
 	///		Put /auth
+	///		
 	/// </remarks>
 	/// <response code="200">O token é atualizado</response>
-	/// <response code="401">Retorna um erro indicando algum erro cometido na requisição</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	///	Exemplo de retorno:
 	///
@@ -127,6 +129,7 @@ public class AuthController : ApiBaseController
   	///			"succeed": true,
   	///			"results": ""
 	///		}
+	///		
 	/// </returns>
 	[HttpPut]
 	public async Task<IActionResult> UpdateAccesToken()
@@ -161,16 +164,16 @@ public class AuthController : ApiBaseController
 	}
 
 	/// <summary>
-	/// Usado para encerrar a sessão do usuário no sistema
+	/// Usado para encerrar a sessão do usuário no sistema.
 	/// </summary>
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
 	///		DELETE /auth
-	///
+	///		
 	/// </remarks>
 	/// <response code="200">A sessão do usuário é encerrada no sistema</response>
-	/// <response code="401">Retorna um erro indicando algum erro cometido na requisição</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	///	Exemplo de retorno:
 	///
@@ -179,6 +182,7 @@ public class AuthController : ApiBaseController
 	///			"succeed": true,
 	///			"results": "Usuário deslogado com sucesso"
 	///		}
+	///		
 	/// </returns>
 	[HttpDelete]
 	[Authorize]
