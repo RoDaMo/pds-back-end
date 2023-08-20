@@ -103,6 +103,20 @@ public class TeamController : ApiBaseController
         }
     }
     
+    /// <summary>
+	/// Usado para obter times por id.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET teams/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém todos os times conforme o id.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [AllowAnonymous]
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Show(int id)
