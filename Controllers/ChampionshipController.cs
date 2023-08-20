@@ -165,6 +165,20 @@ public class ChampionshipController : ApiBaseController
     }
   }
 
+	/// <summary>
+	/// Usado para obter campeonato por id.
+	/// </summary>
+  /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /championships/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Exibe o campeonato conforme id.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
   [HttpGet]
   [Route("/championships/{id:int}")]
   public async Task<IActionResult> Show(int id)
