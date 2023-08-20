@@ -90,8 +90,8 @@ public class BracketingController : ApiBaseController
 	/// <response code="200">Retorna o status de sucesso da requisição</response>
 	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
     [HttpDelete]
-    [Route("/bracketing/delete")]
-    public async Task<IActionResult> DeleteBracketing([FromBody] int championshipId)
+    [Route("/bracketing/delete/{championshipId:int}")]
+    public async Task<IActionResult> DeleteBracketing(int championshipId)
     {
         var result = new List<Match>();
         try

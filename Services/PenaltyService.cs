@@ -49,10 +49,10 @@ public class PenaltyService
             throw new ApplicationException("Data da partida não definida.");
         }
 
-        if(await DidMatchNotStart(penalty.MatchId))
-        {
-            throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
-        }
+        // if(await DidMatchNotStart(penalty.MatchId))
+        // {
+        //     throw new ApplicationException("Partida ainda não inciada ou já encerrada.");
+        // }
 
         if(!await AreTeamsTied(penalty.MatchId))
         {
@@ -137,8 +137,8 @@ public class PenaltyService
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND (home = @teamId OR visitor = @teamId) );", new {matchId, teamId});
     private async Task<bool> DepartureDateNotSet(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date IS NULL);", new {matchId});
-    private async Task<bool> DidMatchNotStart(int matchId)
-        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date <> CURRENT_DATE);", new {matchId});
+    // private async Task<bool> DidMatchNotStart(int matchId)
+    //     => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date <> CURRENT_DATE);", new {matchId});
     private async Task<bool> AreTeamsTied(int matchId)
     {
         var match = await GetMatchById(matchId);

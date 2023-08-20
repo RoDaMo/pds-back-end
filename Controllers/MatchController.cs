@@ -44,8 +44,8 @@ public class MatchController : ApiBaseController
     }
 
     [HttpPut]
-    [Route("/matches/end-game-knockout")]
-    public async Task<IActionResult> EndGameToKnockout([FromBody] int matchId)
+    [Route("/matches/{matchId:int}/end-game-knockout")]
+    public async Task<IActionResult> EndGameToKnockout(int matchId)
     {
         var result = new List<string>();
 
@@ -83,8 +83,8 @@ public class MatchController : ApiBaseController
     }
 
     [HttpPut]
-    [Route("/matches/end-game-league-system")]
-    public async Task<IActionResult> EndGameToLeagueSystem([FromBody] int matchId)
+    [Route("/matches/{matchId:int}/end-game-league-system")]
+    public async Task<IActionResult> EndGameToLeagueSystem(int matchId)
     {
         var result = new List<string>();
 
@@ -103,8 +103,8 @@ public class MatchController : ApiBaseController
     }
 
     [HttpPut]
-    [Route("/matches/end-game-group-stage")]
-    public async Task<IActionResult> CreateGroupStage([FromBody] int matchId)
+    [Route("/matches/{matchId:int}/end-game-group-stage")]
+    public async Task<IActionResult> CreateGroupStage(int matchId)
     {
         var result = new List<string>();
 
