@@ -166,7 +166,7 @@ public class OrganizerController  : ApiBaseController
     }
     
     /// <summary>
-	/// Usado para obter usuários para adicionar como suborganizadores.
+	/// Usado para obter todos os campeonatos os quais o usuário administra.
 	/// </summary>
     /// <param name="username"></param>
 	/// <remarks>
@@ -175,7 +175,7 @@ public class OrganizerController  : ApiBaseController
 	///		GET organizer/championship
 	///		
 	/// </remarks>
-	/// <response code="200">Obtém todos os os usuários conforme o username.</response>
+	/// <response code="200">Obtém todos os campeonatos administrados pelo usuário.</response>
 	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	/// </returns>
@@ -200,10 +200,19 @@ public class OrganizerController  : ApiBaseController
     }
     
     /// <summary>
-    /// Obtem usuários para adicionar como organizadores de um campeonato.
-    /// </summary>
+	/// Usado para obter usuários para adicionar como suborganizadores.
+	/// </summary>
     /// <param name="username"></param>
-    /// <returns></returns>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET organizer?username=""
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém todos os usuários conforme o username.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> GetByQuery(string username)
