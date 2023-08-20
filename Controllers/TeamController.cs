@@ -321,7 +321,7 @@ public class TeamController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		DELETE teams/{id}
+	///		DELETE /teams/{id}
 	///		
 	/// </remarks>
 	/// <response code="200">O time é excluído.</response>
@@ -347,6 +347,20 @@ public class TeamController : ApiBaseController
         }
     }
 
+    /// <summary>
+	/// Usado para obter todos os jogadores do time.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /teams/{id}/players
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém todos os jogadores do time.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpGet]
     [Route("/teams/{id:int}/players")]
     public async Task<IActionResult> GetAllPlayersOfTeam(int id)
