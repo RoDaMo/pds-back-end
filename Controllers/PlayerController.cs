@@ -7,6 +7,9 @@ using PlayOffsApi.Services;
 using Generic = PlayOffsApi.Resources.Generic;
 
 namespace PlayOffsApi.Controllers;
+/// <summary>
+///Endpoints destinados à configuração do usuário.
+/// </summary>
 
 
 [Authorize]
@@ -17,6 +20,7 @@ public class PlayerController : ApiBaseController
     private readonly PlayerService _playerService;
     private readonly AuthService _authService;
     private readonly ErrorLogService _error;
+    /// <inheritdoc />
     public PlayerController(PlayerService playerService, ErrorLogService error, AuthService authService)
     {
         _playerService = playerService;
