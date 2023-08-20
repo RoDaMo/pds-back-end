@@ -56,7 +56,7 @@ public class AuthController : ApiBaseController
 	///		}
 	///		
 	/// </remarks>
-	/// <response code="200">Retorna o token recém-criado</response>
+	/// <response code="200">Retorna o token recém-criado.</response>
 	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	///	Exemplo de retorno:
@@ -119,7 +119,7 @@ public class AuthController : ApiBaseController
 	///		Put /auth
 	///		
 	/// </remarks>
-	/// <response code="200">O token é atualizado</response>
+	/// <response code="200">O token é atualizado.</response>
 	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	///	Exemplo de retorno:
@@ -172,7 +172,7 @@ public class AuthController : ApiBaseController
 	///		DELETE /auth
 	///		
 	/// </remarks>
-	/// <response code="200">A sessão do usuário é encerrada no sistema</response>
+	/// <response code="200">A sessão do usuário é encerrada no sistema.</response>
 	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	///	Exemplo de retorno:
@@ -193,6 +193,34 @@ public class AuthController : ApiBaseController
 		return ApiOk<string>(Resource.LogoutUserDeslogadoSucesso);
 	}
 
+	/// <summary>
+	/// Usado para cadastrar usuário.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/register
+	///		{
+	///			"Name": "Usuário Admin 10",
+	///			"Email": "jerobe6695@meogl.com",
+	///			"Password": "Ab123",
+	///			"Username": "UsuarioAdmin10",
+	///			"Birthday": "2004-06-14"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Registra o usuário.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "Usuário cadastrado com sucesso",
+	///			"succeed": true,
+	///			"results": ""
+	///		}
+	///		
+	/// </returns>
 	[HttpPost]
 	[Route("/auth/register")]
 	public async Task<IActionResult> RegisterUser(User user, [FromHeader]string superSecretPassword = "")
