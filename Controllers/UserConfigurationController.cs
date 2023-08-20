@@ -64,6 +64,23 @@ public class UserConfigurationController : ApiBaseController
         }
     }
 
+    /// <summary>
+	/// Usado para atualizar senha do usuário.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /userconfigurations/updatepassword
+	///		{
+    ///         "NewPassword": "Cd123",
+    ///         "CurrentPassword": "Ab123"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Senha do usuário é atualizada.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpPut]
     [Route("/userconfigurations/updatepassword")]
     public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordDTO updatePasswordDTO)
