@@ -83,19 +83,22 @@ public class OrganizerController  : ApiBaseController
     }
 
     /// <summary>
-    /// Remove um sub-organizador de um campeonato.
-    /// </summary>
-    /// <remarks>
-    /// Exemplo de requisição:
-    /// 
-    ///		DELETE /organizer
+	/// Usado para remover novo suborganizador.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE organizer
     ///		{
-    ///			"OrganizerId": "xxxx-xxxx-xxxx-xxxx",
-    ///			"ChampionshipId": "51"
-    ///		}
-    /// </remarks>
-    /// <param name="toBeRemoved"></param>
-    /// <returns></returns>
+    ///         "organizerId": "d7868182-c7ff-4fcc-91dc-c797f4bfd09e",
+    ///         "championshipId": 66
+    ///     }
+	///		
+	/// </remarks>
+	/// <response code="200">Remove um suborganizador ao campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpDelete]
     public async Task<IActionResult> RemoveOrganizerFromChampionship(Organizer toBeRemoved)
     {
