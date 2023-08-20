@@ -128,10 +128,19 @@ public class OrganizerController  : ApiBaseController
     }
 
     /// <summary>
-    /// Obtém todos os organizadores de um campeonato. Para visualizá-los, é necessário ser o organizador principal.
-    /// </summary>
+	/// Usado para obter todos os suborganizadores.
+	/// </summary>
     /// <param name="id"></param>
-    /// <returns></returns>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET organizer/championship/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém todos os suborganizadores do campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpGet]
     [Route("/organizer/championship/{id:int}")]
     public async Task<IActionResult> GetAllOrganizersFromChampionship(int id)
