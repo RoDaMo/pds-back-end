@@ -243,7 +243,7 @@ public class BracketingController : ApiBaseController
     /// <summary>
 	/// Usado para verificar se campeonato já possui um chaveamento criado.
 	/// </summary>
-    /// <param name="id">Id do Campeonato</param>
+    /// <param name="id"></param>
     /// <remarks>
 	/// Exemplo de requisição:
 	/// 
