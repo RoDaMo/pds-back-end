@@ -355,6 +355,22 @@ public class AuthController : ApiBaseController
 	}
 
 
+	/// <summary>
+	/// Usado para verificar email para redefinir senha.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/exists
+	///		{
+	///			"Email": "email@gmail.com"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Verifica o email.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpPost]
 	[Route("/auth/forgot-password")] 
 	public async Task<IActionResult> ForgotPassword(User user)
@@ -616,6 +632,19 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para deletar usuário atual.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE /auth/user
+	///		
+	/// </remarks>
+	/// <response code="200">Deleta o usuário atual.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpDelete]
 	[Authorize]
 	[Route("/auth/user")]
