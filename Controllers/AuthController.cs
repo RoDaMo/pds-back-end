@@ -551,6 +551,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+	/// <summary>
+	/// Usado para adicionar CPF para usuário atual.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/cpf
+	///		"78641357068"
+	///		
+	/// </remarks>
+	/// <response code="200">Cadastra CPF para usuário atual.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[Authorize]
 	[HttpPost]
 	[Route("/auth/cpf")]
