@@ -35,7 +35,7 @@ public class BracketingController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		POST bracketing/knockout
+	///		POST /bracketing/knockout
     ///		23
     ///		
 	/// </remarks>
@@ -98,7 +98,7 @@ public class BracketingController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		POST bracketing/league-system
+	///		POST /bracketing/league-system
     ///		23
     ///		
 	/// </remarks>
@@ -152,7 +152,7 @@ public class BracketingController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		POST bracketing/group-stage
+	///		POST /bracketing/group-stage
     ///		23
     ///		
 	/// </remarks>

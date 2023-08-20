@@ -81,7 +81,7 @@ public class MatchController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		PUT matches/{id}/end-game-knockout
+	///		PUT /matches/{id}/end-game-knockout
 	///		
 	/// </remarks>
 	/// <response code="200">Partida eliminatória é finalizada.</response>
@@ -122,7 +122,7 @@ public class MatchController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		POST matches/penalties
+	///		POST /matches/penalties
     ///		{
     ///             "MatchId": 31,
     ///             "PlayerTempId": "c223084a-90ec-471a-af4a-19697aefaba0",
@@ -169,7 +169,7 @@ public class MatchController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		PUT matches/{id}/end-game-league-system
+	///		PUT /matches/{id}/end-game-league-system
 	///		
 	/// </remarks>
 	/// <response code="200">Partida pontos corridos é finalizada.</response>
@@ -211,7 +211,7 @@ public class MatchController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		PUT matches/{id}/end-game-group-stage
+	///		PUT /matches/{id}/end-game-group-stage
 	///		
 	/// </remarks>
 	/// <response code="200">Partida fase de grupos é finalizada.</response>
@@ -253,7 +253,7 @@ public class MatchController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		PUT matches
+	///		PUT /matches
     ///		{
     ///             "Id": 4469,
     ///             "Local": "Bairro do Limoeiro",
