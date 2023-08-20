@@ -206,7 +206,7 @@ public class OrganizerController  : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		GET organizer?username=""
+	///		GET organizer?username={username}
 	///		
 	/// </remarks>
 	/// <response code="200">Obtém todos os usuários conforme o username.</response>
