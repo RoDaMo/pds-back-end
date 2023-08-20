@@ -57,10 +57,8 @@ public class ImageController : ApiBaseController
 	/// Exemplo de requisição:
 	/// 
 	///		POST /img
-	///		{
-    ///         "teamId": 5,
-    ///         "championshipId": 47
-	///		}
+    ///		    file: "",
+    ///		    type: 3
 	///		
 	/// </remarks>
 	/// <response code="200">A imagem é enviada ao banco.</response>
