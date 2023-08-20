@@ -355,7 +355,7 @@ public class AuthController : ApiBaseController
 	}
 
 	/// <summary>
-	/// Usado para redefinir senha.
+	/// Usado para redefinir senha por POST.
 	/// </summary>
 	/// <remarks>
 	/// Exemplo de requisição:
@@ -474,6 +474,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para redefinir senha por GET.
+	/// </summary>
+	/// <param name="token"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/reset-password?token={token}
+	///		
+	/// </remarks>
+	/// <response code="200">Redefine a senha.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/reset-password")] 
 	public async Task<IActionResult> ResetPassword(string token)
