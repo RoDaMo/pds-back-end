@@ -166,9 +166,19 @@ public class OrganizerController  : ApiBaseController
     }
     
     /// <summary>
-    /// Obtem todos os campeonatos no qual o usuário organiza
-    /// </summary>
-    /// <returns></returns>
+	/// Usado para obter usuários para adicionar como suborganizadores.
+	/// </summary>
+    /// <param name="username"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET organizer/championship
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém todos os os usuários conforme o username.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpGet]
     [Route("/organizer/championship")]
     public async Task<IActionResult> GetAllChampionshipsFromOrganizer()
