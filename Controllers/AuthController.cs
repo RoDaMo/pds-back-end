@@ -245,6 +245,31 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+
+	/// <summary>
+	/// Usado para verificar se usuário existe.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/exists
+	///		{
+	///			"Username": "UsuarioAdmin10"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Retorna se o usuário existe ou não.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": true
+	///		}
+	///		
+	/// </returns>
 	[HttpPost]
 	[Route("/auth/exists")]
 	public async Task<IActionResult> UserAlreadyExists(User user)
