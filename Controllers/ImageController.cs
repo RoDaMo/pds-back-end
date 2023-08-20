@@ -49,6 +49,23 @@ public class ImageController : ApiBaseController
         return File(image.Stream.ToArray(), image.ContentType, image.FileName + "." + image.Extension);
     }
 
+    /// <summary>
+	/// Usado para enviar imagem.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /img
+	///		{
+    ///         "teamId": 5,
+    ///         "championshipId": 47
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">A imagem é enviada ao banco.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> SendImage(IFormFile file, [FromForm]TypeUpload type)
