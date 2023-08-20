@@ -202,7 +202,7 @@ public class ChampionshipController : ApiBaseController
 	/// 
 	///		PUT /championships
 	///		{
-  ///		  "id": 39,
+  ///		    "id": 39,
 	///			"name": "volei 33",
 	///			"initialDate": "2024-01-01",
 	///			"finalDate": "2025-01-01",
