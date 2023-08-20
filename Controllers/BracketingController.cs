@@ -199,11 +199,29 @@ public class BracketingController : ApiBaseController
         }
     }
 
+
     /// <summary>
-	/// Usado para deletar chaveamentos
+	/// Usado para deletar chaveamentos.
 	/// </summary>
-	/// <response code="200">Retorna o status de sucesso da requisição</response>
-	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE /bracketing/delete/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Deleta o chaveamento de id passado no parâmetro.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
     [HttpDelete]
     [Route("/bracketing/delete")]
     public async Task<IActionResult> DeleteBracketing([FromBody] int championshipId)
