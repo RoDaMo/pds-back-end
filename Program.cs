@@ -26,7 +26,9 @@ if (builder.Environment.IsProduction())
 	// CRYPT_KEY = Environment.GetEnvironmentVariable("CRYPT_KEY").ToUtf8Bytes();
 }
 
-var audience = new[] { AUDIENCE, "https://localhost:5173", "https://127.0.0.1:5173", "http://localhost" };
+var audienceProduction = AUDIENCE.Split(',');
+var audienceLocal = new[] { "https://localhost:5173", "https://127.0.0.1:5173", "http://localhost" };
+var audience = audienceProduction.Concat(audienceLocal);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(con =>
 {
