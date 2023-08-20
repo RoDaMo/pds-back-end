@@ -77,6 +77,7 @@ public class MatchController : ApiBaseController
     /// <summary>
 	/// Usado para terminar partida de futebol de eliminatórias.
 	/// </summary>
+    /// <param name="id"></param>
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
@@ -161,6 +162,28 @@ public class MatchController : ApiBaseController
         }   
     }
 
+    /// <summary>
+	/// Usado para terminar partida de futebol de pontos corridos.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT matches/{id}/end-game-league-system
+	///		
+	/// </remarks>
+	/// <response code="200">Partida pontos corridos é finalizada.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
     [HttpPut]
     [Route("/matches/end-game-league-system")]
     public async Task<IActionResult> EndGameToLeagueSystem([FromBody] int matchId)
