@@ -115,6 +115,33 @@ public class MatchController : ApiBaseController
         }   
     }
 
+    /// <summary>
+	/// Usado para atribuir gols em disputa de penaltis.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST matches/penalties
+    ///		{
+    ///         "MatchId": 31,
+    ///         "PlayerTempId": "c223084a-90ec-471a-af4a-19697aefaba0",
+    ///         "TeamId": 6,
+    ///         "Converted": false
+    ///     }
+	///		
+	/// </remarks>
+	/// <response code="200">Atribui ou não o gol conforme o atributo "Converted".</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
     [HttpPost]
     [Route("/matches/penalties")]
     public async Task<IActionResult> CreatePenalty([FromBody] Penalty penalty)
