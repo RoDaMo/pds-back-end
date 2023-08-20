@@ -204,6 +204,28 @@ public class MatchController : ApiBaseController
         }   
     }
 
+    /// <summary>
+	/// Usado para terminar partida de futebol de fase de grupos.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT matches/{id}/end-game-group-stage
+	///		
+	/// </remarks>
+	/// <response code="200">Partida fase de grupos é finalizada.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
     [HttpPut]
     [Route("/matches/end-game-group-stage")]
     public async Task<IActionResult> CreateGroupStage([FromBody] int matchId)
