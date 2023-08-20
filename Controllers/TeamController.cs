@@ -81,7 +81,7 @@ public class TeamController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		GET /teams?query=""&amp;sport=""&amp;championshipId=""
+	///		GET /teams?query={query}&amp;sport={sport}&amp;championshipId={championshipId}
 	///		
 	/// </remarks>
 	/// <response code="200">Obtém todos os times conforme a query.</response>
@@ -110,7 +110,7 @@ public class TeamController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		GET teams/{id}
+	///		GET /teams/{id}
 	///		
 	/// </remarks>
 	/// <response code="200">Obtém todos os times conforme o id.</response>
@@ -201,7 +201,7 @@ public class TeamController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		DELETE teams/championship
+	///		DELETE /teams/championship
     ///		{
     ///         "championshipId": 1168,
     ///         "teamId": 44
@@ -250,7 +250,7 @@ public class TeamController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		GET teams/championship/{id}
+	///		GET /teams/championship/{id}
 	///		
 	/// </remarks>
 	/// <response code="200">Obtém todos os campeonatos que o time participa.</response>
