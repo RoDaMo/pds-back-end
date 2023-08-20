@@ -35,7 +35,7 @@ public class BracketingController : ApiBaseController
 	/// Exemplo de requisição:
 	/// 
 	///		POST bracketing/knockout
-	///		23	
+    ///		23
     ///		
 	/// </remarks>
 	/// <response code="200">Um chavamento de formato mata-mata é criado.</response>
@@ -46,24 +46,22 @@ public class BracketingController : ApiBaseController
 	///		{
 	///			"message": "",
 	///			"succeed": true,
-	///			"results": [
-    ///             {
-    ///                 "id": 4461,
-    ///                 "winner": 0,
-    ///                 "home": 3,
-    ///                 "visitor": 4,
-    ///                 "arbitrator": null,
-    ///                 "championshipId": 23,
-    ///                 "date": "0001-01-01T00:00:00",
-    ///                 "round": 0,
-    ///                 "phase": 3,
-    ///                 "tied": false,
-    ///                 "previousMatch": 0,
-    ///                 "local": null,
-    ///                 "homeUniform": null,
-    ///                 "visitorUniform": null
-    ///              }
-    ///         ]
+	///			"results": {
+    ///               "id": 4461,
+    ///               "winner": 0,
+    ///               "home": 3,
+    ///               "visitor": 4,
+    ///               "arbitrator": null,
+    ///               "championshipId": 23,
+    ///               "date": "0001-01-01T00:00:00",
+    ///               "round": 0,
+    ///               "phase": 3,
+    ///               "tied": false,
+    ///               "previousMatch": 0,
+    ///               "local": null,
+    ///               "homeUniform": null,
+    ///               "visitorUniform": null
+    ///         }
 	///		}
     ///		
 	/// </returns>
@@ -93,6 +91,43 @@ public class BracketingController : ApiBaseController
         }
     }
 
+	/// <summary>
+	/// Usado para gerar chaveamento do formato pontos corridos.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST bracketing/league-system
+    ///		23
+    ///		
+	/// </remarks>
+	/// <response code="200">Um chavamento de formato pontos corridos é criado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": {
+    ///               "id": 0,
+    ///               "winner": 0,
+    ///               "home": 4,
+    ///               "visitor": 7,
+    ///               "arbitrator": null,
+    ///               "championshipId": 23,
+    ///               "date": "0001-01-01T00:00:00",
+    ///               "round": 1,
+    ///               "phase": 0,
+    ///               "tied": false,
+    ///               "previousMatch": 0,
+    ///               "local": null,
+    ///               "homeUniform": null,
+    ///               "visitorUniform": null
+    ///         }
+	///		}
+    ///		
+	/// </returns>
     [HttpPost]
     [Route("/bracketing/league-system")]
     public async Task<IActionResult> CreateLeagueSystem([FromBody] int championshipId)
