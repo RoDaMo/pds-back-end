@@ -145,6 +145,43 @@ public class BracketingController : ApiBaseController
         }
     }
 
+	/// <summary>
+	/// Usado para gerar chaveamento do formato fase de grupos.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST bracketing/group-stage
+    ///		23
+    ///		
+	/// </remarks>
+	/// <response code="200">Um chavamento de formato fase de grupos é criado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": {
+    ///               "id": 0,
+    ///               "winner": 0,
+    ///               "home": 18,
+    ///               "visitor": 12,
+    ///               "arbitrator": null,
+    ///               "championshipId": 23,
+    ///               "date": "0001-01-01T00:00:00",
+    ///               "round": 1,
+    ///               "phase": 0,
+    ///               "tied": false,
+    ///               "previousMatch": 0,
+    ///               "local": null,
+    ///               "homeUniform": null,
+    ///               "visitorUniform": null
+    ///         }
+	///		}
+    ///		
+	/// </returns>
     [HttpPost]
     [Route("/bracketing/group-stage")]
     public async Task<IActionResult> CreateGroupStage([FromBody] int championshipId)
