@@ -83,7 +83,7 @@ public class OrganizerController  : ApiBaseController
     }
 
     /// <summary>
-	/// Usado para remover novo suborganizador.
+	/// Usado para remover suborganizador.
 	/// </summary>
 	/// <remarks>
 	/// Exemplo de requisição:
@@ -95,7 +95,7 @@ public class OrganizerController  : ApiBaseController
     ///     }
 	///		
 	/// </remarks>
-	/// <response code="200">Remove um suborganizador ao campeonato.</response>
+	/// <response code="200">Remove um suborganizador do campeonato.</response>
 	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	/// </returns>
