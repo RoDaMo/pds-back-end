@@ -21,6 +21,7 @@ public class BracketingController : ApiBaseController
     private readonly BracketingService _bracketingService;
     private readonly ErrorLogService _error;
     private readonly ChampionshipActivityLogService _activityLogService;
+    /// <inheritdoc />
     public BracketingController(BracketingService bracketingService, ErrorLogService error, ChampionshipActivityLogService activityLogService)
     {
         _bracketingService = bracketingService;
@@ -242,7 +243,7 @@ public class BracketingController : ApiBaseController
     /// <summary>
 	/// Usado para verificar se campeonato já possui um chaveamento criado.
 	/// </summary>
-    /// <param name="id"></param>
+    /// <param name="id">Id do Campeonato</param>
     /// <remarks>
 	/// Exemplo de requisição:
 	/// 
@@ -251,7 +252,7 @@ public class BracketingController : ApiBaseController
 	/// </remarks>
 	/// <response code="200">Retorna um valor booleano</response>
 	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
-    /// /// <returns>
+    /// <returns>
 	///	Exemplo de retorno:
 	/// </returns>
     [HttpGet]
