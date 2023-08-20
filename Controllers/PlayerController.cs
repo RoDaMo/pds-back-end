@@ -36,12 +36,12 @@ public class PlayerController : ApiBaseController
 	/// 
 	///		PUT /players
 	///		{
-    ///         "artisticName": "Mané",
-    ///         "number": 12,
-    ///         "playerTeamId": 5,
-    ///         "playerPosition": 2,
-    ///         "iscaptain": false,
-    ///         "id": "xxxx-xxxx-xxxx-xxxx"
+    ///             "artisticName": "Mané",
+    ///             "number": 12,
+    ///             "playerTeamId": 5,
+    ///             "playerPosition": 2,
+    ///             "iscaptain": false,
+    ///             "id": "xxxx-xxxx-xxxx-xxxx"
 	///		}
 	///		
 	/// </remarks>
