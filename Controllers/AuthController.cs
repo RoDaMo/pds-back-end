@@ -587,6 +587,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para obter usuário por id.
+	/// </summary>
+	/// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Retorna o usuário conforme id.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/{id:guid}")]
 	public async Task<IActionResult> GetById(Guid id)
