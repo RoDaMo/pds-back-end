@@ -147,6 +147,23 @@ public class TeamController : ApiBaseController
         }
     }
 
+    /// <summary>
+	/// Usado para vincular um time a um campeonato.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /teams/championship
+	///		{
+    ///         "teamId": 5,
+    ///         "championshipId": 47
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Time será vinculado ao campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpPost]
     [Authorize]
     [Route("/teams/championship")]
