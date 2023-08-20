@@ -78,6 +78,20 @@ public class PlayerController : ApiBaseController
         }
     }
 
+    /// <summary>
+	/// Usado para desvincular jogador do time.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE /players/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Jogador é desvinculado do time.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpDelete]
     [Route("/players/{id:guid}")]
     public async Task<IActionResult> RemovePlayerFromTeam(Guid id)
