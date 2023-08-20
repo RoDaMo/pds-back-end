@@ -124,11 +124,11 @@ public class MatchController : ApiBaseController
 	/// 
 	///		POST matches/penalties
     ///		{
-    ///         "MatchId": 31,
-    ///         "PlayerTempId": "c223084a-90ec-471a-af4a-19697aefaba0",
-    ///         "TeamId": 6,
-    ///         "Converted": false
-    ///     }
+    ///             "MatchId": 31,
+    ///             "PlayerTempId": "c223084a-90ec-471a-af4a-19697aefaba0",
+    ///             "TeamId": 6,
+    ///             "Converted": false
+    ///         }
 	///		
 	/// </remarks>
 	/// <response code="200">Atribui ou não o gol conforme o atributo "Converted".</response>
