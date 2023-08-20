@@ -520,6 +520,19 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para verificar se usuário possui CPF cadastrado.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/cpf
+	///		
+	/// </remarks>
+	/// <response code="200">Retorna se o usuário tem ou não CPF cadastrado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[Authorize]
 	[HttpGet]
 	[Route("/auth/cpf")]
