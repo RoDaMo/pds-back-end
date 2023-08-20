@@ -102,6 +102,42 @@ public class ChampionshipController : ApiBaseController
   }
 
 
+	/// <summary>
+	/// Usado para listar campeonatos conforme parâmetros.
+	/// </summary>
+  /// <param name="name"></param>
+  /// <param name="sport"></param>
+  /// <param name="start"></param>
+  /// <param name="finish"></param>
+  /// <param name="pitId"></param>
+  /// <param name="sort"></param>
+  /// <param name="status"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /championships?name={name}&amp;sport={sport}&amp;start={start}&amp;finish={finish}&amp;pitId={pitId}&amp;sort={sort}&amp;status={status}
+	///		
+	/// </remarks>
+	/// <response code="200">Lista os campeonatos conforme os parâmetros passados.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": [
+  ///			  {
+  ///			    "id": 7,
+  ///			    "name": "Campeonato",
+  ///			    "initialDate": "2024-05-01T00:00:00",
+  ///			    "finalDate": "2025-01-01T00:00:00",
+  ///			    "sportsId": 2
+  ///       }
+  ///     ]
+	///		}
+	///		
+	/// </returns>
   [HttpGet(Name = "index")]
   public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new(), DateTime finish = new(), ChampionshipStatus status = ChampionshipStatus.Active, [FromHeader]string pitId = "", [FromHeader]string sort = "")
   {
