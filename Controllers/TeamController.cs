@@ -32,16 +32,16 @@ public class TeamController : ApiBaseController
     }
 
     /// <summary>
-	/// Usado cadastrar times.
+	/// Usado para cadastrar times.
 	/// </summary>
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
 	///		POST /teams
 	///		{
-    ///         "emblem": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpzsTC6YHwy_5CTTv27jKJYHxVMgofSsL1WA&usqp=CAU",
-    ///         "uniformHome": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
-    ///         "uniformAway": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
+    ///         "emblem": "",
+    ///         "uniformHome": "",
+    ///         "uniformAway": "",
     ///         "sportsId": "1",
     ///         "name": "FC Borussia München De Vôlei 2"
 	///		}
@@ -272,6 +272,27 @@ public class TeamController : ApiBaseController
         }
     }
 
+    /// <summary>
+	/// Usado para atualizar times.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /teams
+	///		{
+    ///		    "id": 5,
+    ///         "emblem": "",
+    ///         "uniformHome": "",
+    ///         "uniformAway": "",
+    ///         "sportsId": "1",
+    ///         "name": "FC Borussia München De Vôlei 2"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Time é atualizado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpPut]
     [Authorize]
     [Route("/teams")]
