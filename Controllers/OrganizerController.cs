@@ -36,7 +36,7 @@ public class OrganizerController  : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		POST organizer
+	///		POST /organizer
     ///		{
     ///         "organizerId": "d7868182-c7ff-4fcc-91dc-c797f4bfd09e",
     ///         "championshipId": 66
@@ -88,7 +88,7 @@ public class OrganizerController  : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		DELETE organizer
+	///		DELETE /organizer
     ///		{
     ///         "organizerId": "d7868182-c7ff-4fcc-91dc-c797f4bfd09e",
     ///         "championshipId": 66
@@ -134,7 +134,7 @@ public class OrganizerController  : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		GET organizer/championship/{id}
+	///		GET /organizer/championship/{id}
 	///		
 	/// </remarks>
 	/// <response code="200">Obtém todos os suborganizadores do campeonato.</response>
@@ -172,7 +172,7 @@ public class OrganizerController  : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		GET organizer/championship
+	///		GET /organizer/championship
 	///		
 	/// </remarks>
 	/// <response code="200">Obtém todos os campeonatos administrados pelo usuário.</response>
@@ -206,7 +206,7 @@ public class OrganizerController  : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		GET organizer?username={username}
+	///		GET /organizer?username={username}
 	///		
 	/// </remarks>
 	/// <response code="200">Obtém todos os usuários conforme o username.</response>
