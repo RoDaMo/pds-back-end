@@ -7,6 +7,9 @@ using PlayOffsApi.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace PlayOffsApi.Controllers;
+/// <summary>
+///Endpoints destinados à configuração do usuário.
+/// </summary>
 
 [Authorize]
 [ApiController]
@@ -15,12 +18,31 @@ public class UserConfigurationController : ApiBaseController
 {
     private readonly AuthService _authService;
     private readonly ErrorLogService _error;
+    /// <inheritdoc />
     public UserConfigurationController(AuthService authService, ErrorLogService error)
     {
         _authService = authService;
         _error = error;
     }
     
+    /// <summary>
+	/// Usado para atualizar perfil do usuário.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /userconfigurations
+	///		{
+    ///         "Username": "UsuarioTeste",
+    ///         "Bio": "Bio bio bio bio bio",
+    ///         "Picture": ""
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Perfil do usuário é atualizado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpPut]
     public async Task<IActionResult> UpdateProfile([FromBody] User user)
     {
