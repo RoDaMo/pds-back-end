@@ -314,6 +314,20 @@ public class TeamController : ApiBaseController
         }
     }
 
+	/// <summary>
+	/// Usado para excluir time.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE teams/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">O time é excluído.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpDelete]
     [Route("/teams/{id:int}")]
     [Authorize]
