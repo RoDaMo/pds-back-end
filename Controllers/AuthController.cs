@@ -393,6 +393,19 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para obter usuário atual.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/user
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém usuário atual.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[Authorize]
 	[HttpGet]
 	[Route("/auth/user")]
