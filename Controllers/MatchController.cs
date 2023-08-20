@@ -6,6 +6,9 @@ using PlayOffsApi.Services;
 
 namespace PlayOffsApi.Controllers;
 
+/// <summary>
+///Endpoints destinados à manuntenção de partidas.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("/matches")]
@@ -15,6 +18,7 @@ public class MatchController : ApiBaseController
     private readonly MatchService _matchService;
     private readonly GoalService _goalService;
     private readonly PenaltyService _penaltyService;
+    /// <inheritdoc />
     public MatchController(ErrorLogService error, MatchService matchService, GoalService goalService, PenaltyService penaltyService)
     {
         _error = error;
@@ -22,7 +26,34 @@ public class MatchController : ApiBaseController
         _goalService = goalService;
         _penaltyService = penaltyService;
     }
-    
+
+    /// <summary>
+	/// Usado para adicionar gol ou ponto.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /matches/goals
+	///		{
+	///			"MatchId": 542,
+	///			"PlayerTempId": "e3b82666-d624-4c09-87df-f330029a402a",
+	///			"TeamId": 3,
+    ///			"AssisterPlayerTempId": "f5d4d4b8-9e53-40fb-80dc-37ca5b03e6ea"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Gol ou ponto é adicionado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
     [HttpPost]
     [Route("/matches/goals")]
     public async Task<IActionResult> CreateGoal([FromBody] Goal goal)
