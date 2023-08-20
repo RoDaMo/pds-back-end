@@ -354,6 +354,23 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+	/// <summary>
+	/// Usado para redefinir senha.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/reset-password
+	///		{
+	///			"Email": "email@gmail.com",
+	///			"Password": "Abc1_"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Redefine a senha.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpPost]
 	[Route("/auth/forgot-password")] 
 	public async Task<IActionResult> ForgotPassword(User user)
