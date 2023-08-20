@@ -285,6 +285,7 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+
 	[Authorize]
 	[HttpGet]
 	[Obsolete("Useless")]
@@ -294,6 +295,20 @@ public class AuthController : ApiBaseController
 		return ApiOk(true);
 	}
 
+    /// <summary>
+	/// Usado para confirmar email.
+	/// </summary>
+    /// <param name="token"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/confirm-email?token={token}
+	///		
+	/// </remarks>
+	/// <response code="200">Envia email para confirmação.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/confirm-email")] 
 	public async Task<IActionResult> ConfirmEmail(string token)
