@@ -247,10 +247,35 @@ public class MatchController : ApiBaseController
     }
 
     /// <summary>
-	/// Usado para atualizar a data e o árbitro da partida
+	/// Usado para atualizar informações pertinentes da partida.
 	/// </summary>
-	/// <response code="200">Retorna o status de sucesso da requisição</response>
-	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT matches
+    ///		{
+    ///         "Id": 4469,
+    ///         "Local": "Bairro do Limoeiro",
+    ///         "HomeUniform": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
+    ///     "VisitorUniform": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
+    ///     "Date": "2024-08-18T23:18:00Z",
+    ///     "Arbitrator": "Daronco"
+    ///	    }
+	///		
+	/// </remarks>
+	/// <response code="200">Partida é atualizada.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
     [HttpPut]
     [Route("/matches")]
     public async Task<IActionResult> UpdateMatch([FromBody] Match match)
