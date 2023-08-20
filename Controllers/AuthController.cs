@@ -444,6 +444,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para reenviar email para usuário redefinir a senha.
+	/// </summary>
+	/// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/resend-forgot-password?id={id}
+	///		
+	/// </remarks>
+	/// <response code="200">Reenvia email para usuário redefinir a senha.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/resend-forgot-password")] 
 	public async Task<IActionResult> ResendForgotPassword(Guid id)
