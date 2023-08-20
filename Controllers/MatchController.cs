@@ -74,6 +74,27 @@ public class MatchController : ApiBaseController
         }   
     }
 
+    /// <summary>
+	/// Usado para terminar partida de futebol de eliminatórias.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT matches/{id}/end-game-knockout
+	///		
+	/// </remarks>
+	/// <response code="200">Partida eliminatória é finalizada.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
     [HttpPut]
     [Route("/matches/end-game-knockout")]
     public async Task<IActionResult> EndGameToKnockout([FromBody] int matchId)
