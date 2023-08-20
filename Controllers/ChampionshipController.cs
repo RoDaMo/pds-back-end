@@ -252,6 +252,20 @@ public class ChampionshipController : ApiBaseController
     }
   }
 
+	/// <summary>
+	/// Usado para obter todos os times de um campeonato por id.
+	/// </summary>
+  /// <param name="championshipId"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /championships/teams?championshipId={championshipId}
+	///		
+	/// </remarks>
+	/// <response code="200">Exibe todos os times do campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
   [HttpGet]
   [Route("/championships/teams")]
   public async Task<IActionResult> GetAllTeams(int championshipId)
@@ -268,6 +282,20 @@ public class ChampionshipController : ApiBaseController
     }
   }
 
+	/// <summary>
+	/// Usado para excluir um campeonato.
+	/// </summary>
+  /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE /championships/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Exclui campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
   [HttpDelete]
   [Authorize]
   [Route("/championships/{id:int}")]
