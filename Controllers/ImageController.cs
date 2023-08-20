@@ -8,6 +8,9 @@ using PlayOffsApi.Services;
 using Resource = PlayOffsApi.Resources.Controllers.ImageController;
 
 namespace PlayOffsApi.Controllers;
+/// <summary>
+///Endpoints destinados à configuração do usuário.
+/// </summary>
 
 [Route("/img")]
 [ApiController]
@@ -16,13 +19,27 @@ public class ImageController : ApiBaseController
     private readonly ImageService _imageService;
     private readonly ErrorLogService _error;
     private readonly RedisService _redisService;
+    /// <inheritdoc />
     public ImageController(ImageService imageService, ErrorLogService error, RedisService redisService)
     {
         _imageService = imageService;
         _error = error;
         _redisService = redisService;
     }
-    
+    /// <summary>
+	/// Usado para obter imagem.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /img/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém imagem conforme id.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpGet]
     [Route("/img/{id:guid}")]
     public async Task<IActionResult> GetImage(Guid id)
