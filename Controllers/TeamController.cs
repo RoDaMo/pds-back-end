@@ -195,6 +195,23 @@ public class TeamController : ApiBaseController
         }
     }
 
+    /// <summary>
+	/// Usado para remover time de um campeonato.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE teams/championship
+    ///		{
+    ///         "championshipId": 1168,
+    ///         "teamId": 44
+    ///     }
+	///		
+	/// </remarks>
+	/// <response code="200">Remove um time do campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpDelete]
     [Authorize]
     [Route("/teams/championship")]
