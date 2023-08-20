@@ -9,6 +9,9 @@ using PlayOffsApi.Services;
 using Resource = PlayOffsApi.Resources.Controllers.TeamController;
 
 namespace PlayOffsApi.Controllers;
+/// <summary>
+///Endpoints destinados à manuntenção dos times.
+/// </summary>
 
 [Authorize]
 [ApiController]
@@ -19,6 +22,7 @@ public class TeamController : ApiBaseController
     private readonly ChampionshipService _championshipService;
     private readonly ErrorLogService _error;
     private readonly ChampionshipActivityLogService _activityLogService;
+    /// <inheritdoc />
     public TeamController(TeamService teamService, ChampionshipService championshipService, ErrorLogService error, ChampionshipActivityLogService activityLogService)
     {
         _teamService = teamService;
@@ -27,6 +31,26 @@ public class TeamController : ApiBaseController
         _activityLogService = activityLogService;
     }
 
+    /// <summary>
+	/// Usado cadastrar times.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /teams
+	///		{
+    ///         "emblem": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpzsTC6YHwy_5CTTv27jKJYHxVMgofSsL1WA&usqp=CAU",
+    ///         "uniformHome": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
+    ///         "uniformAway": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
+    ///         "sportsId": "1",
+    ///         "name": "FC Borussia München De Vôlei 2"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Time é cadastrado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> CreateAsync([FromBody] TeamDTO teamDto)
