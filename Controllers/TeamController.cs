@@ -72,6 +72,22 @@ public class TeamController : ApiBaseController
         }
     }
 
+    /// <summary>
+	/// Usado para obter times por query.
+	/// </summary>
+    /// <param name="query"></param>
+    /// <param name="sport"></param>
+    /// <param name="championshipId"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET teams?query=""&sport=""&championshipId=""
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém todos os times conforme a query.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpGet]
     public async Task<IActionResult> Index([FromQuery]string query, Sports sport, int championshipId)
     {
