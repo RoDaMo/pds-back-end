@@ -255,12 +255,12 @@ public class MatchController : ApiBaseController
 	/// 
 	///		PUT matches
     ///		{
-    ///         "Id": 4469,
-    ///         "Local": "Bairro do Limoeiro",
-    ///         "HomeUniform": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
-    ///         "VisitorUniform": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
-    ///         "Date": "2024-08-18T23:18:00Z",
-    ///         "Arbitrator": "Daronco"
+    ///             "Id": 4469,
+    ///             "Local": "Bairro do Limoeiro",
+    ///             "HomeUniform": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
+    ///             "VisitorUniform": "https://mir-s3-cdn-cf.behance.net/project_modules/disp/e5b04979607885.5cc8847e682c5.jpg",
+    ///             "Date": "2024-08-18T23:18:00Z",
+    ///             "Arbitrator": "Daronco"
     ///	    }
 	///		
 	/// </remarks>
