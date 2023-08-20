@@ -223,8 +223,8 @@ public class BracketingController : ApiBaseController
 	///		
 	/// </returns>
     [HttpDelete]
-    [Route("/bracketing/delete")]
-    public async Task<IActionResult> DeleteBracketing([FromBody] int championshipId)
+    [Route("/bracketing/delete/{championshipId:int}")]
+    public async Task<IActionResult> DeleteBracketing(int championshipId)
     {
         var result = new List<Match>();
         try
@@ -240,10 +240,20 @@ public class BracketingController : ApiBaseController
     }
 
     /// <summary>
-	/// Usado para verificar se campeonato já possui um chaveamento criado
+	/// Usado para verificar se campeonato já possui um chaveamento criado.
 	/// </summary>
+    /// <param name="id"></param>
+    /// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /bracketing/exists/{id}
+	///		
+	/// </remarks>
 	/// <response code="200">Retorna um valor booleano</response>
 	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
+    /// /// <returns>
+	///	Exemplo de retorno:
+	/// </returns>
     [HttpGet]
     [Route("/bracketing/exists/{id:int}")]
     public async Task<IActionResult> BracketingExists(int id)
