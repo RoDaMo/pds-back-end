@@ -33,7 +33,7 @@ public class ChampionshipController : ApiBaseController
   }
 
 	/// <summary>
-	/// Usado para criar campeonato.
+	/// Usado para criar um campeonato.
 	/// </summary>
 	/// <remarks>
 	/// Exemplo de requisição:
@@ -194,6 +194,35 @@ public class ChampionshipController : ApiBaseController
     }
   }
 
+	/// <summary>
+	/// Usado para atualizar um campeonato.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /championships
+	///		{
+  ///		  "id": 39,
+	///			"name": "volei 33",
+	///			"initialDate": "2024-01-01",
+	///			"finalDate": "2025-01-01",
+  ///			"sportsId": 2,
+  ///			"teamQuantity": 16,
+  ///			"logo": "",
+  ///			"description": "hahahahahhahahahhahakkkkkkk",
+  ///			"Format": 1,
+  ///			"NumberOfPlayers": 800,
+  ///			"DoubleStartLeagueSystem": false,
+  ///			"DoubleMatchEliminations": false,
+  ///			"DoubleMatchGroupStage": false,
+  ///			"FinalDoubleMatch": false
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Atualiza o campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
   [HttpPut]
   [Authorize]
   public async Task<IActionResult> Update([FromBody] Championship championship)
