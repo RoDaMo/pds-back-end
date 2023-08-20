@@ -81,7 +81,7 @@ public class TeamController : ApiBaseController
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		GET /teams?query=""\&sport=""\&championshipId=""
+	///		GET /teams?query=""&amp;sport=""&amp;championshipId=""
 	///		
 	/// </remarks>
 	/// <response code="200">Obtém todos os times conforme a query.</response>
