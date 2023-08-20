@@ -243,6 +243,20 @@ public class TeamController : ApiBaseController
         }
     }
 
+    /// <summary>
+	/// Usado para obter os campeonatos no qual o time participa.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET teams/championship/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém todos os campeonatos que o time participa.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
     [HttpGet]
     [Route("/teams/championship/{id:int}")]
     public async Task<IActionResult> GetTeamChampionships(int id)
