@@ -8,6 +8,9 @@ using PlayOffsApi.Services;
 using Resource = PlayOffsApi.Resources.Championship;
 
 namespace PlayOffsApi.Controllers;
+/// <summary>
+///Endpoints destinados à manuntenção dos times.
+/// </summary>
 
 [ApiController]
 [Route("/championships")]
@@ -18,6 +21,7 @@ public class ChampionshipController : ApiBaseController
   private readonly AuthService _authService;	
   private readonly ErrorLogService _error;
   private readonly ChampionshipActivityLogService _activityLogService;
+  /// <inheritdoc />
 
   public ChampionshipController(ChampionshipService championshipService, AuthService authService, ErrorLogService error, ChampionshipActivityLogService activityLogService, OrganizerService organizerService)
   {
@@ -28,6 +32,42 @@ public class ChampionshipController : ApiBaseController
     _organizerService = organizerService;
   }
 
+	/// <summary>
+	/// Usado para criar campeonato.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /championships
+	///		{
+	///			"name": "volei 33",
+	///			"initialDate": "2024-01-01",
+	///			"finalDate": "2025-01-01",
+  ///			"sportsId": 2,
+  ///			"teamQuantity": 16,
+  ///			"logo": "",
+  ///			"description": "hahahahahhahahahhahakkkkkkk",
+  ///			"Format": 1,
+  ///			"NumberOfPlayers": 800,
+  ///			"DoubleStartLeagueSystem": false,
+  ///			"DoubleMatchEliminations": false,
+  ///			"DoubleMatchGroupStage": false,
+  ///			"FinalDoubleMatch": false
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Cria um campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": ["Campeonato cadastrado"]
+	///		}
+	///		
+	/// </returns>
   [Authorize]
   [HttpPost(Name = "create")]
   public async Task<IActionResult> CreateAsync([FromBody] Championship championship)
