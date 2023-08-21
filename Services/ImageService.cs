@@ -14,22 +14,8 @@ namespace PlayOffsApi.Services;
 
 public partial class ImageService
 {
-    private const string BucketName = "playoffs-armazenamento";
-    private readonly AWSCredentials _awsCredentials = new EnvironmentVariablesAWSCredentials();
     private readonly string _mountPath = Environment.GetEnvironmentVariable("MOUNT_PATH");
-    private static readonly Dictionary<string, string> ContentTypeMappings = new()
-    {
-        { "image/jpeg", ".jpg" },
-        { "image/png", ".png" },
-        { "image/gif", ".gif" },
-        { "image/bmp", ".bmp" },
-        { "image/tiff", ".tiff" },
-        { "image/webp", ".webp" },
-        { "application/pdf", ".pdf" }
-    };
 
-    private AmazonS3Client GetClient => new(_awsCredentials, RegionEndpoint.SAEast1);
-    
     public async Task<List<string>> SendImage(Image file, TypeUpload type)
     {
         var results = ValidateUpload(file, type);
@@ -110,48 +96,4 @@ public partial class ImageService
     private static partial Regex PdfRegex();
 
     private static double ConvertBytesToMegabytes(long bytes) => (bytes / 1024f) / 1024f;
-
-    public async Task DownloadFilesFromS3()
-    {
-        var listRequest = new ListObjectsV2Request
-        {
-            BucketName = BucketName,
-            MaxKeys = 1000 
-        };
-
-        ListObjectsV2Response response;
-        using var client = GetClient;
-        do
-        {
-            response = await client.ListObjectsV2Async(listRequest);
-            foreach (var entry in response.S3Objects)
-                await DownloadFile(entry.Key, client);
-            
-            listRequest.ContinuationToken = response.NextContinuationToken;
-        } while (response.IsTruncated);
-    }
-
-    private async Task DownloadFile(string key, IAmazonS3 client)
-    {
-        var getObjectMetadataRequest = new GetObjectMetadataRequest
-        {
-            BucketName = BucketName,
-            Key = key
-        };
-
-        var response = await client.GetObjectMetadataAsync(getObjectMetadataRequest);
-        var contentType = new ContentType(response.Headers["Content-Type"]);
-        var fileExtension = GetFileExtension(contentType);
-        var fileNameWithExtension = Path.GetFileNameWithoutExtension(key) + fileExtension;
-        var downloadPath = Path.Combine(_mountPath, fileNameWithExtension);
-    
-        using var fileTransferUtility = new TransferUtility(client);
-        await fileTransferUtility.DownloadAsync(downloadPath, BucketName, key);
-    }
-
-    private static string GetFileExtension(ContentType type)
-    {
-        ContentTypeMappings.TryGetValue(type.MediaType, out var value);
-        return value;
-    }
 }
