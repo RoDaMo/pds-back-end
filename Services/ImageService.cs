@@ -1,9 +1,11 @@
+using System.Net.Mime;
 using System.Text.RegularExpressions;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
+using Microsoft.AspNetCore.StaticFiles;
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using Resource = PlayOffsApi.Resources.Services.ImageService;
@@ -14,7 +16,18 @@ public partial class ImageService
 {
     private const string BucketName = "playoffs-armazenamento";
     private readonly AWSCredentials _awsCredentials = new EnvironmentVariablesAWSCredentials();
-    
+    private readonly string _mountPath = Environment.GetEnvironmentVariable("MOUNT_PATH");
+    private static readonly Dictionary<string, string> ContentTypeMappings = new()
+    {
+        { "image/jpeg", ".jpg" },
+        { "image/png", ".png" },
+        { "image/gif", ".gif" },
+        { "image/bmp", ".bmp" },
+        { "image/tiff", ".tiff" },
+        { "image/webp", ".webp" },
+        { "application/pdf", ".pdf" }
+    };
+
     private AmazonS3Client GetClient => new(_awsCredentials, RegionEndpoint.SAEast1);
     
     public async Task<List<string>> SendImage(Image file, TypeUpload type)
@@ -22,17 +35,12 @@ public partial class ImageService
         var results = ValidateUpload(file, type);
         if (results.Any())
             return results;
-  
-        using var client = GetClient;
-        var uploadRequest = new TransferUtilityUploadRequest
-        {
-            BucketName = BucketName,
-            Key = file.FileName.ToString(),
-            InputStream = file.Stream,
-            ContentType = file.ContentType
-        };
+
+        var filePath = Path.Combine(_mountPath, file.FileName + "." + file.Extension);
+        await using var stream = File.Create(filePath);
+        file.Stream.Position = 0;
+        await file.Stream.CopyToAsync(stream);
         
-        await new TransferUtility(client).UploadAsync(uploadRequest);
         return new List<string>();
     }
 
@@ -72,25 +80,27 @@ public partial class ImageService
         }
     }
 
-    public async Task<Image> GetImage(Guid fileName)
+    public async Task<Image> GetImage(string fileName)
     {
-        using var client = GetClient;
-        var responseTask = client.GetObjectAsync(new()
+        if (fileName.Split('.').Length == 1)
         {
-            BucketName = BucketName,
-            Key = fileName.ToString(),
-        });
+            var files = Directory.GetFiles(_mountPath, fileName + ".*");
+            fileName = Path.GetFileName(files[0]);
+        }
         
-        using var response = await responseTask;
-        var memoryStream = new MemoryStream();
-        await response.ResponseStream.CopyToAsync(memoryStream);
-        var cloudFilename = response.Key;
+        var filePath = Path.Combine(_mountPath, fileName);
+        new FileExtensionContentTypeProvider().TryGetContentType(filePath, out var contentType);
+        
+        await using var imageStream = new MemoryStream(await File.ReadAllBytesAsync(filePath));
+        var fileNameAndExtension = fileName.Split('.');
+        var (fileGuid, fileExtension) = (fileNameAndExtension[0], fileNameAndExtension[1]);
+
         return new Image
         {
-            Stream = memoryStream,
-            FileName = Guid.Parse(cloudFilename),
-            Extension = response.Headers.ContentType.Split('/')[1],
-            ContentType = response.Headers.ContentType
+            Stream = imageStream,
+            FileName = Guid.Parse(fileGuid),
+            ContentType = contentType,
+            Extension = fileExtension
         };
     }
 
@@ -100,4 +110,48 @@ public partial class ImageService
     private static partial Regex PdfRegex();
 
     private static double ConvertBytesToMegabytes(long bytes) => (bytes / 1024f) / 1024f;
+
+    public async Task DownloadFilesFromS3()
+    {
+        var listRequest = new ListObjectsV2Request
+        {
+            BucketName = BucketName,
+            MaxKeys = 1000 
+        };
+
+        ListObjectsV2Response response;
+        using var client = GetClient;
+        do
+        {
+            response = await client.ListObjectsV2Async(listRequest);
+            foreach (var entry in response.S3Objects)
+                await DownloadFile(entry.Key, client);
+            
+            listRequest.ContinuationToken = response.NextContinuationToken;
+        } while (response.IsTruncated);
+    }
+
+    private async Task DownloadFile(string key, IAmazonS3 client)
+    {
+        var getObjectMetadataRequest = new GetObjectMetadataRequest
+        {
+            BucketName = BucketName,
+            Key = key
+        };
+
+        var response = await client.GetObjectMetadataAsync(getObjectMetadataRequest);
+        var contentType = new ContentType(response.Headers["Content-Type"]);
+        var fileExtension = GetFileExtension(contentType);
+        var fileNameWithExtension = Path.GetFileNameWithoutExtension(key) + fileExtension;
+        var downloadPath = Path.Combine(_mountPath, fileNameWithExtension);
+    
+        using var fileTransferUtility = new TransferUtility(client);
+        await fileTransferUtility.DownloadAsync(downloadPath, BucketName, key);
+    }
+
+    private static string GetFileExtension(ContentType type)
+    {
+        ContentTypeMappings.TryGetValue(type.MediaType, out var value);
+        return value;
+    }
 }
