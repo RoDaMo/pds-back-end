@@ -11,7 +11,7 @@ public class MatchValidator : AbstractValidator<Match>
             .Must(date => date >= DateTime.UtcNow)
             .WithMessage("A data não pode ser anterior à data de hoje.")
             .When(date => date is not null);
-         RuleFor(m => m.Arbitrator)
+        RuleFor(m => m.Arbitrator)
             .Length(4, 200)
             .WithMessage("Árbitro deve possuir pelo menos 4 caracteres e no máximo 200.")
             .When(arbitrator => arbitrator is not null);
