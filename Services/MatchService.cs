@@ -751,9 +751,17 @@ public class MatchService
     }
     private async Task<bool> CheckIfUniformBelongsToTeam(int teamId, string uniform)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM teams WHERE Id = @teamId AND (UniformHome = @uniform OR UniformAway = @uniform))", new {teamId, uniform});
-
     private async Task UpdateSend(Match match)
 		=> await _dbService.EditData(
             "UPDATE Matches SET date = @Date, arbitrator = @Arbitrator, local = @Local, homeuniform = @HomeUniform, visitoruniform = @VisitorUniform WHERE id=@id",
             match);
+    public async Task ActiveProrrogationValidationAsync(int matchId)
+    {
+        var match = await GetMatchById(matchId);
+
+        if(match is null)
+            throw new ApplicationException("Partida passada não existe");
+        
+        await _dbService.EditData("UPDATE Matches SET Prorrogation = true WHERE id=@matchId", new {matchId});
+    }
 }

@@ -146,4 +146,45 @@ public class MatchController : ApiBaseController
             return ApiBadRequest(result);
         }   
     }
+
+    /// Usado para iniciar a prorrogação.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /matches/{id}/prorrogation
+	///		
+	/// </remarks>
+	/// <response code="200">Inicia a prorrogação da partida</response>
+	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
+    [HttpPut]
+    [Route("/matches/{matchId:int}/prorrogation")]
+    public async Task<IActionResult> Prorrogation(int matchId)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            await _matchService.ActiveProrrogationValidationAsync(matchId);
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }   
+    }
 }
