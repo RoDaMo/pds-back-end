@@ -71,6 +71,7 @@ public class PlayerController : ApiBaseController
         try
         {
             var users = await _authService.GetUsersByUsernameValidation(username);
+            users = users.OrderBy(u => u.PlayerPosition).ToList();
             return ApiOk(users.Select(s => new { s.Name, s.Picture, s.Id }));
         }
         catch (ApplicationException ex)
@@ -79,4 +80,31 @@ public class PlayerController : ApiBaseController
             return ApiBadRequest(Generic.GenericErrorMessage);
         }
     }
+
+    /// <summary>
+	/// Usado para remover ou adicionar capitães
+	/// </summary>
+	/// <response code="200">Retorna o status de sucesso da requisição</response>
+	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
+    [HttpPut]
+    [Route("/players/{id:guid}")]
+    public async Task<IActionResult> UpdateCaptain(Guid id)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+
+            result = await _playerService.UpdateCaptainValidationAsync(id, userId);
+            return result.Any() ? ApiBadRequest(result) : ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }
+    }    
 }

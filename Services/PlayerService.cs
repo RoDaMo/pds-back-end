@@ -1,3 +1,4 @@
+using FluentValidation;
 using PlayOffsApi.Models;
 using PlayOffsApi.Validations;
 using Resource = PlayOffsApi.Resources.Services.PlayerService;
@@ -67,11 +68,6 @@ public class PlayerService
 			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyExists);
 		}
 
-        if(await ChecksIfTeamAlreadyHasCaptain())
-		{
-			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyHasCaptain);
-		}
-
 		if(await ChecksIfUserPassedAlreadHasTeam(user.Id))
 		{
 			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyBelongsTeam);
@@ -92,7 +88,6 @@ public class PlayerService
     private async Task<bool> ChecksIfUserIsManager(Guid userId, int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId = @teamId);", new { userId, teamId });
     private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number, int teamsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number AND teamsid = @teamsId);", new {number, teamsId});
 	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number, int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number AND playerteamid = @teamId);", new {number, teamId});
-    private async Task<bool> ChecksIfTeamAlreadyHasCaptain() => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE iscaptain = true);", new {});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
     private async Task<bool> ChecksIfUserPassedExists(Guid id) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @id);", new {id});
     private async Task<bool> ChecksIfUserPassedAlreadHasTeam(Guid id) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM users WHERE id = @id AND playerteamid IS NOT NULL);", new {id});
@@ -133,4 +128,38 @@ public class PlayerService
 
 	    return (playerExists, playerTemp);
     }
+
+	public async Task<List<string>> UpdateCaptainValidationAsync(Guid playerId, Guid managerId)
+	{
+		if(await ChecksIfUserIsManager(managerId))
+			throw new ApplicationException(Resource.CreateValidationAsyncOnlyTechnicians);
+
+		var player = await GetUserByIdAsync(playerId);
+
+		if(player is null)
+			throw new ApplicationException("Jogador não existe");
+		
+		if(player.IsCaptain)
+		{
+			await RemoveCaptainByTeamId(player.PlayerTeamId);
+		}
+		else
+		{
+			await RemoveCaptainByTeamId(player.PlayerTeamId);
+			await MakePlayerCaptain(player.Id);
+		}
+
+		return new();
+	}
+
+	private async Task<User> GetUserByIdAsync(Guid userId) 
+		=> await _dbService.GetAsync<User>("SELECT * FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
+	private async Task RemoveCaptainByTeamId(int teamId)
+	{
+		await _dbService.EditData("UPDATE users SET IsCaptain = false WHERE PlayerTeamId = @teamId", new {teamId});
+	}
+	private async Task MakePlayerCaptain(Guid playerId)
+		=> await _dbService.EditData("UPDATE users SET IsCaptain = true WHERE Id = @playerId", new {playerId});
+
+	
 }

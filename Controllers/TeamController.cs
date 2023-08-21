@@ -217,7 +217,29 @@ public class TeamController : ApiBaseController
         try
         {
             var players = await _teamService.GetPlayersOfTeamValidation(id); 
+            players = players.OrderBy(u => u.PlayerPosition).ToList();
             return ApiOk(players.Select(m => new { id = m.Id, name = m.Name, artisticName = m.ArtisticName, number = m.Number, teamsId = m.PlayerTeamId, playerPosition = m.PlayerPosition, isCaptain = m.IsCaptain, picture = m.Picture }));
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+	/// Usado para verificar se time possui um capitão
+	/// </summary>
+	/// <response code="200">Retorna um valor booleano relativo à verificação</response>
+	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
+    [HttpGet]
+    [Route("/teams/{id:int}/exists-captain")]
+    public async Task<IActionResult> VerifyTeamHasCaptain(int id)
+    {
+        try
+        {
+            var result = await _teamService.VerifyTeamHasCaptain(id); 
+            return ApiOk(result);
         }
         catch (ApplicationException ex)
         {
