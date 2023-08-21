@@ -1,5 +1,11 @@
 ﻿using System.Linq.Expressions;
+using System.Net.Mime;
 using System.Text.Json;
+using Amazon;
+using Amazon.Runtime;
+using Amazon.S3;
+using Amazon.S3.Model;
+using Amazon.S3.Transfer;
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using PlayOffsApi.Services;
@@ -13,6 +19,21 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private IRedisSubscriptionAsync _subscription;
     private CancellationToken _cts;
+    private const string BucketName = "playoffs-armazenamento";
+    private readonly AWSCredentials _awsCredentials = new EnvironmentVariablesAWSCredentials();
+    private readonly string _mountPath = Environment.GetEnvironmentVariable("MOUNT_PATH");
+    private static readonly Dictionary<string, string> ContentTypeMappings = new()
+    {
+        { "image/jpeg", ".jpg" },
+        { "image/png", ".png" },
+        { "image/gif", ".gif" },
+        { "image/bmp", ".bmp" },
+        { "image/tiff", ".tiff" },
+        { "image/webp", ".webp" },
+        { "application/pdf", ".pdf" }
+    };
+
+    private AmazonS3Client GetClient => new(_awsCredentials, RegionEndpoint.SAEast1);
     public BackgroundJobs(RedisService redisService, IServiceScopeFactory serviceScopeFactory)
     {
         _redisService = redisService;
@@ -147,4 +168,48 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
 
     private static async Task ChangeChampionshipStatusSend(int championshipId, ChampionshipStatus status, DbService dbService) 
         => await dbService.EditData("UPDATE championships SET status = @status WHERE id = @id", new { id = championshipId, status });
+    
+    public async Task DownloadFilesFromS3()
+    {
+        var listRequest = new ListObjectsV2Request
+        {
+            BucketName = BucketName,
+            MaxKeys = 1000 
+        };
+
+        ListObjectsV2Response response;
+        using var client = GetClient;
+        do
+        {
+            response = await client.ListObjectsV2Async(listRequest, _cts);
+            foreach (var entry in response.S3Objects)
+                await DownloadFile(entry.Key, client);
+            
+            listRequest.ContinuationToken = response.NextContinuationToken;
+        } while (response.IsTruncated);
+    }
+
+    private async Task DownloadFile(string key, IAmazonS3 client)
+    {
+        var getObjectMetadataRequest = new GetObjectMetadataRequest
+        {
+            BucketName = BucketName,
+            Key = key
+        };
+
+        var response = await client.GetObjectMetadataAsync(getObjectMetadataRequest, _cts);
+        var contentType = new ContentType(response.Headers["Content-Type"]);
+        var fileExtension = GetFileExtension(contentType);
+        var fileNameWithExtension = Path.GetFileNameWithoutExtension(key) + fileExtension;
+        var downloadPath = Path.Combine(_mountPath, fileNameWithExtension);
+    
+        using var fileTransferUtility = new TransferUtility(client);
+        await fileTransferUtility.DownloadAsync(downloadPath, BucketName, key, _cts);
+    }
+
+    private static string GetFileExtension(ContentType type)
+    {
+        ContentTypeMappings.TryGetValue(type.MediaType, out var value);
+        return value;
+    }
 }

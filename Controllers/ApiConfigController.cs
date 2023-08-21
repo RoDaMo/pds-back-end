@@ -18,15 +18,15 @@ public class ApiConfigController : ApiBaseController
     private readonly ChampionshipService _championshipService;
     private readonly AuthService _authService;
     private readonly ErrorLogService _error;
-    private readonly ImageService _imageService;
+    private readonly IBackgroundJobsService _backgroundService;
 
     /// <inheritdoc />
-    public ApiConfigController(ChampionshipService championshipService, ErrorLogService error, AuthService authService, ImageService imageService)
+    public ApiConfigController(ChampionshipService championshipService, ErrorLogService error, AuthService authService, ImageService imageService, IBackgroundJobsService backgroundService)
     {
         _championshipService = championshipService;
         _error = error;
         _authService = authService;
-        _imageService = imageService;
+        _backgroundService = backgroundService;
     }
 
     [HttpPut]
@@ -68,7 +68,7 @@ public class ApiConfigController : ApiBaseController
     {
         try
         {
-            await _imageService.DownloadFilesFromS3();
+            await _backgroundService.EnqueueJob(() => _backgroundService.DownloadFilesFromS3());
             return ApiOk();
         }
         catch (ApplicationException ex)
