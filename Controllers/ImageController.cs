@@ -24,11 +24,12 @@ public class ImageController : ApiBaseController
     }
     
     [HttpGet]
-    [Route("/img/{id:guid}")]
-    public async Task<IActionResult> GetImage(Guid id)
+    [Route("/img/{id}")]
+    public async Task<IActionResult> GetImage(string id)
     {
         var image = await _imageService.GetImage(id);
-        
+
+        HttpContext.Response.Headers["Cache-Control"] = "public, max-age=31536000";
         return File(image.Stream.ToArray(), image.ContentType, image.FileName + "." + image.Extension);
     }
 
