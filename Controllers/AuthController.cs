@@ -75,7 +75,7 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken) || Request.Headers.ContainsKey("IsLocalhost")) 
+			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken)) 
 				throw new ApplicationException(Resource.InvalidCaptcha);
 			
 			await using var redis = await _redisService.GetDatabase();
