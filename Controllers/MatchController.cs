@@ -6,7 +6,6 @@ using PlayOffsApi.Services;
 
 namespace PlayOffsApi.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("/matches")]
 public class MatchController : ApiBaseController
@@ -24,6 +23,7 @@ public class MatchController : ApiBaseController
     }
     
     [HttpPost]
+    [Authorize]
     [Route("/matches/goals")]
     public async Task<IActionResult> CreateGoal([FromBody] Goal goal)
     {
@@ -44,6 +44,7 @@ public class MatchController : ApiBaseController
     }
 
     [HttpPut]
+    [Authorize]
     [Route("/matches/{matchId:int}/end-game-knockout")]
     public async Task<IActionResult> EndGameToKnockout(int matchId)
     {
@@ -64,6 +65,7 @@ public class MatchController : ApiBaseController
     }
 
     [HttpPost]
+    [Authorize]
     [Route("/matches/penalties")]
     public async Task<IActionResult> CreatePenalty([FromBody] Penalty penalty)
     {
@@ -83,6 +85,7 @@ public class MatchController : ApiBaseController
     }
 
     [HttpPut]
+    [Authorize]
     [Route("/matches/{matchId:int}/end-game-league-system")]
     public async Task<IActionResult> EndGameToLeagueSystem(int matchId)
     {
@@ -103,6 +106,7 @@ public class MatchController : ApiBaseController
     }
 
     [HttpPut]
+    [Authorize]
     [Route("/matches/{matchId:int}/end-game-group-stage")]
     public async Task<IActionResult> CreateGroupStage(int matchId)
     {
@@ -128,6 +132,7 @@ public class MatchController : ApiBaseController
 	/// <response code="200">Retorna o status de sucesso da requisição</response>
 	/// <response code="400">Retorna um erro indicando algum erro cometido na requisição</response>
     [HttpPut]
+    [Authorize]
     [Route("/matches")]
     public async Task<IActionResult> UpdateMatch([FromBody] Match match)
     {
@@ -169,6 +174,7 @@ public class MatchController : ApiBaseController
 	///		
 	/// </returns>
     [HttpPut]
+    [Authorize]
     [Route("/matches/{matchId:int}/prorrogation")]
     public async Task<IActionResult> Prorrogation(int matchId)
     {
@@ -185,6 +191,62 @@ public class MatchController : ApiBaseController
             await _error.HandleExceptionValidationAsync(HttpContext, ex);
             result.Add(ex.Message);
             return ApiBadRequest(result);
+        }   
+    }
+
+    /// Usado para obter uma partida de acordo com seu id.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /matches/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Retorna a partida</response>
+	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+    ///         "succeed": true,
+    ///         "results": {
+    ///             "id": 4836,
+    ///             "homeName": "alex",
+    ///             "visitorName": "nome",
+    ///              "homeEmblem": "oi",
+    ///              "visitorEmblem": "m",
+    ///              "homeGoals": 0,
+    ///              "visitorGoals": 0,
+    ///              "homeWinnigSets": 0,
+    ///              "visitorWinnigSets": 0,
+    ///              "isSoccer": true,
+    ///              "winnerName": null,
+    ///              "homeId": 8,
+    ///              "visitorId": 10,
+    ///              "finished": false,
+    ///              "local": "Em algum lugar",
+    ///              "arbitrator": "Daronco",
+    ///              "date": "2023-09-08T03:00:00Z"
+    ///          }
+	///		}
+	///		
+	/// </returns>
+    [HttpGet]
+    [Route("/matches/{matchId:int}")]
+    public async Task<IActionResult> Show(int matchId)
+    {
+        try
+        {
+            var result = await _matchService.GetMatchByIdValidation(matchId);
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
         }   
     }
 }

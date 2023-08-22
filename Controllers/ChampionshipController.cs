@@ -208,7 +208,10 @@ public class ChampionshipController : ApiBaseController
   ///                "winnerName": null,
   ///                "homeId": 4,
   ///                "visitorId": 5,
-  ///                "finished": true
+  ///                "finished": true,
+  ///                "local": "Em algum lugar",
+  ///                "arbitrator": "Daronco",
+  ///                "date": "2023-09-08T03:00:00Z"
   ///         }
 	///		}
 	///		
