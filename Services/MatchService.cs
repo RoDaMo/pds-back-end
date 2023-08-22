@@ -44,23 +44,24 @@ public class MatchService
         if(championship.DoubleMatchEliminations && match.Phase != Phase.Finals || 
         championship.FinalDoubleMatch && match.Phase == Phase.Finals)
 		{
-            if(await CheckIfIsLastMatch(matchId))
+            var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(matchId, match.Visitor);
+            var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(matchId, match.Home);
+            if(match.PreviousMatch != 0)
             {
-                var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(matchId, match.Visitor);
-                var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(matchId, match.Home);
                 if(aggregateVisitorPoints == aggregateHomePoints && match.Winner == 0)
                 {
                     throw new ApplicationException("Partida não pode ser encerrada sem um vencedor nos gols agregados.");
                 }
+                if(await CheckIfFirstMatchHasNotFinished(match.PreviousMatch))
+                {
+                    throw new ApplicationException("A primeira partida deve ser finalizada antes.");
+                }
             }
-
-            var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
-            var homePoints = await GetPointsFromTeamById(matchId, match.Home);
-            if(homePoints > visitorPoints)
+            if(aggregateHomePoints > aggregateVisitorPoints)
             {
                 await DefineWinner(match.Home, matchId);
             }
-            else if(homePoints < visitorPoints)
+            else if(aggregateHomePoints < aggregateVisitorPoints)
             {
                 await DefineWinner(match.Visitor, matchId);
             } 
@@ -88,6 +89,8 @@ public class MatchService
             }
         }       
     }
+    private async Task<bool> CheckIfFirstMatchHasNotFinished(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND (WINNER IS NULL AND Tied = false))", new {matchId});
     private async Task<int> DefineWinner(int teamId, int matchId)
     {
         if(teamId == 0)
@@ -362,19 +365,23 @@ public class MatchService
         => await _dbService.GetAsync<int>(
             "SELECT COUNT(*) FROM matches WHERE ChampionshipId = @championshipId AND Winner = @teamId", 
             new {teamId, championshipId});
-    private async Task<int> GoalDifference(int teamId, int championshipId)
+     private async Task<int> GoalDifference(int teamId, int championshipId)
     {
         var goalsScored = await ProGoals(teamId, championshipId);
         var goalsConceded = await _dbService.GetAsync<int>(
-            @"SELECT COUNT(g.Id)
-            FROM Goals g
-            JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND
-            (m.Visitor = @teamId OR m.Home = @teamId) AND 
-            (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            @"SELECT COALESCE(SUM(TotalGoals), 0) AS GrandTotalGoals
+            FROM (
+                SELECT g.TeamId, COUNT(g.Id) AS TotalGoals
+                FROM Goals g
+                JOIN Matches m ON g.MatchId = m.Id
+                WHERE m.ChampionshipId = @championshipId AND
+                    (m.Visitor = @teamId OR m.Home = @teamId) AND 
+                    (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
+                GROUP BY g.TeamId
+            ) AS SubqueryAlias;",
             new { championshipId, teamId });
-        return goalsScored - goalsConceded;
+        var result = goalsScored - goalsConceded;
+        return result;
     }
     private async Task<int> ProGoals(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(

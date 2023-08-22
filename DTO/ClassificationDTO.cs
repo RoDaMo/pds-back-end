@@ -2,6 +2,7 @@ namespace PlayOffsApi.DTO;
 
 public class ClassificationDTO
 {
+    public int TeamId { get; set; }
     public int Position { get; set; }
     public string Emblem { get; set; }
     public string Name { get; set; }

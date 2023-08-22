@@ -11,7 +11,11 @@ public class MatchDTO
     public int VisitorGoals { get; set; }
     public int HomeWinnigSets { get; set; }
     public int VisitorWinnigSets { get; set; }
-    public bool HasAggregatedScore { get; set; }
-    public int HomeAggregatedScore { get; set; }
-    public int VisitorAggregatedScore { get; set; }
+    public bool IsSoccer { get; set; }
+    public string WinnerName { get; set; }
+
+    public MatchDTO()
+    {
+        IsSoccer = false;
+    }
 }

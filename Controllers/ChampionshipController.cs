@@ -172,5 +172,39 @@ public class ChampionshipController : ApiBaseController
       return ApiBadRequest(ex.Message);
     }
   }
+
+  [HttpGet]
+  [Route("/championships/{id:int}/matches/{round:int}")]
+  public async Task<IActionResult> GetAllMatchesByRound(int id, int round)
+  {
+    try
+    {
+       
+      var result = await _championshipService.GetAllMatchesByRoundValidation(id, round);
+      return ApiOk(result);
+    }
+    catch (ApplicationException ex)
+    {
+      await _error.HandleExceptionValidationAsync(HttpContext, ex);
+      return ApiBadRequest(ex.Message);
+    }
+  }
+
+  [HttpGet]
+  [Route("/championships/{id:int}/matches/{phase:int}")]
+  public async Task<IActionResult> GetAllMatchesByPhase(int id, int phase)
+  {
+    try
+    {
+       
+      var result = await _championshipService.GetAllMatchesByPhaseValidation(id, phase);
+      return ApiOk(result);
+    }
+    catch (ApplicationException ex)
+    {
+      await _error.HandleExceptionValidationAsync(HttpContext, ex);
+      return ApiBadRequest(ex.Message);
+    }
+  }
 }
 

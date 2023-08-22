@@ -24,6 +24,7 @@ public class StatisticsService
         if(championship.SportsId == Sports.Football)
         {
             var classifications = await GetAllClassificationsByChampionshipId(championshipId);
+            classifications = classifications.OrderBy(c => c.Position).ToList();
             var classificationsDTO = new List<ClassificationDTO>();
 
             if(championship.Format == Enum.Format.LeagueSystem)
@@ -36,6 +37,7 @@ public class StatisticsService
                     classificationDTO.Points = classification.Points;
                     classificationDTO.Emblem = team.Emblem;
                     classificationDTO.Name = team.Name;
+                    classificationDTO.TeamId = team.Id;
                     classificationDTO.Wins = await AmountOfWins(team.Id, championshipId);
                     classificationDTO.GoalBalance = await GoalDifference(team.Id, championshipId);
                     classificationDTO.ProGoals = await ProGoals(team.Id, championshipId);
@@ -62,6 +64,7 @@ public class StatisticsService
                     var team = await GetByTeamIdSendAsync(classification.TeamId);
                     classificationDTO.Position = classification.Position;
                     classificationDTO.Points = classification.Points;
+                    classificationDTO.TeamId = team.Id;
                     classificationDTO.Emblem = team.Emblem;
                     classificationDTO.Name = team.Name;
                     classificationDTO.Wins = await AmountOfWins(team.Id, championshipId);
@@ -91,6 +94,7 @@ public class StatisticsService
                     classificationDTO.Points = classification.Points;
                     classificationDTO.Emblem = team.Emblem;
                     classificationDTO.Name = team.Name;
+                    classificationDTO.TeamId = team.Id;
                     classificationDTO.Wins = await AmountOfWins(team.Id, championshipId);
                     classificationDTO.WinningSets = await WinningSets(team.Id, championshipId);
                     classificationDTO.LosingSets = await LosingSets(team.Id, championshipId);
@@ -121,6 +125,7 @@ public class StatisticsService
                     classificationDTO.Points = classification.Points;
                     classificationDTO.Emblem = team.Emblem;
                     classificationDTO.Name = team.Name;
+                    classificationDTO.TeamId = team.Id;
                     classificationDTO.Wins = await AmountOfWins(team.Id, championshipId);
                     classificationDTO.WinningSets = await WinningSets(team.Id, championshipId);
                     classificationDTO.LosingSets = await LosingSets(team.Id, championshipId);
@@ -137,7 +142,7 @@ public class StatisticsService
         return new();
     }
     private async Task<Championship> GetChampionshipByIdSend(int id) 
-	    => await _dbService.GetAsync<Championship>("SELECT format, status, teamquantity, numberofplayers, DoubleMatchGroupStage, DoubleMatchEliminations, DoubleStartLeagueSystem, FinalDoubleMatch FROM championships WHERE id = @id", new { id });
+	    => await _dbService.GetAsync<Championship>("SELECT * FROM championships WHERE id = @id", new { id });
 	private async Task<List<Classification>> GetAllClassificationsByChampionshipId(int championshipId)
         => await _dbService.GetAll<Classification>("SELECT * FROM classifications WHERE ChampionshipId = @ChampionshipId ORDER BY Id", new {championshipId});
 	private async Task<Team> GetByTeamIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
@@ -149,15 +154,19 @@ public class StatisticsService
     {
         var goalsScored = await ProGoals(teamId, championshipId);
         var goalsConceded = await _dbService.GetAsync<int>(
-            @"SELECT COUNT(g.Id)
-            FROM Goals g
-            JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND
-            (m.Visitor = @teamId OR m.Home = @teamId) AND 
-            (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            @"SELECT  COALESCE(SUM(TotalGoals), 0) AS GrandTotalGoals
+            FROM (
+                SELECT g.TeamId, COUNT(g.Id) AS TotalGoals
+                FROM Goals g
+                JOIN Matches m ON g.MatchId = m.Id
+                WHERE m.ChampionshipId = @championshipId AND
+                    (m.Visitor = @teamId OR m.Home = @teamId) AND 
+                    (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
+                GROUP BY g.TeamId
+            ) AS SubqueryAlias;",
             new { championshipId, teamId });
-        return goalsScored - goalsConceded;
+        var result = goalsScored - goalsConceded;
+        return result;
     }
     private async Task<int> ProGoals(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
@@ -170,10 +179,10 @@ public class StatisticsService
             new { championshipId, teamId });
     private async Task<int> AmountOfMatches(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
-            @"SELECT COUNT(*) FROM matches 
+            @"SELECT COUNT(Id) FROM matches 
             WHERE (Visitor = @teamId OR Home = @teamId) AND 
             ChampionshipId = @championshipId AND
-            (Winner <> NULL OR Tied = TRUE)", 
+            (Winner IS NOT NULL OR Tied = TRUE)", 
             new {teamId, championshipId});
     private async Task<List<MatchDTO>> GetLast3Matches(int teamId, int championshipId)
     {
@@ -181,7 +190,7 @@ public class StatisticsService
             @"SELECT * FROM matches 
             WHERE (Visitor = @teamId OR Home = @teamId) AND 
             ChampionshipId = @championshipId AND
-            (Winner <> NULL OR Tied = TRUE)
+            (Winner IS NOT NULL OR Tied = TRUE)
             ORDER BY Date DESC
             LIMIT 3", 
             new {teamId, championshipId});
@@ -192,13 +201,13 @@ public class StatisticsService
             var homeTeam = await GetByTeamIdSendAsync(match.Home);
             var visitorTeam = await GetByTeamIdSendAsync(match.Visitor);
             matchDTO.Id = match.Id;
-            matchDTO.HasAggregatedScore = false;
             matchDTO.HomeEmblem = homeTeam.Emblem;
             matchDTO.HomeName = homeTeam.Name;
+            matchDTO.IsSoccer = true;
             matchDTO.HomeGoals = await GetPointsFromTeamById(match.Id, match.Home);
             matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
             matchDTO.VisitorEmblem = visitorTeam.Emblem;
-            matchDTO.VisitorEmblem = visitorTeam.Name;
+            matchDTO.VisitorName = visitorTeam.Name;
             matchesDTO.Add(matchDTO);
         }
         return matchesDTO;
@@ -209,7 +218,7 @@ public class StatisticsService
             @"SELECT * FROM matches 
             WHERE (Visitor = @teamId OR Home = @teamId) AND 
             ChampionshipId = @championshipId AND
-            (Winner <> NULL OR Tied = TRUE)
+            (Winner IS NOT NULL OR Tied = TRUE)
             ORDER BY Date DESC
             LIMIT 3", 
             new {teamId, championshipId});
@@ -220,11 +229,10 @@ public class StatisticsService
             var homeTeam = await GetByTeamIdSendAsync(match.Home);
             var visitorTeam = await GetByTeamIdSendAsync(match.Visitor);
             matchDTO.Id = match.Id;
-            matchDTO.HasAggregatedScore = false;
             matchDTO.HomeEmblem = homeTeam.Emblem;
             matchDTO.HomeName = homeTeam.Name;
             matchDTO.VisitorEmblem = visitorTeam.Emblem;
-            matchDTO.VisitorEmblem = visitorTeam.Name;
+            matchDTO.VisitorName = visitorTeam.Name;
             var pointsForSet = new List<int>();
             var pointsForSet2 = new List<int>();
             var WonSets = 0;
@@ -316,6 +324,18 @@ public class StatisticsService
             else
             {
                 result.Lose = true;
+            }
+        }
+
+        else
+        {
+            if(match.HomeName == classification.Name)
+            {
+                result.Lose = true;
+            }
+            else
+            {
+                result.Won = true;
             }
         }
 
@@ -517,13 +537,16 @@ public class StatisticsService
     }
     private async Task<int> PointsAgainst(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
-            @"SELECT COUNT(g.Id)
-            FROM Goals g
-            JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND
-            (m.Visitor = @teamId OR m.Home = @teamId) AND 
-            (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            @"SELECT COALESCE(SUM(TotalGoals), 0) AS GrandTotalGoals
+            FROM (
+                SELECT g.TeamId, COUNT(g.Id) AS TotalGoals
+                FROM Goals g
+                JOIN Matches m ON g.MatchId = m.Id
+                WHERE m.ChampionshipId = @championshipId AND
+                    (m.Visitor = @teamId OR m.Home = @teamId) AND 
+                    (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
+                GROUP BY g.TeamId
+            ) AS SubqueryAlias;",
             new { championshipId, teamId });
     
     public async Task<List<StrikerDTO>> GetStrikersValidationAsync(int championshipId)
@@ -562,13 +585,7 @@ public class StatisticsService
             }
         }
         
-        foreach (var player in players)
-        {
-            if(player.Goals < fifthLargestGoals)
-            {
-                players.Remove(player);
-            }
-        }
+        players.RemoveAll(p => p.Goals < fifthLargestGoals);
 
         foreach (var player in players)
         {

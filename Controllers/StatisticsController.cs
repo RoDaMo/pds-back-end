@@ -29,7 +29,7 @@ public class StatisticsController : ApiBaseController
         try
         {
             var results = await _statisticsService.GetClassificationsValidationAsync(championshipId);
-            return ApiOk(result);
+            return ApiOk(results);
         }
 
         catch (ApplicationException ex)
@@ -49,7 +49,7 @@ public class StatisticsController : ApiBaseController
         try
         {
             var results = await _statisticsService.GetStrikersValidationAsync(championshipId);
-            return ApiOk(result);
+            return ApiOk(results);
         }
 
         catch (ApplicationException ex)

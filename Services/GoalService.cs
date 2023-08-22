@@ -88,6 +88,10 @@ public class GoalService
             throw new ApplicationException("Tempo do evento é inválido");
         if(championship.SportsId == Sports.Football)
         {
+            if(match.PreviousMatch != 0 && await CheckIfFirstMatchHasNotFinished(match.PreviousMatch))
+            {
+                throw new ApplicationException("A primeira partida deve ser finalizada antes.");
+            }
             goal.Date = null;
             if(await CheckIfThereIsAnyPenaltyByMatchId(goal.MatchId))
             {
@@ -127,6 +131,8 @@ public class GoalService
         }
         return errorMessages;
     }
+    private async Task<bool> CheckIfFirstMatchHasNotFinished(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND (WINNER IS NULL AND Tied = false))", new {matchId});
     private async Task<bool> CheckIfMinutesIsNotValid(Goal goal, Match math)
     {
         if(goal.Set == 0)
@@ -723,13 +729,16 @@ public class GoalService
     }
     private async Task<int> PointsAgainst(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
-            @"SELECT COUNT(g.Id)
-            FROM Goals g
-            JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND
-            (m.Visitor = @teamId OR m.Home = @teamId) AND 
-            (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            @"SELECT COALESCE(SUM(TotalGoals), 0) AS GrandTotalGoals
+            FROM (
+                SELECT g.TeamId, COUNT(g.Id) AS TotalGoals
+                FROM Goals g
+                JOIN Matches m ON g.MatchId = m.Id
+                WHERE m.ChampionshipId = @championshipId AND
+                    (m.Visitor = @teamId OR m.Home = @teamId) AND 
+                    (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
+                GROUP BY g.TeamId
+            ) AS SubqueryAlias;",
             new { championshipId, teamId });
 
         
