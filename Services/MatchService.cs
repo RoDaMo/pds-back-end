@@ -798,6 +798,7 @@ public class MatchService
             matchDTO.Local = match.Local;
             matchDTO.Arbitrator = match.Arbitrator;
             matchDTO.Date = match.Date;
+            matchDTO.ChampionshipId = match.ChampionshipId;
             matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
 			return matchDTO;
 		}
@@ -817,6 +818,7 @@ public class MatchService
             matchDTO.Local = match.Local;
             matchDTO.Arbitrator = match.Arbitrator;
             matchDTO.Date = match.Date;
+            matchDTO.ChampionshipId = match.ChampionshipId;
             matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
             var pointsForSet = new List<int>();
             var pointsForSet2 = new List<int>();

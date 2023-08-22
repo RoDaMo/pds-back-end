@@ -19,6 +19,7 @@ public class MatchDTO
     public string Local { get; set; }
     public string Arbitrator { get; set; }
     public DateTime Date { get; set; }
+    public int ChampionshipId { get; set; }
 
     public MatchDTO()
     {
