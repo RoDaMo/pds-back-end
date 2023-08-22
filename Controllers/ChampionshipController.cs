@@ -173,31 +173,54 @@ public class ChampionshipController : ApiBaseController
     }
   }
 
+  /// <summary>
+	/// Usado para obter as partidas de um campeonato conforme parâmetros.
+	/// </summary>
+  /// <param name="id"></param>
+  /// <param name="round"></param>
+  /// <param name="phase"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /championships/{id}/matches/?round={round}&amp;phase={phase}
+	///		
+	/// </remarks>
+	/// <response code="200">Lista de partidas conforme os parâmetros passados.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+  ///      "succeed": true,
+  ///      "results": [
+  ///        {
+///                "id": 4828,
+///                "homeName": "Lagarta",
+///                "visitorName": "Harry Potter",
+///                "homeEmblem": "oi",
+///                "visitorEmblem": "oi",
+///                "homeGoals": 0,
+///                "visitorGoals": 4,
+///                "homeWinnigSets": 0,
+///                "visitorWinnigSets": 0,
+///                "isSoccer": true,
+///                "winnerName": null,
+///                "homeId": 4,
+///                "visitorId": 5
+  ///         }
+	///		}
+	///		
+	/// </returns>
   [HttpGet]
-  [Route("/championships/{id:int}/matches/{round:int}")]
-  public async Task<IActionResult> GetAllMatchesByRound(int id, int round)
+  [Route("/championships/{id:int}/matches")]
+  public async Task<IActionResult> GetAllMatchesByRound(int id, [FromQuery] int round, [FromQuery] int phase)
   {
     try
     {
-       
-      var result = await _championshipService.GetAllMatchesByRoundValidation(id, round);
-      return ApiOk(result);
-    }
-    catch (ApplicationException ex)
-    {
-      await _error.HandleExceptionValidationAsync(HttpContext, ex);
-      return ApiBadRequest(ex.Message);
-    }
-  }
-
-  [HttpGet]
-  [Route("/championships/{id:int}/matches/{phase:int}")]
-  public async Task<IActionResult> GetAllMatchesByPhase(int id, int phase)
-  {
-    try
-    {
-       
-      var result = await _championshipService.GetAllMatchesByPhaseValidation(id, phase);
+      
+      var result = (phase == 0) ? await _championshipService.GetAllMatchesByRoundValidation(id, round) 
+      : await _championshipService.GetAllMatchesByPhaseValidation(id, phase);
       return ApiOk(result);
     }
     catch (ApplicationException ex)

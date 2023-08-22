@@ -259,15 +259,17 @@ public class ChampionshipService
 			{
 				var matchDTO = new MatchDTO();
 				var home = await GetByTeamIdSendAsync(match.Home);
-				var visitor = await GetByTeamIdSendAsync(match.Home);
+				var visitor = await GetByTeamIdSendAsync(match.Visitor);
 				matchDTO.Id = match.Id;
 				matchDTO.IsSoccer = true;
 				matchDTO.HomeEmblem = home.Emblem;
 				matchDTO.HomeName = home.Name;
+				matchDTO.HomeId = home.Id;
 				matchDTO.HomeGoals = await GetPointsFromTeamById(match.Id, match.Home);
 				matchDTO.VisitorEmblem = visitor.Emblem;
-				matchDTO.VisitorName = visitor.Emblem;
+				matchDTO.VisitorName = visitor.Name;
 				matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
+				matchDTO.VisitorId = visitor.Id;
 				matchesDTO.Add(matchDTO);
 			}
 			return matchesDTO;
@@ -283,8 +285,10 @@ public class ChampionshipService
 				matchDTO.Id = match.Id;
 				matchDTO.HomeEmblem = homeTeam.Emblem;
 				matchDTO.HomeName = homeTeam.Name;
+				matchDTO.HomeId = homeTeam.Id;
+				matchDTO.VisitorId = visitorTeam.Id;
 				matchDTO.VisitorEmblem = visitorTeam.Emblem;
-				matchDTO.VisitorEmblem = visitorTeam.Name;
+				matchDTO.VisitorName = visitorTeam.Name;
 				var pointsForSet = new List<int>();
 				var pointsForSet2 = new List<int>();
 				var WonSets = 0;
@@ -390,14 +394,16 @@ public class ChampionshipService
 			{
 				var matchDTO = new MatchDTO();
 				var home = await GetByTeamIdSendAsync(match.Home);
-				var visitor = await GetByTeamIdSendAsync(match.Home);
+				var visitor = await GetByTeamIdSendAsync(match.Visitor);
 				matchDTO.Id = match.Id;
 				matchDTO.IsSoccer = true;
 				matchDTO.HomeEmblem = home.Emblem;
 				matchDTO.HomeName = home.Name;
+				matchDTO.HomeId = home.Id;
 				matchDTO.HomeGoals = await GetPointsFromTeamById(match.Id, match.Home);
 				matchDTO.VisitorEmblem = visitor.Emblem;
-				matchDTO.VisitorName = visitor.Emblem;
+				matchDTO.VisitorName = visitor.Name;
+				matchDTO.VisitorId = visitor.Id;
 				matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
 				if(match.PreviousMatch != 0)
 					matchDTO.WinnerName = (match.Winner == home.Id) ? home.Name : visitor.Name;
@@ -416,8 +422,10 @@ public class ChampionshipService
 				matchDTO.Id = match.Id;
 				matchDTO.HomeEmblem = homeTeam.Emblem;
 				matchDTO.HomeName = homeTeam.Name;
+				matchDTO.HomeId = homeTeam.Id;
 				matchDTO.VisitorEmblem = visitorTeam.Emblem;
-				matchDTO.VisitorEmblem = visitorTeam.Name;
+				matchDTO.VisitorName = visitorTeam.Name;
+				matchDTO.VisitorId = visitorTeam.Id;
 				var pointsForSet = new List<int>();
 				var pointsForSet2 = new List<int>();
 				var WonSets = 0;
