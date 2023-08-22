@@ -82,6 +82,7 @@ public class StatisticsService
         else
         {
             var classifications = await GetAllClassificationsByChampionshipId(championshipId);
+            classifications = classifications.OrderBy(c => c.Position).ToList();
             var classificationsDTO = new List<ClassificationDTO>();
 
             if(championship.Format == Enum.Format.LeagueSystem)
@@ -203,11 +204,13 @@ public class StatisticsService
             matchDTO.Id = match.Id;
             matchDTO.HomeEmblem = homeTeam.Emblem;
             matchDTO.HomeName = homeTeam.Name;
+            matchDTO.HomeId = match.Home;
             matchDTO.IsSoccer = true;
             matchDTO.HomeGoals = await GetPointsFromTeamById(match.Id, match.Home);
             matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
             matchDTO.VisitorEmblem = visitorTeam.Emblem;
             matchDTO.VisitorName = visitorTeam.Name;
+            matchDTO.VisitorId = match.Visitor;
             matchesDTO.Add(matchDTO);
         }
         return matchesDTO;
@@ -229,10 +232,12 @@ public class StatisticsService
             var homeTeam = await GetByTeamIdSendAsync(match.Home);
             var visitorTeam = await GetByTeamIdSendAsync(match.Visitor);
             matchDTO.Id = match.Id;
+            matchDTO.HomeId = match.Home;
             matchDTO.HomeEmblem = homeTeam.Emblem;
             matchDTO.HomeName = homeTeam.Name;
             matchDTO.VisitorEmblem = visitorTeam.Emblem;
             matchDTO.VisitorName = visitorTeam.Name;
+            matchDTO.VisitorId = match.Visitor;
             var pointsForSet = new List<int>();
             var pointsForSet2 = new List<int>();
             var WonSets = 0;
@@ -297,8 +302,16 @@ public class StatisticsService
                     }
                 }
             }
-            matchDTO.HomeWinnigSets = WonSets;
-            matchDTO.VisitorWinnigSets = WonSets2;
+            if(match.Home == teamId)
+            {
+                matchDTO.HomeWinnigSets = WonSets;
+                matchDTO.VisitorWinnigSets = WonSets2;
+            }
+            else
+            {
+                matchDTO.HomeWinnigSets = WonSets2;
+                matchDTO.VisitorWinnigSets = WonSets;
+            }
             matchesDTO.Add(matchDTO);
         }
         return matchesDTO;
@@ -317,7 +330,7 @@ public class StatisticsService
         }
         else if(match.HomeGoals > match.VisitorGoals)
         {
-            if(match.HomeName == classification.Name)
+            if(match.HomeId == classification.TeamId)
             {
                 result.Won = true;
             }
@@ -326,10 +339,9 @@ public class StatisticsService
                 result.Lose = true;
             }
         }
-
         else
         {
-            if(match.HomeName == classification.Name)
+            if(match.HomeId == classification.TeamId)
             {
                 result.Lose = true;
             }
@@ -349,9 +361,14 @@ public class StatisticsService
     foreach (var match in classificationDTO.LastMatches)
     {
         var result = new LastResultsDTO();
+        Console.WriteLine("match home: "+ match.HomeName);
+        Console.WriteLine("classification name: "+ classificationDTO.Name);
+        Console.WriteLine("matchid id: "+ match.Id);
+
+
         if(match.HomeWinnigSets == 3)
         {
-            if(match.HomeName == classificationDTO.Name)
+            if(match.HomeId == classificationDTO.TeamId)
             {
                 result.Won = true;
             }
@@ -362,7 +379,7 @@ public class StatisticsService
         }
         else if(match.VisitorWinnigSets == 3)
         {
-            if(match.HomeName == classificationDTO.Name)
+            if(match.VisitorId == classificationDTO.TeamId)
             {
                 result.Won = true;
             }

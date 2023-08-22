@@ -13,6 +13,9 @@ public class MatchDTO
     public int VisitorWinnigSets { get; set; }
     public bool IsSoccer { get; set; }
     public string WinnerName { get; set; }
+    public int HomeId { get; set; }
+    public int VisitorId { get; set; }
+
 
     public MatchDTO()
     {
