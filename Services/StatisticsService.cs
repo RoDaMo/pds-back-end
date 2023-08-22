@@ -24,11 +24,11 @@ public class StatisticsService
         if(championship.SportsId == Sports.Football)
         {
             var classifications = await GetAllClassificationsByChampionshipId(championshipId);
-            classifications = classifications.OrderBy(c => c.Position).ToList();
             var classificationsDTO = new List<ClassificationDTO>();
 
             if(championship.Format == Enum.Format.LeagueSystem)
             {
+                classifications = classifications.OrderBy(c => c.Position).ToList();
                 foreach (var classification in classifications)
                 {
                     var classificationDTO = new ClassificationDTO();
@@ -82,11 +82,11 @@ public class StatisticsService
         else
         {
             var classifications = await GetAllClassificationsByChampionshipId(championshipId);
-            classifications = classifications.OrderBy(c => c.Position).ToList();
             var classificationsDTO = new List<ClassificationDTO>();
 
             if(championship.Format == Enum.Format.LeagueSystem)
             {
+                classifications = classifications.OrderBy(c => c.Position).ToList();
                 foreach (var classification in classifications)
                 {
                     var classificationDTO = new ClassificationDTO();
