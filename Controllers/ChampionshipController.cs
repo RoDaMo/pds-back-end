@@ -195,19 +195,20 @@ public class ChampionshipController : ApiBaseController
   ///      "succeed": true,
   ///      "results": [
   ///        {
-///                "id": 4828,
-///                "homeName": "Lagarta",
-///                "visitorName": "Harry Potter",
-///                "homeEmblem": "oi",
-///                "visitorEmblem": "oi",
-///                "homeGoals": 0,
-///                "visitorGoals": 4,
-///                "homeWinnigSets": 0,
-///                "visitorWinnigSets": 0,
-///                "isSoccer": true,
-///                "winnerName": null,
-///                "homeId": 4,
-///                "visitorId": 5
+  ///                "id": 4828,
+  ///                "homeName": "Lagarta",
+  ///                "visitorName": "Harry Potter",
+  ///                "homeEmblem": "oi",
+  ///                "visitorEmblem": "oi",
+  ///                "homeGoals": 0,
+  ///                "visitorGoals": 4,
+  ///                "homeWinnigSets": 0,
+  ///                "visitorWinnigSets": 0,
+  ///                "isSoccer": true,
+  ///                "winnerName": null,
+  ///                "homeId": 4,
+  ///                "visitorId": 5,
+  ///                "finished": true
   ///         }
 	///		}
 	///		

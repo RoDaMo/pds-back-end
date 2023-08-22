@@ -68,7 +68,8 @@ public class StatisticsController : ApiBaseController
     ///                 "isSoccer": true,
     ///                 "winnerName": null,
     ///                 "homeId": 3,
-    ///                 "visitorId": 7
+    ///                 "visitorId": 7,
+    ///                 "finished": true
     ///             }
     ///         ],
     ///         "lastResults": [

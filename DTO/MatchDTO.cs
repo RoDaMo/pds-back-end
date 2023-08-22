@@ -15,10 +15,11 @@ public class MatchDTO
     public string WinnerName { get; set; }
     public int HomeId { get; set; }
     public int VisitorId { get; set; }
-
+    public bool Finished { get; set; }
 
     public MatchDTO()
     {
+        Finished = false;
         IsSoccer = false;
     }
 }

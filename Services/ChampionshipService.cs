@@ -270,6 +270,7 @@ public class ChampionshipService
 				matchDTO.VisitorName = visitor.Name;
 				matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
 				matchDTO.VisitorId = visitor.Id;
+				matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
 				matchesDTO.Add(matchDTO);
 			}
 			return matchesDTO;
@@ -289,6 +290,7 @@ public class ChampionshipService
 				matchDTO.VisitorId = visitorTeam.Id;
 				matchDTO.VisitorEmblem = visitorTeam.Emblem;
 				matchDTO.VisitorName = visitorTeam.Name;
+				matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
 				var pointsForSet = new List<int>();
 				var pointsForSet2 = new List<int>();
 				var WonSets = 0;
@@ -405,6 +407,7 @@ public class ChampionshipService
 				matchDTO.VisitorName = visitor.Name;
 				matchDTO.VisitorId = visitor.Id;
 				matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
+				matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
 				if(match.PreviousMatch != 0)
 					matchDTO.WinnerName = (match.Winner == home.Id) ? home.Name : visitor.Name;
 				matchesDTO.Add(matchDTO);
@@ -426,6 +429,7 @@ public class ChampionshipService
 				matchDTO.VisitorEmblem = visitorTeam.Emblem;
 				matchDTO.VisitorName = visitorTeam.Name;
 				matchDTO.VisitorId = visitorTeam.Id;
+				matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
 				var pointsForSet = new List<int>();
 				var pointsForSet2 = new List<int>();
 				var WonSets = 0;

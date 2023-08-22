@@ -211,6 +211,7 @@ public class StatisticsService
             matchDTO.VisitorEmblem = visitorTeam.Emblem;
             matchDTO.VisitorName = visitorTeam.Name;
             matchDTO.VisitorId = match.Visitor;
+            matchDTO.Finished = true;
             matchesDTO.Add(matchDTO);
         }
         return matchesDTO;
@@ -238,6 +239,7 @@ public class StatisticsService
             matchDTO.VisitorEmblem = visitorTeam.Emblem;
             matchDTO.VisitorName = visitorTeam.Name;
             matchDTO.VisitorId = match.Visitor;
+            matchDTO.Finished = true;
             var pointsForSet = new List<int>();
             var pointsForSet2 = new List<int>();
             var WonSets = 0;
@@ -361,10 +363,6 @@ public class StatisticsService
     foreach (var match in classificationDTO.LastMatches)
     {
         var result = new LastResultsDTO();
-        Console.WriteLine("match home: "+ match.HomeName);
-        Console.WriteLine("classification name: "+ classificationDTO.Name);
-        Console.WriteLine("matchid id: "+ match.Id);
-
 
         if(match.HomeWinnigSets == 3)
         {
