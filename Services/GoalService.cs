@@ -61,7 +61,10 @@ public class GoalService
         {
             throw new ApplicationException("Data da partida não definida.");
         }
-
+        if(match.Date.ToUniversalTime() >= DateTime.UtcNow)
+        {
+            throw new ApplicationException("Partida ainda não inciou");
+        }
         if(await CheckIfThereIsWinner(goal.MatchId))
         {
             throw new ApplicationException("Partida já possui um vencedor.");
@@ -86,6 +89,7 @@ public class GoalService
         }
         if(await CheckIfMinutesIsNotValid(goal, match))
             throw new ApplicationException("Tempo do evento é inválido");
+        
         if(championship.SportsId == Sports.Football)
         {
             if(match.PreviousMatch != 0 && await CheckIfFirstMatchHasNotFinished(match.PreviousMatch))
@@ -109,7 +113,7 @@ public class GoalService
         else
         {
             goal.Minutes = null;
-            goal.Date = goal.Date?.ToUniversalTime();
+            goal.Date = DateTime.UtcNow;
             if(await ThereIsAWinner(goal.MatchId))
             {
                 throw new ApplicationException("Partida já encerrada.");

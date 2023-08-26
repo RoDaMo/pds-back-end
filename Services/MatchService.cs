@@ -20,7 +20,8 @@ public class MatchService
 
     public async Task EndGameToKnockoutValidationAsync(int matchId)
     {
-        if(!await CheckIfMatchExists(matchId))
+        var match = await GetMatchById(matchId);
+        if(match is null)
         {
             throw new ApplicationException("Partida passada não existe.");
         }
@@ -28,12 +29,15 @@ public class MatchService
         {
             throw new ApplicationException("Data da partida não definida.");
         }
-        if(await CheckIfThereIsWinner(matchId))
+        if(match.Date.ToUniversalTime() >= DateTime.UtcNow)
+        {
+            throw new ApplicationException("Partida ainda não inciou");
+        }
+        if(match.Winner != 0)
         {
             throw new ApplicationException("Partida já possui um vencedor.");
         }
 
-        var match = await GetMatchById(matchId);
         var championship = await GetByIdSend(match.ChampionshipId);
 
         if(match.HomeUniform is null || match.VisitorUniform is null)
@@ -249,7 +253,8 @@ public class MatchService
 
     public async Task EndGameToLeagueSystemValidationAsync(int matchId)
     {
-        if(!await CheckIfMatchExists(matchId))
+        var match = await GetMatchById(matchId);
+        if(match is null)
         {
             throw new ApplicationException("Partida passada não existe.");
         }
@@ -257,22 +262,23 @@ public class MatchService
         {
             throw new ApplicationException("Data da partida não definida.");
         }
-        if(await CheckIfThereIsWinner(matchId))
+        if(match.Date.ToUniversalTime() >= DateTime.UtcNow)
+        {
+            throw new ApplicationException("Partida ainda não inciou");
+        }
+        if(match.Winner != 0)
         {
             throw new ApplicationException("Partida já possui um vencedor.");
         }
-        if(await CheckIfThereIsTie(matchId))
+        if(match.Tied)
         {
             throw new ApplicationException("Partida já terminou em empate.");
         }
-
-        var match = await GetMatchById(matchId);
-
         if(match.HomeUniform is null || match.VisitorUniform is null)
             throw new ApplicationException("É necessário definir os uniformes das equipes antes");
         
         if (match.Local is null)
-            throw new ApplicationException("É necessário definir o local da partida antes antes");
+            throw new ApplicationException("É necessário definir o local da partida antes");
 
         var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
         var homePoints = await GetPointsFromTeamById(matchId, match.Home);
@@ -600,7 +606,8 @@ public class MatchService
 
     public async Task EndGameToGroupStageValidationAsync(int matchId)
     {
-        if(!await CheckIfMatchExists(matchId))
+        var match = await GetMatchById(matchId);
+        if(match is null)
         {
             throw new ApplicationException("Partida passada não existe.");
         }
@@ -608,17 +615,18 @@ public class MatchService
         {
             throw new ApplicationException("Data da partida não definida.");
         }
-
-        if(await CheckIfThereIsWinner(matchId))
+        if(match.Date.ToUniversalTime() >= DateTime.UtcNow)
+        {
+            throw new ApplicationException("Partida ainda não inciou");
+        }
+        if(match.Winner != 0)
         {
             throw new ApplicationException("Partida já possui um vencedor.");
         }
-        if(await CheckIfThereIsTie(matchId))
+        if(match.Tied)
         {
             throw new ApplicationException("Partida já terminou em empate.");
         }
-
-        var match = await GetMatchById(matchId);
 
         if(match.HomeUniform is null || match.VisitorUniform is null)
             throw new ApplicationException("É necessário definir os uniformes das equipes antes");
@@ -766,9 +774,47 @@ public class MatchService
     public async Task ActiveProrrogationValidationAsync(int matchId)
     {
         var match = await GetMatchById(matchId);
+        var championship = await GetChampionshipByMatchId(matchId);
 
         if(match is null)
             throw new ApplicationException("Partida passada não existe");
+
+        if(championship.SportsId == Sports.Volleyball)
+            throw new ApplicationException("Vôlei não apresenta prorrogação");
+        
+        if(championship.Format == Format.LeagueSystem)
+            throw new ApplicationException("Esse formato de campeonato não apresenta prorrogação");
+        
+        if(championship.Format == Format.GroupStage && match.Round != 0)
+            throw new ApplicationException("Fase atual do campeonato não apresenta prorrogação");
+
+        if(match.Phase != Phase.Finals && championship.DoubleMatchEliminations ||
+            match.Phase == Phase.Finals && championship.FinalDoubleMatch)
+        {
+            var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Visitor);
+            var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Home);
+            if(match.PreviousMatch == 0)
+            {
+                throw new ApplicationException("Primeira partida não pode apresentar prorrogação");
+            }
+            else if(await CheckIfFirstMatchHasNotFinished(match.PreviousMatch))
+            {
+               throw new ApplicationException("Primeira partida ainda não foi finalizada");
+            }
+            else if(aggregateHomePoints != aggregateVisitorPoints)
+            {
+                throw new ApplicationException("Partida precisa estar empatada para iniciar a prorrogação");
+            }
+        }
+
+        else
+        {
+            var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
+            var homePoints = await GetPointsFromTeamById(matchId, match.Home);
+
+            if(visitorPoints != homePoints)
+                throw new ApplicationException("Partida precisa estar empatada para iniciar a prorrogação");
+        }
         
         await _dbService.EditData("UPDATE Matches SET Prorrogation = true WHERE id=@matchId", new {matchId});
     }
@@ -787,6 +833,7 @@ public class MatchService
             var visitor = await GetByTeamIdSendAsync(match.Visitor);
             matchDTO.Id = match.Id;
             matchDTO.IsSoccer = true;
+            matchDTO.Prorrogation = match.Prorrogation;
             matchDTO.HomeEmblem = home.Emblem;
             matchDTO.HomeName = home.Name;
             matchDTO.HomeId = home.Id;
@@ -811,6 +858,7 @@ public class MatchService
             matchDTO.Id = match.Id;
             matchDTO.HomeEmblem = homeTeam.Emblem;
             matchDTO.HomeName = homeTeam.Name;
+            matchDTO.Prorrogation = match.Prorrogation;
             matchDTO.HomeId = homeTeam.Id;
             matchDTO.VisitorId = visitorTeam.Id;
             matchDTO.VisitorEmblem = visitorTeam.Emblem;
@@ -894,5 +942,52 @@ public class MatchService
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM goals WHERE MatchId = @matchId);", new {matchId});
    private async Task<int> GetLastSet(int matchId)
     	=> await _dbService.GetAsync<int>("SELECT MAX(Set) from goals where MatchId = @matchId", new {matchId});
-	
+    
+    public async Task<bool> CanThereBePenalties(int matchId)
+    {
+        var match = await GetMatchById(matchId);
+        var championship = await GetChampionshipByMatchId(matchId);
+
+        if(match is null)
+            throw new ApplicationException("Partida passada não existe");
+        
+        if(championship.SportsId == Sports.Volleyball)
+            return false;
+
+        if(championship.Format == Format.LeagueSystem)
+           return false;
+        
+        if(championship.Format == Format.GroupStage && match.Round != 0)
+           return false;
+
+        if(match.Phase != Phase.Finals && championship.DoubleMatchEliminations ||
+            match.Phase == Phase.Finals && championship.FinalDoubleMatch)
+        {
+            var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Visitor);
+            var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Home);
+            if(match.PreviousMatch == 0)
+            {
+                return false;
+            }
+            else if(await CheckIfFirstMatchHasNotFinished(match.PreviousMatch))
+            {
+                return false;
+            }
+            else if(aggregateHomePoints != aggregateVisitorPoints)
+            {
+                return false;
+            }
+        }
+
+        else
+        {
+            var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
+            var homePoints = await GetPointsFromTeamById(matchId, match.Home);
+
+            if(visitorPoints != homePoints)
+                return false;
+        }
+
+        return true;
+    }
 }

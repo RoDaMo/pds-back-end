@@ -20,6 +20,7 @@ public class MatchDTO
     public string Arbitrator { get; set; }
     public DateTime Date { get; set; }
     public int ChampionshipId { get; set; }
+    public bool Prorrogation { get; set; }
 
     public MatchDTO()
     {

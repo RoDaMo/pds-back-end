@@ -327,6 +327,15 @@ public class BracketingService
 			}
 		}
 
+		var k = 0;
+		for (int i = 0; i < matches.Count/2; i += 2)
+		{
+			var auxiliar = matches[matches.Count/2 + k];
+			matches[matches.Count/2 + k] = matches[i+1];
+			matches[i+1] = auxiliar;
+			k = k + 2;
+		}
+
 		if((championship.DoubleMatchEliminations && phase != Phase.Finals) ||
 			(championship.FinalDoubleMatch && phase == Phase.Finals))
 		{

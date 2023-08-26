@@ -37,9 +37,6 @@ public class GoalValidator : AbstractValidator<Goal>
                 .NotEqual(goal => goal.AssisterPlayerTempId)
                 .When(g => g.PlayerTempId != Guid.Empty)
                 .WithMessage("O jogador que marcou o gol não pode ser também o assistente.");
-            RuleFor(g => g.Date)
-                .NotEmpty()
-                .WithMessage("Momento do evento não pode ser vazio.");
 		});
 
         RuleSet("ValidationSoccer", () => 
