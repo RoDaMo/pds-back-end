@@ -18,6 +18,7 @@ public class Match
     public string Local { get; set; }
     public string HomeUniform { get; set; }
     public string VisitorUniform { get; set; }
+    public bool Prorrogation { get; set; }
 
     public Match(int championshipId, int home, int visitor, Phase phase)
     {

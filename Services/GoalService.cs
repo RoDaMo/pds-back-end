@@ -57,10 +57,13 @@ public class GoalService
         {
             throw new ApplicationException("Time informado não participa da partida atual.");
         }
-
         if(await DepartureDateNotSet(goal.MatchId))
         {
             throw new ApplicationException("Data da partida não definida.");
+        }
+        if(match.Date.ToUniversalTime() >= DateTime.UtcNow)
+        {
+            throw new ApplicationException("Partida ainda não inciou");
         }
         if(await CheckIfThereIsWinner(goal.MatchId))
         {
@@ -84,9 +87,16 @@ public class GoalService
                 throw new ApplicationException("Jogador que fez assistência não pertence ao mesmo time do jogador que fez o gol.");
             }
         }
-
+        if(await CheckIfMinutesIsNotValid(goal, match))
+            throw new ApplicationException("Tempo do evento é inválido");
+        
         if(championship.SportsId == Sports.Football)
         {
+            if(match.PreviousMatch != 0 && await CheckIfFirstMatchHasNotFinished(match.PreviousMatch))
+            {
+                throw new ApplicationException("A primeira partida deve ser finalizada antes.");
+            }
+            goal.Date = null;
             if(await CheckIfThereIsAnyPenaltyByMatchId(goal.MatchId))
             {
                 throw new ApplicationException("Durante a etapa de pênaltis não é possível atribuir um gol normal.");
@@ -102,6 +112,8 @@ public class GoalService
         }
         else
         {
+            goal.Minutes = null;
+            goal.Date = DateTime.UtcNow;
             if(await ThereIsAWinner(goal.MatchId))
             {
                 throw new ApplicationException("Partida já encerrada.");
@@ -123,6 +135,35 @@ public class GoalService
         }
         return errorMessages;
     }
+    private async Task<bool> CheckIfFirstMatchHasNotFinished(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND (WINNER IS NULL AND Tied = false))", new {matchId});
+    private async Task<bool> CheckIfMinutesIsNotValid(Goal goal, Match math)
+    {
+        if(goal.Set == 0)
+        {
+            var timeOfLastEvent = await GetTimeOfLastEventSoccer(goal.MatchId);
+            if(math.Prorrogation)
+            {
+                if(goal.Minutes > 120 || timeOfLastEvent > goal.Minutes || goal.Minutes < 90)
+                    return true;
+                return false;
+            }
+            else if(goal.Minutes > 90 || timeOfLastEvent > goal.Minutes)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        var timeOfLastEvent2 = await GetTimeOfLastEventVolley(goal.MatchId);
+        if(timeOfLastEvent2.ToUniversalTime() > goal.Date?.ToUniversalTime())
+            return true;
+        return false;
+    }
+    private async Task<int> GetTimeOfLastEventSoccer(int matchId)
+        => await _dbService.GetAsync<int>("SELECT Minutes FROM Goals WHERE MatchId = @matchId ORDER BY Id DESC LIMIT 1", new {matchId});
+     private async Task<DateTime> GetTimeOfLastEventVolley(int matchId)
+        => await _dbService.GetAsync<DateTime>("SELECT Date FROM Goals WHERE MatchId = @matchId ORDER BY Id DESC LIMIT 1", new {matchId});
     private async Task<bool> CheckIfAssisterPlayerTempAndMarkerAreFromSameTeam(Guid assisterId, int teamId)
         => await _dbService.GetAsync<bool>(
             @"SELECT EXISTS (
@@ -189,19 +230,19 @@ public class GoalService
         if(goal.AssisterPlayerId == Guid.Empty && goal.AssisterPlayerTempId != Guid.Empty)
         {
             id = await _dbService.EditData(
-			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerTempId, AssisterPlayerId) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, @AssisterPlayerTempId, null) RETURNING Id;",
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerTempId, AssisterPlayerId, Minutes, Date) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, @AssisterPlayerTempId, null, @Minutes, @Date) RETURNING Id;",
 			goal);
         }
         else if(goal.AssisterPlayerId != Guid.Empty)
         {
             id = await _dbService.EditData(
-			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, @AssisterPlayerId, null) RETURNING Id;",
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId, Minutes, Date) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, @AssisterPlayerId, null, @Minutes, @Date) RETURNING Id;",
 			goal);
         }
         else
         {
             id = await _dbService.EditData(
-			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, null, null) RETURNING Id;",
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId, Minutes, Date) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, null, null, @Minutes, @Date) RETURNING Id;",
 			goal);
         }
         return id;
@@ -213,19 +254,19 @@ public class GoalService
         if(goal.AssisterPlayerId == Guid.Empty && goal.AssisterPlayerTempId != Guid.Empty)
         {
             id = await _dbService.EditData(
-			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerTempId, AssisterPlayerId) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, @AssisterPlayerTempId, null) RETURNING Id;",
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerTempId, AssisterPlayerId, Minutes, Date) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, @AssisterPlayerTempId, null, @Minutes, @Date) RETURNING Id;",
 			goal);
         }
         else if(goal.AssisterPlayerId != Guid.Empty)
         {
             id = await _dbService.EditData(
-			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, @AssisterPlayerId, null) RETURNING Id;",
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId, Minutes, Date) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, @AssisterPlayerId, null, @Minutes, @Date) RETURNING Id;",
 			goal);
         }
         else
         {
             id = await _dbService.EditData(
-			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, null, null) RETURNING Id;",
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId, Minutes, Date) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, null, null, @Minutes, @Date) RETURNING Id;",
 			goal);
         }
         return id;
@@ -692,13 +733,16 @@ public class GoalService
     }
     private async Task<int> PointsAgainst(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
-            @"SELECT COUNT(g.Id)
-            FROM Goals g
-            JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND
-            (m.Visitor = @teamId OR m.Home = @teamId) AND 
-            (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            @"SELECT COALESCE(SUM(TotalGoals), 0) AS GrandTotalGoals
+            FROM (
+                SELECT g.TeamId, COUNT(g.Id) AS TotalGoals
+                FROM Goals g
+                JOIN Matches m ON g.MatchId = m.Id
+                WHERE m.ChampionshipId = @championshipId AND
+                    (m.Visitor = @teamId OR m.Home = @teamId) AND 
+                    (g.TeamId <> @teamId AND g.OwnGoal = false OR g.TeamId = @teamId AND g.OwnGoal = true)
+                GROUP BY g.TeamId
+            ) AS SubqueryAlias;",
             new { championshipId, teamId });
 
         

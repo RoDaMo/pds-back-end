@@ -1,5 +1,6 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Search;
+using PlayOffsApi.DTO;
 using PlayOffsApi.Enum;
 using PlayOffsApi.HostedService;
 using PlayOffsApi.Models;
@@ -238,4 +239,282 @@ public class ChampionshipService
 	}
 
 	private async Task<List<Championship>> GetAllChampionshipsForIndexingSend() => await _dbService.GetAll<Championship>("SELECT * FROM championships", new {});
+
+	public async Task<List<MatchDTO>> GetAllMatchesByRoundValidation(int championshipId, int round)
+	{
+		var championship = await GetByIdSend(championshipId);
+		
+		if(championship is null)
+			throw new ApplicationException("Campeonato passado não existe");
+		
+		if(championship.Format == Format.Knockout)
+			throw new ApplicationException("Formato de campeonato inválido");
+		
+		var matches = await GetMatchesByRoundAndChampionship(championshipId, round);
+		var matchesDTO = new List<MatchDTO>();
+
+		if(championship.SportsId == Sports.Football)
+		{
+			foreach (var match in matches)
+			{
+				var matchDTO = new MatchDTO();
+				var home = await GetByTeamIdSendAsync(match.Home);
+				var visitor = await GetByTeamIdSendAsync(match.Visitor);
+				matchDTO.Id = match.Id;
+				matchDTO.IsSoccer = true;
+				matchDTO.HomeEmblem = home.Emblem;
+				matchDTO.HomeName = home.Name;
+				matchDTO.HomeId = home.Id;
+				matchDTO.HomeGoals = await GetPointsFromTeamById(match.Id, match.Home);
+				matchDTO.VisitorEmblem = visitor.Emblem;
+				matchDTO.VisitorName = visitor.Name;
+				matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
+				matchDTO.VisitorId = visitor.Id;
+				matchDTO.Local = match.Local;
+				matchDTO.Arbitrator = match.Arbitrator;
+				matchDTO.Date = match.Date;
+				matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
+				matchesDTO.Add(matchDTO);
+			}
+			return matchesDTO;
+		}
+
+		else
+		{
+			foreach (var match in matches)
+			{
+				var matchDTO = new MatchDTO();
+				var homeTeam = await GetByTeamIdSendAsync(match.Home);
+				var visitorTeam = await GetByTeamIdSendAsync(match.Visitor);
+				matchDTO.Id = match.Id;
+				matchDTO.HomeEmblem = homeTeam.Emblem;
+				matchDTO.HomeName = homeTeam.Name;
+				matchDTO.HomeId = homeTeam.Id;
+				matchDTO.VisitorId = visitorTeam.Id;
+				matchDTO.VisitorEmblem = visitorTeam.Emblem;
+				matchDTO.VisitorName = visitorTeam.Name;
+				matchDTO.Local = match.Local;
+				matchDTO.Arbitrator = match.Arbitrator;
+				matchDTO.Date = match.Date;
+				matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
+				var pointsForSet = new List<int>();
+				var pointsForSet2 = new List<int>();
+				var WonSets = 0;
+				var WonSets2 = 0;
+				var lastSet = 0;
+				lastSet = !await IsItFirstSet(match.Id) ? 1 : await GetLastSet(match.Id);
+				var team2Id = await _dbService.GetAsync<int>("SELECT CASE WHEN home <> @teamId THEN home ELSE visitor END AS selected_team FROM matches WHERE id = @matchId;", new {teamId = match.Home, matchId = match.Id});
+
+				for (int i = 0;  i < lastSet; i++)
+				{
+					pointsForSet.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId = @teamId And OwnGoal = false OR TeamId <> @teamId And OwnGoal = true) AND Set = @j", new {matchId = match.Id, teamId = match.Home, j = i+1}));
+					pointsForSet2.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId <> @teamId And OwnGoal = false OR TeamId = @teamId And OwnGoal = true) AND Set = @j", new {matchId = match.Id, teamId = match.Home, j = i+1}));
+				}
+
+				for (int i = 0;  i < lastSet; i++)
+				{
+					if(i != 4)
+					{
+						if(pointsForSet[i] == 25 && pointsForSet2[i] < 24)
+						{
+							WonSets++;
+						}
+						else if(pointsForSet[i] < 24 && pointsForSet2[i] == 25)
+						{
+							WonSets2++;
+						}
+						else if(pointsForSet[i] >= 24 && pointsForSet2[i] >= 24)
+						{
+							if(pointsForSet[i] - pointsForSet2[i] == 2)
+							{
+								WonSets++;
+							}
+							else if(pointsForSet[i] - pointsForSet2[i] == -2)
+							{
+								WonSets2++;
+
+							}
+						}
+					}
+
+					else
+					{
+						if(pointsForSet[i] == 15 && pointsForSet2[i] < 14)
+						{
+							WonSets++;
+						}
+						else if(pointsForSet[i] < 14 && pointsForSet2[i] == 15)
+						{
+							WonSets2++;
+						}
+						else if(pointsForSet[i] >= 14 && pointsForSet2[i] >= 14)
+						{
+							if(pointsForSet[i] - pointsForSet2[i] == 2)
+							{
+								WonSets++;
+							}
+							else if(pointsForSet[i] - pointsForSet2[i] == -2)
+							{
+								WonSets2++;
+
+							}
+						}
+					}
+				}
+				matchDTO.HomeWinnigSets = WonSets;
+				matchDTO.VisitorWinnigSets = WonSets2;
+				matchesDTO.Add(matchDTO);
+			}
+		}
+		return matchesDTO;
+	}
+
+	private async Task<List<Match>> GetMatchesByRoundAndChampionship(int championshipId, int round)
+		=> await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Round = @round ORDER BY Id", new {championshipId, round});
+	
+	private async Task<Team> GetByTeamIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
+
+	private async Task<int> GetPointsFromTeamById(int matchId, int teamId)
+        => await _dbService.GetAsync<int>("SELECT COUNT(*) FROM goals WHERE MatchId = @matchId AND (TeamId = @teamId AND OwnGoal = false OR TeamId <> @teamId AND OwnGoal = true)", new {matchId, teamId});
+  
+   private async Task<bool> IsItFirstSet(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM goals WHERE MatchId = @matchId);", new {matchId});
+   
+   private async Task<int> GetLastSet(int matchId)
+    	=> await _dbService.GetAsync<int>("SELECT MAX(Set) from goals where MatchId = @matchId", new {matchId});
+	
+	public async Task<List<MatchDTO>> GetAllMatchesByPhaseValidation(int championshipId, int phase)
+	{
+		var championship = await GetByIdSend(championshipId);
+		
+		if(championship is null)
+			throw new ApplicationException("Campeonato passado não existe");
+		
+		if(championship.Format == Format.LeagueSystem)
+			throw new ApplicationException("Formato de campeonato inválido");
+		
+		var matches = await GetMatchesByPhaseAndChampionship(championshipId, phase);
+		var matchesDTO = new List<MatchDTO>();
+
+		if(championship.SportsId == Sports.Football)
+		{
+			foreach (var match in matches)
+			{
+				var matchDTO = new MatchDTO();
+				var home = await GetByTeamIdSendAsync(match.Home);
+				var visitor = await GetByTeamIdSendAsync(match.Visitor);
+				matchDTO.Id = match.Id;
+				matchDTO.IsSoccer = true;
+				matchDTO.HomeEmblem = home.Emblem;
+				matchDTO.HomeName = home.Name;
+				matchDTO.HomeId = home.Id;
+				matchDTO.HomeGoals = await GetPointsFromTeamById(match.Id, match.Home);
+				matchDTO.VisitorEmblem = visitor.Emblem;
+				matchDTO.VisitorName = visitor.Name;
+				matchDTO.VisitorId = visitor.Id;
+				matchDTO.Local = match.Local;
+				matchDTO.Arbitrator = match.Arbitrator;
+				matchDTO.Date = match.Date;
+				matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
+				matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
+				if(match.PreviousMatch != 0)
+					matchDTO.WinnerName = (match.Winner == home.Id) ? home.Name : visitor.Name;
+				matchesDTO.Add(matchDTO);
+			}
+			return matchesDTO;
+		}
+
+		else
+		{
+			foreach (var match in matches)
+			{
+				var matchDTO = new MatchDTO();
+				var homeTeam = await GetByTeamIdSendAsync(match.Home);
+				var visitorTeam = await GetByTeamIdSendAsync(match.Visitor);
+				matchDTO.Id = match.Id;
+				matchDTO.HomeEmblem = homeTeam.Emblem;
+				matchDTO.HomeName = homeTeam.Name;
+				matchDTO.HomeId = homeTeam.Id;
+				matchDTO.VisitorEmblem = visitorTeam.Emblem;
+				matchDTO.VisitorName = visitorTeam.Name;
+				matchDTO.VisitorId = visitorTeam.Id;
+				matchDTO.Local = match.Local;
+				matchDTO.Arbitrator = match.Arbitrator;
+				matchDTO.Date = match.Date;
+				matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
+				var pointsForSet = new List<int>();
+				var pointsForSet2 = new List<int>();
+				var WonSets = 0;
+				var WonSets2 = 0;
+				var lastSet = 0;
+				lastSet = !await IsItFirstSet(match.Id) ? 1 : await GetLastSet(match.Id);
+				var team2Id = await _dbService.GetAsync<int>("SELECT CASE WHEN home <> @teamId THEN home ELSE visitor END AS selected_team FROM matches WHERE id = @matchId;", new {teamId = match.Home, matchId = match.Id});
+
+				for (int i = 0;  i < lastSet; i++)
+				{
+					pointsForSet.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId = @teamId And OwnGoal = false OR TeamId <> @teamId And OwnGoal = true) AND Set = @j", new {matchId = match.Id, teamId = match.Home, j = i+1}));
+					pointsForSet2.Add(await _dbService.GetAsync<int>("select count(*) from goals where MatchId = @matchId AND (TeamId <> @teamId And OwnGoal = false OR TeamId = @teamId And OwnGoal = true) AND Set = @j", new {matchId = match.Id, teamId = match.Home, j = i+1}));
+				}
+
+				for (int i = 0;  i < lastSet; i++)
+				{
+					if(i != 4)
+					{
+						if(pointsForSet[i] == 25 && pointsForSet2[i] < 24)
+						{
+							WonSets++;
+						}
+						else if(pointsForSet[i] < 24 && pointsForSet2[i] == 25)
+						{
+							WonSets2++;
+						}
+						else if(pointsForSet[i] >= 24 && pointsForSet2[i] >= 24)
+						{
+							if(pointsForSet[i] - pointsForSet2[i] == 2)
+							{
+								WonSets++;
+							}
+							else if(pointsForSet[i] - pointsForSet2[i] == -2)
+							{
+								WonSets2++;
+
+							}
+						}
+					}
+
+					else
+					{
+						if(pointsForSet[i] == 15 && pointsForSet2[i] < 14)
+						{
+							WonSets++;
+						}
+						else if(pointsForSet[i] < 14 && pointsForSet2[i] == 15)
+						{
+							WonSets2++;
+						}
+						else if(pointsForSet[i] >= 14 && pointsForSet2[i] >= 14)
+						{
+							if(pointsForSet[i] - pointsForSet2[i] == 2)
+							{
+								WonSets++;
+							}
+							else if(pointsForSet[i] - pointsForSet2[i] == -2)
+							{
+								WonSets2++;
+
+							}
+						}
+					}
+				}
+				matchDTO.HomeWinnigSets = WonSets;
+				matchDTO.VisitorWinnigSets = WonSets2;
+				matchesDTO.Add(matchDTO);
+			}
+		}
+		return matchesDTO;
+	}
+
+	private async Task<List<Match>> GetMatchesByPhaseAndChampionship(int championshipId, int phase)
+		=> await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Id", new {championshipId, phase});
+	
 }
