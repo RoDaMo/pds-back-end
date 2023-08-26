@@ -11,5 +11,7 @@ public class Goal
     public bool OwnGoal { get; set; }
     public Guid AssisterPlayerId { get; set; }
     public Guid AssisterPlayerTempId { get; set; }
+    public int? Minutes { get; set; }
+    public DateTime? Date { get; set; }
     public Goal() { }
 }

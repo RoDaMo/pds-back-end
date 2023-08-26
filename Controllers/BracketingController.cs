@@ -225,7 +225,7 @@ public class BracketingController : ApiBaseController
 	/// </returns>
     [HttpDelete]
     [Route("/bracketing/delete/{championshipId:int}")]
-    public async Task<IActionResult> DeleteBracketing(int championshipId)
+    public async Task<IActionResult> DeleteBracketing(int championshipId)
     {
         var result = new List<Match>();
         try

@@ -200,9 +200,9 @@ public class TeamService
 	private async Task<List<User>> GetPlayersOfteamSend(int id) =>
 		await _dbService.GetAll<User>(
 			@"
-			SELECT id, name, artisticname, number, email, teamsid, playerposition, false as iscaptain, picture FROM playertempprofiles WHERE teamsid = @id
+			SELECT id, name, artisticname, number, email, teamsid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id
 			UNION ALL
-			SELECT id, name, artisticname, number, email, playerteamid as teamsid, playerposition, iscaptain, picture FROM users WHERE playerteamid = @id;",
+			SELECT id, name, artisticname, number, email, playerteamid as teamsid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id;",
 			new { id });
 
 	private async Task<User> GetTechnicianFromTeam(int teamId) => await _dbService.GetAsync<User>("SELECT picture, name FROM users WHERE teammanagementId = @teamId", new { teamId });
