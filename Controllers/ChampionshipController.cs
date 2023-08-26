@@ -8,6 +8,9 @@ using PlayOffsApi.Services;
 using Resource = PlayOffsApi.Resources.Championship;
 
 namespace PlayOffsApi.Controllers;
+/// <summary>
+///Endpoints destinados à manuntenção dos times.
+/// </summary>
 
 [ApiController]
 [Route("/championships")]
@@ -18,6 +21,7 @@ public class ChampionshipController : ApiBaseController
   private readonly AuthService _authService;	
   private readonly ErrorLogService _error;
   private readonly ChampionshipActivityLogService _activityLogService;
+  /// <inheritdoc />
 
   public ChampionshipController(ChampionshipService championshipService, AuthService authService, ErrorLogService error, ChampionshipActivityLogService activityLogService, OrganizerService organizerService)
   {
@@ -28,6 +32,42 @@ public class ChampionshipController : ApiBaseController
     _organizerService = organizerService;
   }
 
+	/// <summary>
+	/// Usado para criar um campeonato.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /championships
+	///		{
+	///			"name": "volei 33",
+	///			"initialDate": "2024-01-01",
+	///			"finalDate": "2025-01-01",
+  ///			"sportsId": 2,
+  ///			"teamQuantity": 16,
+  ///			"logo": "",
+  ///			"description": "hahahahahhahahahhahakkkkkkk",
+  ///			"Format": 1,
+  ///			"NumberOfPlayers": 800,
+  ///			"DoubleStartLeagueSystem": false,
+  ///			"DoubleMatchEliminations": false,
+  ///			"DoubleMatchGroupStage": false,
+  ///			"FinalDoubleMatch": false
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Cria um campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": ["Campeonato cadastrado"]
+	///		}
+	///		
+	/// </returns>
   [Authorize]
   [HttpPost(Name = "create")]
   public async Task<IActionResult> CreateAsync([FromBody] Championship championship)
@@ -62,6 +102,42 @@ public class ChampionshipController : ApiBaseController
   }
 
 
+	/// <summary>
+	/// Usado para listar campeonatos conforme parâmetros.
+	/// </summary>
+  /// <param name="name"></param>
+  /// <param name="sport"></param>
+  /// <param name="start"></param>
+  /// <param name="finish"></param>
+  /// <param name="pitId"></param>
+  /// <param name="sort"></param>
+  /// <param name="status"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /championships?name={name}&amp;sport={sport}&amp;start={start}&amp;finish={finish}&amp;pitId={pitId}&amp;sort={sort}&amp;status={status}
+	///		
+	/// </remarks>
+	/// <response code="200">Lista os campeonatos conforme os parâmetros passados.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": [
+  ///			  {
+  ///			    "id": 7,
+  ///			    "name": "Campeonato",
+  ///			    "initialDate": "2024-05-01T00:00:00",
+  ///			    "finalDate": "2025-01-01T00:00:00",
+  ///			    "sportsId": 2
+  ///       }
+  ///     ]
+	///		}
+	///		
+	/// </returns>
   [HttpGet(Name = "index")]
   public async Task<IActionResult> Index([FromQuery] string name = "", Sports sport = Sports.All, DateTime start = new(), DateTime finish = new(), ChampionshipStatus status = ChampionshipStatus.Active, [FromHeader]string pitId = "", [FromHeader]string sort = "")
   {
@@ -89,6 +165,20 @@ public class ChampionshipController : ApiBaseController
     }
   }
 
+	/// <summary>
+	/// Usado para obter campeonato por id.
+	/// </summary>
+  /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /championships/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Exibe o campeonato conforme id.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
   [HttpGet]
   [Route("/championships/{id:int}")]
   public async Task<IActionResult> Show(int id)
@@ -104,6 +194,35 @@ public class ChampionshipController : ApiBaseController
     }
   }
 
+	/// <summary>
+	/// Usado para atualizar um campeonato.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /championships
+	///		{
+  ///		    "id": 39,
+	///			"name": "volei 33",
+	///			"initialDate": "2024-01-01",
+	///			"finalDate": "2025-01-01",
+  ///			"sportsId": 2,
+  ///			"teamQuantity": 16,
+  ///			"logo": "",
+  ///			"description": "hahahahahhahahahhahakkkkkkk",
+  ///			"Format": 1,
+  ///			"NumberOfPlayers": 800,
+  ///			"DoubleStartLeagueSystem": false,
+  ///			"DoubleMatchEliminations": false,
+  ///			"DoubleMatchGroupStage": false,
+  ///			"FinalDoubleMatch": false
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Atualiza o campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
   [HttpPut]
   [Authorize]
   public async Task<IActionResult> Update([FromBody] Championship championship)
@@ -133,6 +252,20 @@ public class ChampionshipController : ApiBaseController
     }
   }
 
+	/// <summary>
+	/// Usado para obter todos os times de um campeonato por id.
+	/// </summary>
+  /// <param name="championshipId"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /championships/teams?championshipId={championshipId}
+	///		
+	/// </remarks>
+	/// <response code="200">Exibe todos os times do campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
   [HttpGet]
   [Route("/championships/teams")]
   public async Task<IActionResult> GetAllTeams(int championshipId)
@@ -149,6 +282,20 @@ public class ChampionshipController : ApiBaseController
     }
   }
 
+	/// <summary>
+	/// Usado para excluir um campeonato.
+	/// </summary>
+  /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE /championships/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Exclui campeonato.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
   [HttpDelete]
   [Authorize]
   [Route("/championships/{id:int}")]

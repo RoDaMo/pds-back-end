@@ -1,9 +1,11 @@
+using System.Net.Mime;
 using System.Text.RegularExpressions;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
+using Microsoft.AspNetCore.StaticFiles;
 using PlayOffsApi.Enum;
 using PlayOffsApi.Models;
 using Resource = PlayOffsApi.Resources.Services.ImageService;
@@ -12,27 +14,19 @@ namespace PlayOffsApi.Services;
 
 public partial class ImageService
 {
-    private const string BucketName = "playoffs-armazenamento";
-    private readonly AWSCredentials _awsCredentials = new EnvironmentVariablesAWSCredentials();
-    
-    private AmazonS3Client GetClient => new(_awsCredentials, RegionEndpoint.SAEast1);
-    
+    private readonly string _mountPath = Environment.GetEnvironmentVariable("MOUNT_PATH");
+
     public async Task<List<string>> SendImage(Image file, TypeUpload type)
     {
         var results = ValidateUpload(file, type);
         if (results.Any())
             return results;
-  
-        using var client = GetClient;
-        var uploadRequest = new TransferUtilityUploadRequest
-        {
-            BucketName = BucketName,
-            Key = file.FileName.ToString(),
-            InputStream = file.Stream,
-            ContentType = file.ContentType
-        };
+
+        var filePath = Path.Combine(_mountPath, file.FileName + "." + file.Extension);
+        await using var stream = File.Create(filePath);
+        file.Stream.Position = 0;
+        await file.Stream.CopyToAsync(stream);
         
-        await new TransferUtility(client).UploadAsync(uploadRequest);
         return new List<string>();
     }
 
@@ -72,25 +66,27 @@ public partial class ImageService
         }
     }
 
-    public async Task<Image> GetImage(Guid fileName)
+    public async Task<Image> GetImage(string fileName)
     {
-        using var client = GetClient;
-        var responseTask = client.GetObjectAsync(new()
+        if (fileName.Split('.').Length == 1)
         {
-            BucketName = BucketName,
-            Key = fileName.ToString(),
-        });
+            var files = Directory.GetFiles(_mountPath, fileName + ".*");
+            fileName = Path.GetFileName(files[0]);
+        }
         
-        using var response = await responseTask;
-        var memoryStream = new MemoryStream();
-        await response.ResponseStream.CopyToAsync(memoryStream);
-        var cloudFilename = response.Key;
+        var filePath = Path.Combine(_mountPath, fileName);
+        new FileExtensionContentTypeProvider().TryGetContentType(filePath, out var contentType);
+        
+        await using var imageStream = new MemoryStream(await File.ReadAllBytesAsync(filePath));
+        var fileNameAndExtension = fileName.Split('.');
+        var (fileGuid, fileExtension) = (fileNameAndExtension[0], fileNameAndExtension[1]);
+
         return new Image
         {
-            Stream = memoryStream,
-            FileName = Guid.Parse(cloudFilename),
-            Extension = response.Headers.ContentType.Split('/')[1],
-            ContentType = response.Headers.ContentType
+            Stream = imageStream,
+            FileName = Guid.Parse(fileGuid),
+            ContentType = contentType,
+            Extension = fileExtension
         };
     }
 
