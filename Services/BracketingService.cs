@@ -362,7 +362,7 @@ public class BracketingService
 	{
 		var championship = await GetByIdSend(championshipId);
 
-		if(championship.Status != ChampionshipStatus.Pendent || championship.Status != ChampionshipStatus.Inactive)
+		if(championship.Status != ChampionshipStatus.Pendent && championship.Status != ChampionshipStatus.Inactive)
 			throw new ApplicationException("Não é possível deletar um campeonato que já foi iniciado.");
 		
 		if(championship.Format != Format.Knockout)
