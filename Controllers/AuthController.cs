@@ -43,21 +43,21 @@ public class AuthController : ApiBaseController
 	}
 
 	/// <summary>
-	/// Usado para gerar tokens de acesso para usuários
+	/// Usado para gerar tokens de acesso para usuários.
 	/// </summary>
-	/// <param name="user"></param>
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
 	///		POST /auth
 	///		{
-	///			"Username": "UsuarioDeTeste22",
+	///			"Username": "Kaique",
 	///			"Password": "Ab123",
 	///			"RememberMe": true
 	///		}
+	///		
 	/// </remarks>
-	/// <response code="200">Retorna o token recém-criado</response>
-	/// <response code="401">Retorna um erro indicando algum erro cometido na requisição</response>
+	/// <response code="200">Retorna o token recém-criado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	///	Exemplo de retorno:
 	///
@@ -66,6 +66,7 @@ public class AuthController : ApiBaseController
 	///			"succeed": true,
 	///			"results": "Autenticado com sucesso"
 	///		}
+	///		
 	/// </returns>
 	[HttpPost]
 	[ProducesResponseType(StatusCodes.Status200OK)]
@@ -74,7 +75,7 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
+			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken)) 
 				throw new ApplicationException(Resource.InvalidCaptcha);
 			
 			await using var redis = await _redisService.GetDatabase();
@@ -109,6 +110,27 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+	/// <summary>
+	/// Usado para atualizar tokens de acesso para usuários.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		Put /auth
+	///		
+	/// </remarks>
+	/// <response code="200">O token é atualizado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "Token atualizado",
+  	///			"succeed": true,
+  	///			"results": ""
+	///		}
+	///		
+	/// </returns>
 	[HttpPut]
 	public async Task<IActionResult> UpdateAccesToken()
 	{
@@ -141,6 +163,27 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+	/// <summary>
+	/// Usado para encerrar a sessão do usuário no sistema.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE /auth
+	///		
+	/// </remarks>
+	/// <response code="200">A sessão do usuário é encerrada no sistema.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": "Usuário deslogado com sucesso"
+	///		}
+	///		
+	/// </returns>
 	[HttpDelete]
 	[Authorize]
 	public IActionResult LogoutUser()
@@ -150,6 +193,34 @@ public class AuthController : ApiBaseController
 		return ApiOk<string>(Resource.LogoutUserDeslogadoSucesso);
 	}
 
+	/// <summary>
+	/// Usado para cadastrar usuário.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/register
+	///		{
+	///			"Name": "Usuário Admin 10",
+	///			"Email": "jerobe6695@meogl.com",
+	///			"Password": "Ab123",
+	///			"Username": "UsuarioAdmin10",
+	///			"Birthday": "2004-06-14"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Registra o usuário.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "Usuário cadastrado com sucesso",
+	///			"succeed": true,
+	///			"results": ""
+	///		}
+	///		
+	/// </returns>
 	[HttpPost]
 	[Route("/auth/register")]
 	public async Task<IActionResult> RegisterUser(User user, [FromHeader]string superSecretPassword = "")
@@ -174,6 +245,31 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+
+	/// <summary>
+	/// Usado para verificar se usuário existe.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/exists
+	///		{
+	///			"Username": "UsuarioAdmin10"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Retorna se o usuário existe ou não.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": true
+	///		}
+	///		
+	/// </returns>
 	[HttpPost]
 	[Route("/auth/exists")]
 	public async Task<IActionResult> UserAlreadyExists(User user)
@@ -189,6 +285,7 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+
 	[Authorize]
 	[HttpGet]
 	[Obsolete("Useless")]
@@ -198,6 +295,20 @@ public class AuthController : ApiBaseController
 		return ApiOk(true);
 	}
 
+    /// <summary>
+	/// Usado para confirmar email.
+	/// </summary>
+    /// <param name="token"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/confirm-email?token={token}
+	///		
+	/// </remarks>
+	/// <response code="200">Envia email para confirmação.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/confirm-email")] 
 	public async Task<IActionResult> ConfirmEmail(string token)
@@ -213,6 +324,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para reenviar email.
+	/// </summary>
+    /// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/resend-confirm-email?id={id}
+	///		
+	/// </remarks>
+	/// <response code="200">Reenvia email para confirmação.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/resend-confirm-email")] 
 	public async Task<IActionResult> ResendConfirmEmail(Guid id)
@@ -229,6 +354,23 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+
+	/// <summary>
+	/// Usado para verificar email para redefinir senha.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/exists
+	///		{
+	///			"Email": "email@gmail.com"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Verifica o email.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpPost]
 	[Route("/auth/forgot-password")] 
 	public async Task<IActionResult> ForgotPassword(User user)
@@ -251,6 +393,19 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para obter usuário atual.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/user
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém usuário atual.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[Authorize]
 	[HttpGet]
 	[Route("/auth/user")]
@@ -289,6 +444,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para reenviar email para usuário redefinir a senha.
+	/// </summary>
+	/// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/resend-forgot-password?id={id}
+	///		
+	/// </remarks>
+	/// <response code="200">Reenvia email para usuário redefinir a senha.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/resend-forgot-password")] 
 	public async Task<IActionResult> ResendForgotPassword(Guid id)
@@ -305,6 +474,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para redefinir senha por GET.
+	/// </summary>
+	/// <param name="token"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/reset-password?token={token}
+	///		
+	/// </remarks>
+	/// <response code="200">Redefine a senha.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/reset-password")] 
 	public async Task<IActionResult> ResetPassword(string token)
@@ -320,6 +503,23 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+	/// <summary>
+	/// Usado para redefinir senha por POST.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/reset-password
+	///		{
+	///			"Email": "email@gmail.com",
+	///			"Password": "Abc1_"
+	///		}
+	///		
+	/// </remarks>
+	/// <response code="200">Redefine a senha.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpPost]
 	[Route("/auth/reset-password")] 
 	public async Task<IActionResult> ResetPassword(User user)
@@ -336,6 +536,19 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para verificar se usuário possui CPF cadastrado.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/cpf
+	///		
+	/// </remarks>
+	/// <response code="200">Retorna se o usuário tem ou não CPF cadastrado.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[Authorize]
 	[HttpGet]
 	[Route("/auth/cpf")]
@@ -354,6 +567,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+	/// <summary>
+	/// Usado para adicionar CPF para usuário atual.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /auth/cpf
+	///		"78641357068"
+	///		
+	/// </remarks>
+	/// <response code="200">Cadastra CPF para usuário atual.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[Authorize]
 	[HttpPost]
 	[Route("/auth/cpf")]
@@ -376,6 +603,20 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para obter usuário por id.
+	/// </summary>
+	/// <param name="id"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /auth/{id}
+	///		
+	/// </remarks>
+	/// <response code="200">Retorna o usuário conforme id.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpGet]
 	[Route("/auth/{id:guid}")]
 	public async Task<IActionResult> GetById(Guid id)
@@ -391,6 +632,19 @@ public class AuthController : ApiBaseController
 		}
 	}
 
+    /// <summary>
+	/// Usado para deletar usuário atual.
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		DELETE /auth/user
+	///		
+	/// </remarks>
+	/// <response code="200">Deleta o usuário atual.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
 	[HttpDelete]
 	[Authorize]
 	[Route("/auth/user")]

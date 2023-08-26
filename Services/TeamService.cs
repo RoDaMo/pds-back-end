@@ -206,4 +206,16 @@ public class TeamService
 			new { id });
 
 	private async Task<User> GetTechnicianFromTeam(int teamId) => await _dbService.GetAsync<User>("SELECT picture, name FROM users WHERE teammanagementId = @teamId", new { teamId });
+
+	public async Task<bool> VerifyTeamHasCaptain(int teamId)
+	{
+		if(!await CheckIfTeamExists(teamId))
+			throw new ApplicationException("Time passado não existe.");
+		return await CheckIfTeamHasCaptain(teamId);
+	}
+	private async Task<bool> CheckIfTeamExists(int teamId)
+		=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM teams WHERE Id = @teamId)", new {teamId});
+	private async Task<bool> CheckIfTeamHasCaptain(int teamId)
+		=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE PlayerTeamId = @teamId AND IsCaptain = true)", new {teamId});
+	
 }
