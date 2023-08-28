@@ -44,6 +44,8 @@ public class StatisticsService
                     classificationDTO.AmountOfMatches = await AmountOfMatches(team.Id, championshipId);
                     classificationDTO.LastMatches = await GetLast3Matches(team.Id, championshipId);
                     classificationDTO.LastResults = GetResults(classificationDTO);
+                    classificationDTO.RedCard = await AmountOfRedCards(team.Id, championshipId); 
+                    classificationDTO.YellowCard = await AmountOfYellowCards(team.Id, championshipId); 
                     classificationsDTO.Add(classificationDTO);
                 }
                 return classificationsDTO;
@@ -73,6 +75,8 @@ public class StatisticsService
                     classificationDTO.AmountOfMatches = await AmountOfMatches(team.Id, championshipId);
                     classificationDTO.LastMatches = await GetLast3Matches(team.Id, championshipId);
                     classificationDTO.LastResults = GetResults(classificationDTO);
+                    classificationDTO.RedCard = await AmountOfRedCards(team.Id, championshipId); 
+                    classificationDTO.YellowCard = await AmountOfYellowCards(team.Id, championshipId); 
                     classificationsDTO.Add(classificationDTO);
                 }
                 return classificationsDTO;
@@ -141,6 +145,42 @@ public class StatisticsService
             }
         }
         return new();
+    }
+    private async Task<int> AmountOfRedCards(int teamId, int championshipId)
+    {
+        var tempCards = await _dbService.GetAsync<int>(
+            @"SELECT COUNT(*)
+            FROM Fouls f
+            JOIN PlayerTempProfiles p ON f.PlayerTempId = p.Id
+            JOIN Matches m ON m.Id = f.MatchId
+            WHERE p.TeamsId = @teamId AND m.ChampionshipId = @championshipId AND f.YellowCard = false;", 
+            new {teamId, championshipId});
+        var userCards = await _dbService.GetAsync<int>(
+            @"SELECT COUNT(*)
+            FROM Fouls f
+            JOIN Users u ON f.PlayerId = u.Id
+            JOIN Matches m ON m.Id = f.MatchId
+            WHERE u.PlayerTeamId = @teamId AND m.ChampionshipId = @championshipId AND f.YellowCard = false;", 
+            new {teamId, championshipId});
+        return tempCards + userCards;
+    }
+    private async Task<int> AmountOfYellowCards(int teamId, int championshipId)
+    {
+        var tempCards = await _dbService.GetAsync<int>(
+            @"SELECT COUNT(*)
+            FROM Fouls f
+            JOIN PlayerTempProfiles p ON f.PlayerTempId = p.Id
+            JOIN Matches m ON m.Id = f.MatchId
+            WHERE p.TeamsId = @teamId AND m.ChampionshipId = @championshipId AND f.YellowCard = true AND f.Considered = true;", 
+            new {teamId, championshipId});
+        var userCards = await _dbService.GetAsync<int>(
+            @"SELECT COUNT(*)
+            FROM Fouls f
+            JOIN Users u ON f.PlayerId = u.Id
+            JOIN Matches m ON m.Id = f.MatchId
+            WHERE u.PlayerTeamId = @teamId AND m.ChampionshipId = @championshipId AND f.YellowCard = true AND f.Considered = true;", 
+            new {teamId, championshipId});
+        return tempCards + userCards;
     }
     private async Task<Championship> GetChampionshipByIdSend(int id) 
 	    => await _dbService.GetAsync<Championship>("SELECT * FROM championships WHERE id = @id", new { id });
