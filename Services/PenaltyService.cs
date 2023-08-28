@@ -64,15 +64,10 @@ public class PenaltyService
             throw new ApplicationException("Partida já possui um vencedor.");
         }
 
-        // TODO: impedir que jogador expulso cobre um pênalti
-
         if(await CheckLastPenaltyWasNotTakenByThisTeam(penalty.TeamId, penalty.MatchId))
         {
             throw new ApplicationException("O mesmo time não pode cobrar dois pênatis em sequência.");
         }
-
-
-        
 
         if(penalty.PlayerId == Guid.Empty)
         {
