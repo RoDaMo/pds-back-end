@@ -18,13 +18,15 @@ public class MatchController : ApiBaseController
     private readonly MatchService _matchService;
     private readonly GoalService _goalService;
     private readonly PenaltyService _penaltyService;
+    private readonly FoulService _foulService;
     /// <inheritdoc />
-    public MatchController(ErrorLogService error, MatchService matchService, GoalService goalService, PenaltyService penaltyService)
+    public MatchController(ErrorLogService error, MatchService matchService, GoalService goalService, PenaltyService penaltyService, FoulService foulService)
     {
         _error = error;
         _matchService = matchService;
         _goalService = goalService;
         _penaltyService = penaltyService;
+        _foulService = foulService;
     }
 
     /// <summary>
@@ -302,13 +304,14 @@ public class MatchController : ApiBaseController
         }   
     }
 
+    ///<summary>
     /// Usado para iniciar a prorrogação.
 	/// </summary>
-    /// <param name="id"></param>
+    /// <param name="matchId"></param>
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		PUT /matches/{id}/prorrogation
+	///		PUT /matches/{matchId}/prorrogation
 	///		
 	/// </remarks>
 	/// <response code="200">Inicia a prorrogação da partida</response>
@@ -344,13 +347,14 @@ public class MatchController : ApiBaseController
         }   
     }
 
+    ///<summary>
     /// Usado para obter uma partida de acordo com seu id.
 	/// </summary>
-    /// <param name="id"></param>
+    /// <param name="matchId"></param>
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		GET /matches/{id}
+	///		GET /matches/{matchId}
 	///		
 	/// </remarks>
 	/// <response code="200">Retorna a partida</response>
@@ -400,13 +404,14 @@ public class MatchController : ApiBaseController
         }   
     }
 
-    /// Usado varificar se partida pode iniciar cobrança de pênaltis
+    ///<summary>
+    /// Usado para verificar se partida pode iniciar cobrança de pênaltis
 	/// </summary>
-    /// <param name="id"></param>
+    /// <param name="matchId"></param>
 	/// <remarks>
 	/// Exemplo de requisição:
 	/// 
-	///		PUT /matches/{id}/penalties
+	///		PUT /matches/{matchId}/penalties
 	///		
 	/// </remarks>
 	/// <response code="200">Retorna um valor booleano para a verificação</response>
@@ -437,5 +442,87 @@ public class MatchController : ApiBaseController
             await _error.HandleExceptionValidationAsync(HttpContext, ex);
             return ApiBadRequest(ex.Message);
         }   
+    }
+
+    ///<summary>
+    /// Usado para criar uma falta
+	/// </summary>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		POST /matches/fouls 
+	/// 	{
+	///			"YellowCard": false,
+	///			"PlayerTempId": "e4eaaaf2-72d6-4b1a-8a15-0a92c9e2b635",
+	///			"MatchId": 5015,
+    ///			"Minutes": 50
+	///		}		
+	/// </remarks>
+	/// <response code="200">Cria a falta</response>
+	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
+    [HttpPost]
+    [Authorize]
+    [Route("/matches/fouls")]
+    public async Task<IActionResult> CreateFoul(Foul foul)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            result = await _foulService.CreateFoulValidationAsync(foul);
+            return result.Any() ? ApiBadRequest(result) : ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }  
+
+    }
+
+    /// <summary>
+	/// Usado para obter todos os jogadores do time para uma partida.
+	/// </summary>
+    /// <param name="matchId"></param>
+    /// <param name="teamId"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /matches/{matchId}/teams/{teamId}/players
+	///		
+	/// </remarks>
+	/// <response code="200">Obtém todos os jogadores do time para uma partida.</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
+    [HttpGet]
+    [Authorize]
+    [Route("/matches/{matchId:int}/teams/{teamId:int}/players")]
+    public async Task<IActionResult> GetAllPlayersValidInTeam(int matchId, int teamId)
+    {
+        try
+        {
+            var players = await _matchService.GetAllPlayersValidInTeamValidation(matchId, teamId);
+            players = players.OrderBy(u => u.PlayerPosition).ToList();
+            return ApiOk(players.Select(m => new { id = m.Id, name = m.Name, artisticName = m.ArtisticName, number = m.Number, teamsId = m.PlayerTeamId, playerPosition = m.PlayerPosition, isCaptain = m.IsCaptain, picture = m.Picture, username = m.Username }));
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
+        }  
     }
 }
