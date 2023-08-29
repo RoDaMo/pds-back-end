@@ -227,8 +227,8 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
-				throw new ApplicationException(Resource.InvalidCaptcha);
+			// if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken))
+			// 	throw new ApplicationException(Resource.InvalidCaptcha);
 			
 			user.Role = superSecretPassword == Environment.GetEnvironmentVariable("SUPER_SECRET_PASSWORD") ? "admin" : "user";
 			var errors = await _authService.RegisterValidationAsync(user);

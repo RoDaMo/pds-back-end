@@ -62,20 +62,20 @@ public class ApiConfigController : ApiBaseController
         } 
     }
 
-    [HttpPut]
-    [Route("/api/config/images")]
-    public async Task<IActionResult> DownloadAllImagesFromAWS()
-    {
-        try
-        {
-            await _backgroundService.EnqueueJob(() => _backgroundService.DownloadFilesFromS3());
-            return ApiOk();
-        }
-        catch (ApplicationException ex)
-        {
-            await _error.HandleExceptionValidationAsync(HttpContext, ex);
-            return ApiBadRequest(ex.Message, GenericError.GenericErrorMessage);
-        } 
-    }
+    // [HttpPut]
+    // [Route("/api/config/images")]
+    // public async Task<IActionResult> DownloadAllImagesFromAWS()
+    // {
+    //     try
+    //     {
+    //         await _backgroundService.EnqueueJob(() => _backgroundService.DownloadFilesFromS3());
+    //         return ApiOk();
+    //     }
+    //     catch (ApplicationException ex)
+    //     {
+    //         await _error.HandleExceptionValidationAsync(HttpContext, ex);
+    //         return ApiBadRequest(ex.Message, GenericError.GenericErrorMessage);
+    //     } 
+    // }
 #pragma warning restore CS1591
 }
