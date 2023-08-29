@@ -90,4 +90,12 @@ public class PlayerTempProfileService
 	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number);", new {number});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
 
+    public async Task<PlayerTempProfile> GetTempPlayerById(Guid id) 
+	    => await _dbService.GetAsync<PlayerTempProfile>("SELECT id, name, artisticname, number, email, teamsid, playerposition, picture FROM playertempprofiles WHERE id = @id", new { id });
+    
+    public async Task RemoveCaptainByTeamId(int teamId) 
+	    => await _dbService.EditData("UPDATE playertempprofiles SET IsCaptain = false WHERE teamsid = @teamId", new {teamId});
+
+    public async Task MakePlayerCaptain(Guid playerId)
+	    => await _dbService.EditData("UPDATE playertempprofiles SET IsCaptain = true WHERE Id = @playerId", new {playerId});
 }
