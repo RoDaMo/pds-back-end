@@ -146,7 +146,7 @@ public class BracketingService
 
 		var matches = new List<Match>();
 
-		await Shuffle(teams);
+		Shuffle(teams);
 
 		int numberOfCompetitors = teams.Count;
         int numberOfRounds = numberOfCompetitors - 1;
@@ -191,19 +191,18 @@ public class BracketingService
         }
         teams[1] = temp;
     }
-	private  async Task Shuffle<T>(List<T> list)
+	private static void Shuffle<T>(IList<T> list)
     {
-        Random rng = new Random();
-        int n = list.Count;
+        var rng = new Random();
+        var n = list.Count;
         while (n > 1)
         {
             n--;
-            int k = rng.Next(n + 1);
-            T value = list[k];
-            list[k] = list[n];
-            list[n] = value;
+            var k = rng.Next(n + 1);
+            (list[k], list[n]) = (list[n], list[k]);
         }
     }
+	
 	private async Task<int> CreateClassificationSend(Classification classification)
 		=> await _dbService.EditData(
 				"INSERT INTO classifications (Points, TeamId, ChampionshipId, Position) VALUES (@Points, @TeamId, @ChampionshipId, @Position) returning id", 
@@ -211,54 +210,48 @@ public class BracketingService
 				);
 	public async Task<List<Match>> CreateGroupStage(int championshipId)
 	{
-		if(!await CheckIfChampionhipExists(championshipId))
-        {
-            throw new ApplicationException("Campeonato passado não existe.");
-        }
+		if (!await CheckIfChampionhipExists(championshipId))
+			throw new ApplicationException("Campeonato passado não existe.");
+		
 		var championship = await GetByIdSend(championshipId);
 		var teams = await GetAllTeamsOfChampionshipSend(championshipId);
 
-		if(championship.TeamQuantity != teams.Count())
-		{
-            throw new ApplicationException("Campeonato passado com quantidade inválida de times.");
-        }
-
-		if(championship.Format != Format.GroupStage)
-		{
+		if (championship.TeamQuantity != teams.Count)
+			throw new ApplicationException("Campeonato passado com quantidade inválida de times.");
+		
+		if (championship.Format != Format.GroupStage)
 			throw new ApplicationException("Campeonato passado não apresenta o formato de eliminatórias com fase de grupos.");
-		}
+		
+		Shuffle(teams);
+		var position = 1;
 
-		await Shuffle(teams);
-
-		int position = 1;
-
-		for (int i = 0; i < teams.Count(); i++)
+		foreach (var t in teams)
 		{
-			if(position == 5)
+			if (position == 5)
 				position = 1;
-			await CreateClassificationSend(new Classification(0, teams[i].Id, championshipId, position));
+			
+			await CreateClassificationSend(new Classification(0, t.Id, championshipId, position));
 			position++;
 		}
 
 		var matches = new List<Match>();
-
-        for (int i = 0; i < teams.Count(); i++)
+		for (var i = 0; i < teams.Count; i++)
         {
-            for (int j = i+1; j < teams.Count(); j++)
+            for (var j = i + 1; j < teams.Count; j++)
             {
 				double calculation = i/4;
 				double calculation2 = j/4;
-				if(Math.Ceiling(calculation) != Math.Ceiling(calculation2))
-				{
+				
+				if (Math.Ceiling(calculation) != Math.Ceiling(calculation2))
 					break;
-				}
+				
 				matches.Add(new Match(championshipId, teams[i].Id, teams[j].Id, 1));
             }
         }
 
-		for (int i = 0; i < matches.Count(); i++)
+		for (var i = 0; i < matches.Count; i++)
 		{
-			for(int j = i + 1; j < matches.Count() - 1; j++ )
+			for(var j = i + 1; j < matches.Count - 1; j++ )
 			{
 				if (
 				(matches[i].Home == matches[j].Home || matches[i].Home == matches[j].Visitor
@@ -270,21 +263,18 @@ public class BracketingService
 			}
 		}
 		
-		matches.Sort((x, y) => x.Round.CompareTo(y.Round));
-
+		// matches.Sort((x, y) => x.Round.CompareTo(y.Round));
 		if(championship.DoubleMatchGroupStage)
 		{
-			var quantityMatches = matches.Count();
-			for (int i = 0; i < quantityMatches; i++)
-			{
+			var quantityMatches = matches.Count;
+			for (var i = 0; i < quantityMatches; i++)
 				matches.Add(new Match(championshipId, matches[i].Visitor, matches[i].Home, matches[i].Round + 3));
-			}
+			
 		}
 
 		foreach (var item in matches)
-		{
 			await CreateMatchSend(item);
-		}
+		
 		return matches;
 	}
 
@@ -362,7 +352,7 @@ public class BracketingService
 	{
 		var championship = await GetByIdSend(championshipId);
 
-		if(championship.Status != ChampionshipStatus.Pendent || championship.Status != ChampionshipStatus.Inactive)
+		if(championship.Status != ChampionshipStatus.Pendent && championship.Status != ChampionshipStatus.Inactive)
 			throw new ApplicationException("Não é possível deletar um campeonato que já foi iniciado.");
 		
 		if(championship.Format != Format.Knockout)

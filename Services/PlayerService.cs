@@ -10,23 +10,23 @@ public class PlayerService
     private readonly DbService _dbService;
     private readonly ElasticService _elasticService;
 	private readonly TeamService _teamService;
+	private readonly PlayerTempProfileService _playerTempProfileService;
 
-
-    public PlayerService(DbService dbService, ElasticService elasticService, TeamService teamService)
+    public PlayerService(DbService dbService, ElasticService elasticService, TeamService teamService, PlayerTempProfileService playerTempProfileService)
 	{
 		_dbService = dbService;
         _elasticService = elasticService;
 		_teamService = teamService;
+		_playerTempProfileService = playerTempProfileService;
 	}
 
     public async Task<List<string>> CreateValidationAsync(User user, Guid userId)
 	{
 		var errorMessages = new List<string>();
 
-        if(!await ChecksIfTeamExists(user.PlayerTeamId))
-        {
-			throw new ApplicationException(Resource.CreateValidationAsyncDoesntExist);
-        }
+        if (!await ChecksIfTeamExists(user.PlayerTeamId))
+	        throw new ApplicationException(Resource.CreateValidationAsyncDoesntExist);
+        
 		
 		var team = await _teamService.GetByIdSendAsync(user.PlayerTeamId);
 
@@ -49,38 +49,29 @@ public class PlayerService
         }
 
 		if(await ChecksIfUserIsManager(userId))
-		{
 			throw new ApplicationException(Resource.CreateValidationAsyncOnlyTechnicians);
-		}
+		
 
         if(!await ChecksIfUserPassedExists(user.Id))
-		{
-			throw new ApplicationException(Resource.CreateValidationAsyncUserDoesntExist);
-		}
+	        throw new ApplicationException(Resource.CreateValidationAsyncUserDoesntExist);
 
-		if(await ChecksIfNumberAlreadyExistsInPlayerTemp(user.Number, user.PlayerTeamId))
-		{
-			throw new ApplicationException(Resource.CreateValidationAsyncNumberAlreadyExists);
-		}
+        if(await ChecksIfNumberAlreadyExistsInPlayerTemp(user.Number, user.PlayerTeamId))
+	        throw new ApplicationException(Resource.CreateValidationAsyncNumberAlreadyExists);
 
         if(await ChecksIfNumberAlreadyExistsInUser(user.Number, user.PlayerTeamId))
-		{
-			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyExists);
-		}
+	        throw new ApplicationException(Resource.CreateValidationAsyncAlreadyExists);
 
-		if(await ChecksIfUserPassedAlreadHasTeam(user.Id))
-		{
-			throw new ApplicationException(Resource.CreateValidationAsyncAlreadyBelongsTeam);
-		}
+        if(await ChecksIfUserPassedAlreadHasTeam(user.Id))
+	        throw new ApplicationException(Resource.CreateValidationAsyncAlreadyBelongsTeam);
 
-		await CreateSendAsync(user);
+        await CreateSendAsync(user);
 		return errorMessages;
 	}
 
     private async Task CreateSendAsync(User user)
 	{
 		await _dbService.EditData(
-            "UPDATE users SET artisticname = @ArtisticName, number = @Number, playerposition = @PlayerPosition, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE email = @Email;", user
+            "UPDATE users SET artisticname = @ArtisticName, number = @Number, playerposition = @PlayerPosition, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE id = @Id;", user
             );
 	}
 
@@ -131,18 +122,29 @@ public class PlayerService
 
 	public async Task<List<string>> UpdateCaptainValidationAsync(Guid playerId, Guid managerId)
 	{
-		if(await ChecksIfUserIsManager(managerId))
+		if (await ChecksIfUserIsManager(managerId))
 			throw new ApplicationException(Resource.CreateValidationAsyncOnlyTechnicians);
 
 		var player = await GetUserByIdAsync(playerId);
 
-		if(player is null)
-			throw new ApplicationException("Jogador não existe");
-		
-		if(player.IsCaptain)
+		if (player is null)
 		{
-			await RemoveCaptainByTeamId(player.PlayerTeamId);
+			var tempPlayer = await _playerTempProfileService.GetTempPlayerById(playerId);
+			if (tempPlayer is null)
+				throw new ApplicationException("Jogador não existe");
+
+			if (tempPlayer.IsCaptain)
+			{
+				await _playerTempProfileService.RemoveCaptainByTeamId(tempPlayer.TeamsId);
+				return new();
+			}
+			await _playerTempProfileService.RemoveCaptainByTeamId(tempPlayer.TeamsId);
+			await _playerTempProfileService.MakePlayerCaptain(tempPlayer.Id);
+			return new();
 		}
+		
+		if (player.IsCaptain)
+			await RemoveCaptainByTeamId(player.PlayerTeamId);
 		else
 		{
 			await RemoveCaptainByTeamId(player.PlayerTeamId);

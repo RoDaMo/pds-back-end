@@ -141,16 +141,39 @@ public class GoalService
     {
         if(goal.Set == 0)
         {
-            var timeOfLastEvent = await GetTimeOfLastEventSoccer(goal.MatchId);
+            var lastEventGoal = await GetTimeOfLastEventGoal(goal.MatchId);
+            var lastEventFoul = await GetTimeOfLastEventFoul(goal.MatchId);
             if(math.Prorrogation)
             {
-                if(goal.Minutes > 120 || timeOfLastEvent > goal.Minutes || goal.Minutes < 90)
+                if(lastEventFoul > lastEventGoal)
+                {
+                    if(goal.Minutes > 120 || lastEventFoul > goal.Minutes || goal.Minutes < 90)
+                        return true;
+                    return false;
+                }
+                else
+                {
+                     if(goal.Minutes > 120 || lastEventGoal > goal.Minutes || goal.Minutes < 90)
+                        return true;
+                    return false;
+                }
+                
+            }
+            else if(lastEventFoul > lastEventGoal)
+            {
+                if(goal.Minutes > 90 || lastEventFoul > goal.Minutes)
+                {
                     return true;
+                }
                 return false;
             }
-            else if(goal.Minutes > 90 || timeOfLastEvent > goal.Minutes)
+
+            else
             {
-                return true;
+                if(goal.Minutes > 90 || lastEventGoal > goal.Minutes)
+                {
+                    return true;
+                }
             }
             return false;
         }
@@ -160,8 +183,10 @@ public class GoalService
             return true;
         return false;
     }
-    private async Task<int> GetTimeOfLastEventSoccer(int matchId)
+    private async Task<int> GetTimeOfLastEventGoal(int matchId)
         => await _dbService.GetAsync<int>("SELECT Minutes FROM Goals WHERE MatchId = @matchId ORDER BY Id DESC LIMIT 1", new {matchId});
+    private async Task<int> GetTimeOfLastEventFoul(int matchId)
+        => await _dbService.GetAsync<int>("SELECT Minutes FROM Fouls WHERE MatchId = @matchId ORDER BY Id DESC LIMIT 1", new {matchId});
      private async Task<DateTime> GetTimeOfLastEventVolley(int matchId)
         => await _dbService.GetAsync<DateTime>("SELECT Date FROM Goals WHERE MatchId = @matchId ORDER BY Id DESC LIMIT 1", new {matchId});
     private async Task<bool> CheckIfAssisterPlayerTempAndMarkerAreFromSameTeam(Guid assisterId, int teamId)
@@ -497,7 +522,7 @@ public class GoalService
         {
             var matches = await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Id", new {match.ChampionshipId, match.Phase});
             var newPhase = match.Phase + 1;
-            for (int i = 0; i <= matches.Count() / 2; i = i + 2)
+            for (int i = 0; i <= matches.Count()-2; i = i + 2)
             {
                 var newMatch = new Match(match.ChampionshipId, matches[i].Winner, matches[i+1].Winner, newPhase);
                 await CreateMatchSend(newMatch);
