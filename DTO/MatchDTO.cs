@@ -16,11 +16,15 @@ public class MatchDTO
     public int HomeId { get; set; }
     public int VisitorId { get; set; }
     public bool Finished { get; set; }
-    public string Local { get; set; }
     public string Arbitrator { get; set; }
     public DateTime Date { get; set; }
     public int ChampionshipId { get; set; }
     public bool Prorrogation { get; set; }
+     public int Cep { get; set; }
+    public string City { get; set; }
+    public string Road { get; set; }
+    public int Number { get; set; }
+    public string MatchReport { get; set; }
 
     public MatchDTO()
     {

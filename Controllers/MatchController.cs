@@ -525,4 +525,56 @@ public class MatchController : ApiBaseController
             return ApiBadRequest(ex.Message);
         }  
     }
+
+    [HttpPut]
+    [Authorize]
+    [Route("/matches/add-match-report")]
+    public async Task<IActionResult> AddMatchReport(Match match)
+    {
+        try
+        {
+            await _matchService.AddMatchReportValidation(match);
+            return ApiOk();
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
+        }  
+    }
+
+    [HttpGet]
+    [Route("/matches/{id:int}/get-all-events")]
+    public async Task<IActionResult> GetAllEvents(int matchId)
+    {
+        try
+        {
+            var result = await _matchService.GetAllEventsValidation(matchId);
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
+        }  
+    }
+
+    [HttpPut]
+    [Route("/matches/{id:int}/teams/{team:id}/wo")]
+    public async Task<IActionResult> WO(int matchId, int teamId)
+    {
+        try
+        {
+            await _matchService.WoValidation(matchId, teamId);
+            return ApiOk();
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
+        }  
+    }
 }

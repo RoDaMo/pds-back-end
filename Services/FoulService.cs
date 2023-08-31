@@ -7,9 +7,13 @@ namespace PlayOffsApi.Services;
 public class FoulService
 {
     private readonly DbService _dbService;
-    public FoulService(DbService dbService)
+    private readonly GoalService _goalService;
+    private readonly MatchService _matchService;
+    public FoulService(DbService dbService, GoalService goalService, MatchService matchService)
     {
-        _dbService = dbService;   
+        _dbService = dbService;
+        _goalService = goalService;  
+        _matchService = matchService;
     }
 
     public async Task<List<string>> CreateFoulValidationAsync(Foul foul)
@@ -36,7 +40,7 @@ public class FoulService
         if(match.HomeUniform is null || match.VisitorUniform is null)
             throw new ApplicationException("É necessário definir os uniformes das equipes antes");
         
-        if (match.Local is null)
+        if (match.Road is null)
             throw new ApplicationException("É necessário definir o local da partida antes antes");
         
         if(match.Winner != 0 || match.Tied == true)
@@ -66,10 +70,33 @@ public class FoulService
                 await CreateFoulToPlayerSend(foul);
             }
 
-            foul.Considered = true;
-            foul.Valid = true;
-            await CreateFoulToPlayerSend(foul);
+            else
+            {
+                foul.Considered = true;
+                foul.Valid = true;
+                await CreateFoulToPlayerSend(foul);
+            }
 
+            if(await CheckIfRedCardsOfTeamIsEqualFive(match.Id, player.PlayerTeamId))
+            {
+                await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
+                for (int i = 0; i < 3; i++)
+                {
+                    var goal = new Goal();
+                    goal.MatchId = match.Id;
+                    goal.PlayerId = player.Id;
+                    goal.Minutes = foul.Minutes;
+                    goal.OwnGoal = true;
+                    await _goalService.CreateGoalValidationAsync(goal);
+                }
+
+                if(match.Round != 0 && championship.Format == Enum.Format.GroupStage)
+                    await _matchService.EndGameToGroupStageValidationAsync(match.Id);
+                else if(match.Round != 0 && championship.Format == Enum.Format.LeagueSystem)
+                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id);
+                else
+                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id);
+            }
         }
         else
         {
@@ -90,10 +117,48 @@ public class FoulService
                 foul.Considered = true;
                 foul.Valid = true;
                 await CreateFoulToPlayerTempSend(foul);
+            }
+
+            if(await CheckIfRedCardsOfTeamIsEqualFive(match.Id, playerTemp.TeamsId))
+            {
+                await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
+                for (int i = 0; i < 3; i++)
+                {
+                    var goal = new Goal();
+                    goal.MatchId = match.Id;
+                    goal.PlayerTempId = playerTemp.Id;
+                    goal.Minutes = foul.Minutes;
+                    goal.OwnGoal = true;
+                    await _goalService.CreateGoalValidationAsync(goal);
+                }
+
+                if(match.Round != 0 && championship.Format == Enum.Format.GroupStage)
+                    await _matchService.EndGameToGroupStageValidationAsync(match.Id);
+                else if(match.Round != 0 && championship.Format == Enum.Format.LeagueSystem)
+                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id);
+                else
+                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id);
             }           
         }
         return new();
     }
+    private async Task<bool> CheckIfRedCardsOfTeamIsEqualFive(int matchId, int teamId)
+    {
+         var tempCards = await _dbService.GetAsync<int>(
+            @"SELECT COUNT(*)
+            FROM Fouls f
+            JOIN PlayerTempProfiles p ON f.PlayerTempId = p.Id
+            WHERE p.TeamsId = @teamId AND f.YellowCard = false AND MatchId = @matchId;", 
+            new {teamId, matchId});
+        var userCards = await _dbService.GetAsync<int>(
+            @"SELECT COUNT(*)
+            FROM Fouls f
+            JOIN Users u ON f.PlayerId = u.Id
+            WHERE u.PlayerTeamId = @teamId AND MatchId = @matchId AND f.YellowCard = false;", 
+            new {teamId, matchId});
+        return (tempCards + userCards == 5) ? true : false;
+    }
+        
     private async Task<Match> GetMatchById(int matchId)
         => await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @matchId", new{matchId});
     private async Task<Championship> GetChampionshipByMatchId(int matchId)
@@ -106,8 +171,8 @@ public class FoulService
             new {matchId});
     private async Task<User> GetUserById(Guid id)
         => await _dbService.GetAsync<User>(@"SELECT * FROM users WHERE Id = @id", new {id});
-    private async Task<User> GetPlayerTempProfileById(Guid id)
-        => await _dbService.GetAsync<User>(@"SELECT * FROM playertempprofiles WHERE Id = @id", new {id});
+    private async Task<PlayerTempProfile> GetPlayerTempProfileById(Guid id)
+        => await _dbService.GetAsync<PlayerTempProfile>(@"SELECT * FROM playertempprofiles WHERE Id = @id", new {id});
     private async Task<List<Foul>> GetAllFoulsByUserAndMatch(Guid userId, int matchId)
         => await _dbService.GetAll<Foul>("SELECT * FROM fouls WHERE PlayerId = @userId AND MatchId = @matchId", new {userId, matchId});
     private async Task<List<Foul>> GetAllFoulsByPlayerTempAndMatch(Guid playerTempId, int matchId)
