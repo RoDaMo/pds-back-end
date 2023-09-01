@@ -71,11 +71,15 @@ public class TeamService
 
 	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
 
-	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NOT NULL);", new {userId});
+	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NOT NULL OR TeamManagementId <> 0);", new {userId});
 
+	private async Task UpdateUser(Guid userId)
+	{
+		await _dbService.EditData("UPDATE users SET teammanagementid = null  WHERE id = @userid;", new { userId });
+	}
 	private async Task UpdateUser(Guid userId, int teamId)
 	{
-		await _dbService.EditData("UPDATE users SET teammanagementid = @teamId  WHERE id = @userid;", new { teamId, userId });
+		await _dbService.EditData("UPDATE users SET teammanagementid = @teamId  WHERE id = @userid;", new { userId, teamId });
 	}
 
 	private static Team ToTeam(TeamDTO teamDto) => new(teamDto.Emblem, teamDto.UniformHome, teamDto.UniformAway, teamDto.SportsId, teamDto.Name);
@@ -190,8 +194,50 @@ public class TeamService
 			throw new ApplicationException(Resource.TeamAlreadyDeleted);
 
 		await DeleteTeamSend(id);
-		await UpdateUser(userId, id);
+		await UpdateUser(userId);
+
+		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
+
+		foreach (var championshipId in championshipsId)
+		{
+			await RemoveTeamFromChampionshipValidation(team.Id, championshipId);
+		}
+		
+		await RemoveTeamOfAllPlayerTempProfiled(team.Id);
+		await RemoveTeamOfAllUsers(team.Id);
 	}
+
+	public async Task DeleteTeamValidation(int id)
+	{
+		var team = await GetByIdValidationAsync(id);
+		if (team is null)
+			throw new ApplicationException(Resource.TeamDoesNotExist);
+
+		var user = await _dbService.GetAsync<User>("SELECT * FROM Users WHERE TeamManagementId = @Id", new {id});
+
+		if (team.Deleted)
+			throw new ApplicationException(Resource.TeamAlreadyDeleted);
+
+		await DeleteTeamSend(id);
+		await UpdateUser(user.Id);
+
+		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
+
+		foreach (var championshipId in championshipsId)
+		{
+			await RemoveTeamFromChampionshipValidation(team.Id, championshipId);
+		}
+
+		await RemoveTeamOfAllPlayerTempProfiled(team.Id);
+		await RemoveTeamOfAllUsers(team.Id);
+	}
+	private async Task RemoveTeamOfAllPlayerTempProfiled(int teamId) 
+		=> await _dbService.EditData("UPDATE PlayerTempProfiles SET TeamsId = null WHERE TeamsId = @teamId", new {teamId});
+	 
+	private async Task<List<PlayerTempProfile>> RemoveTeamOfAllUsers(int teamId) 
+		=> await _dbService.GetAll<PlayerTempProfile>("UPDATE Users SET PlayerTeamId = null WHERE PlayerTeamId = @teamId", new {teamId});
+
+	private async Task<List<int>> GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(int teamId) => await _dbService.GetAll<int>("SELECT ChampionshipId FROM championships_teams WHERE TeamId = @teamId", new {teamId});
 
 	private async Task DeleteTeamSend(int id) => await _dbService.EditData("UPDATE teams SET deleted = true WHERE id = @id", new { id });
 

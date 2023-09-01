@@ -471,7 +471,15 @@ public class AuthService
 	private async Task AddCpfUserSend(User user) 
 		=> await _dbService.EditData("UPDATE users SET cpf = @cpf WHERE id = @id", user);
 
-	public async Task DeleteCurrentUserValidation(Guid userId) => await DeleteCurrentUserSend(userId);
+	public async Task DeleteCurrentUserValidation(Guid userId)
+	{
+		await DeleteCurrentUserSend(userId);
+		await UpdateUser(userId);
+	}
+	private async Task UpdateUser(Guid userId)
+	{
+		await _dbService.EditData("UPDATE users SET teammanagementid = null, SET PlayerTeamId = null  WHERE id = @userid;", new { userId });
+	}
 
 	private async Task DeleteCurrentUserSend(Guid userId) =>
 		await _dbService.EditData("UPDATE users SET deleted = true WHERE id =  @userId", new { userId });
