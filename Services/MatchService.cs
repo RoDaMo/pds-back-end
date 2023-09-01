@@ -425,7 +425,7 @@ public class MatchService
             new {championshipId, playerId});
     private bool CheckIfIsTheNextMatchToEliminations(Match previousMatch, Match nextMatch, User user)
     {
-        var nextPhase = previousMatch.Phase + 1;
+        var nextPhase = previousMatch?.Phase + 1;
         if(nextMatch.Phase == nextPhase && (user.PlayerTeamId == nextMatch.Home || user.PlayerTeamId == nextMatch.Visitor))
             return true;
 
@@ -433,7 +433,7 @@ public class MatchService
     }
     private bool CheckIfIsTheNextMatchToEliminations(Match previousMatch, Match nextMatch, PlayerTempProfile player)
     {
-        var nextPhase = previousMatch.Phase + 1;
+        var nextPhase = previousMatch?.Phase + 1;
         if(nextMatch.Phase == nextPhase && (player.TeamsId == nextMatch.Home ||player.TeamsId  == nextMatch.Visitor))
             return true;
 
@@ -441,7 +441,7 @@ public class MatchService
     }
     private bool CheckIfIsTheNextMatchToLeagueSystem(Match previousMatch, Match nextMatch, User user, int number)
     {
-        var round = previousMatch.Round + number;
+        var round = previousMatch?.Round + number;
         if(nextMatch.Round == round && (user.PlayerTeamId == nextMatch.Home || user.PlayerTeamId == nextMatch.Visitor))
             return true;
 
@@ -449,7 +449,7 @@ public class MatchService
     }
     private bool CheckIfIsTheNextMatchToLeagueSystem(Match previousMatch, Match nextMatch, PlayerTempProfile player, int number)
     {
-        var round = previousMatch.Round + number;
+        var round = previousMatch?.Round + number;
         if(nextMatch.Round == round && (player.TeamsId == nextMatch.Home || player.TeamsId == nextMatch.Visitor))
             return true;
 
@@ -1286,7 +1286,7 @@ public class MatchService
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM teams WHERE Id = @teamId AND (UniformHome = @uniform OR UniformAway = @uniform))", new {teamId, uniform});
     private async Task UpdateSend(Match match)
 		=> await _dbService.EditData(
-            @"UPDATE Matches SET date = @Date, arbitrator = @Arbitrator, local = @Local, homeuniform = @HomeUniform, 
+            @"UPDATE Matches SET date = @Date, arbitrator = @Arbitrator, homeuniform = @HomeUniform, 
             visitoruniform = @VisitorUniform, Cep = @Cep, City = @City, Road = @Road, Number = @Number WHERE id=@id",
             match);
     public async Task ActiveProrrogationValidationAsync(int matchId)
@@ -1766,15 +1766,21 @@ public class MatchService
     
     public async Task AddMatchReportValidation(Match match)
     {
+        var oldMatch = await GetMatchById(match.Id);
+
+        if(oldMatch is null)
+            throw new ApplicationException("Partida passada não existe");
         if(match.MatchReport is null)
             throw new ApplicationException("Súmula não pode ser nula");
+        if(oldMatch.Winner == 0 && !oldMatch.Tied)
+            throw new ApplicationException("Partida ainda não foi finalizada");
         
         await AddMatchReportSend(match);
 
     }
     private async Task AddMatchReportSend(Match match)
     {
-        await _dbService.EditData("UPDATE Matches SET MatchReporte = @MatchReport WHERE id = @Id", match);
+        await _dbService.EditData("UPDATE Matches SET MatchReport = @MatchReport WHERE id = @Id", match);
     }
 
     public async Task<dynamic> GetAllEventsValidation(int matchId)
@@ -1795,19 +1801,23 @@ public class MatchService
 
             foreach (var goal in goals)
             {
-                var name = (goal.PlayerId == Guid.Empty) ? (await GetTempById(goal.PlayerTempId)).Name : 
-                (await GetUserById(goal.PlayerId)).Name; 
+                var player = await GetTempById(goal.PlayerTempId);
+                var user =  await GetUserById(goal.PlayerId);
+                var assisterUser =  await GetUserById(goal.AssisterPlayerId);
+                var assisterTemp = await GetTempById(goal.AssisterPlayerTempId);
                 var goalEvent = 
                 new 
                 {
-                    Name = name,
-                    AssisterName = (goal.AssisterPlayerTempId == Guid.Empty) ? (await GetUserById(goal.PlayerId)).Name : (await GetTempById(goal.PlayerTempId)).Name,
+                    Name = (player is null) ? user?.Name : player?.Name,
+                    AssisterName = (assisterUser is null) ? assisterTemp?.Name : assisterTemp?.Name,
                     PlayerId = (goal.PlayerId == Guid.Empty) ? goal.PlayerTempId : goal.PlayerId,
                     AssisterPlayerId = (goal.AssisterPlayerTempId == Guid.Empty) ? goal.AssisterPlayerId : goal.AssisterPlayerTempId,
                     Minutes = goal.Minutes,
                     OwnGoal = goal.OwnGoal,
                     TeamId = goal.TeamId,
-                    Goal = true
+                    Goal = true,
+                    Foul = false,
+                    Penalty = false
                 };
                 events.Add(goalEvent);
             }
@@ -1835,8 +1845,10 @@ public class MatchService
                     Name = name,
                     PlayerId = (foul.PlayerId == Guid.Empty) ? foul.PlayerTempId : foul.PlayerId,
                     Minutes = foul.Minutes,
+                    YellowCard = foul.YellowCard,
+                    Goal = false,
                     Foul = true,
-                    YellowCard = foul.YellowCard
+                    Penalty = false,
                 };
                 events.Add(foulEvent);
             }
@@ -1845,18 +1857,20 @@ public class MatchService
 
             foreach (var penalty in penalties)
             {
-                var name = (penalty.PlayerId == Guid.Empty) ? (await GetTempById(penalty.PlayerTempId)).Name : 
-                (await GetUserById(penalty.PlayerId)).Name; 
+                var player = await GetTempById(penalty.PlayerTempId);
+                var user =  await GetUserById(penalty.PlayerId);
                 var penaltyEvent = 
                 new 
                 {
-                    Name = name,
+                    Name = (player is null) ? user?.Name : player?.Name,
                     PlayerId = (penalty.PlayerId == Guid.Empty) ? penalty.PlayerTempId : penalty.PlayerId,
                     Converted = penalty.Converted,
                     TeamId = penalty.TeamId,
-                    Penalty = true
+                    Goal = false,
+                    Foul = false,
+                    Penalty = true,
                 };
-                events.Add(penaltyEvent);
+                events.Insert(0, penaltyEvent);
             }
 
             return events;
@@ -1870,12 +1884,12 @@ public class MatchService
 
             foreach (var goal in goals)
             {
-                var name = (goal.PlayerId == Guid.Empty) ? (await GetTempById(goal.PlayerTempId)).Name : 
-                (await GetUserById(goal.PlayerId)).Name; 
+                var player = await GetTempById(goal.PlayerTempId);
+                var user =  await GetUserById(goal.PlayerId);
                 var goalEvent = 
                 new 
                 {
-                    Name = name,
+                    Name = (player is null) ? user?.Name : player?.Name,
                     PlayerId = (goal.PlayerId == Guid.Empty) ? goal.PlayerTempId : goal.PlayerId,
                     Date = goal.Date,
                     OwnGoal = goal.OwnGoal,
@@ -1908,7 +1922,7 @@ public class MatchService
         var match = await GetMatchById(matchId);
         var championship = await GetChampionshipByMatchId(matchId);
 
-        var player = (await GetPlayersOfteamSend( teamId != match.Visitor ? match.Visitor : match.Home ))[0];
+        var player = await GetPlayerOfteamSend(teamId != match.Visitor ? match.Visitor : match.Home );
 
         if(match is null)
             throw new ApplicationException("Partida passada não existe");
@@ -1932,7 +1946,7 @@ public class MatchService
             
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
 
-            if(player.Username is null)
+            if(string.IsNullOrWhiteSpace(player.Username))
             {
                 for (int i = 0; i < 3; i++)
                 {
@@ -1941,7 +1955,8 @@ public class MatchService
                     goal.PlayerTempId = player.Id;
                     goal.Minutes = 0;
                     goal.OwnGoal = true;
-                    await _goalService.CreateGoalValidationAsync(goal);
+                    goal.TeamId = teamId != match.Visitor ? match.Visitor : match.Home;
+                    await CreateGoalToPlayerTempSend(goal);
                 }
             }
 
@@ -1952,9 +1967,10 @@ public class MatchService
                     var goal = new Goal();
                     goal.MatchId = match.Id;
                     goal.PlayerId = player.Id;
+                    goal.TeamId = teamId != match.Visitor ? match.Visitor : match.Home;
                     goal.Minutes = 0;
                     goal.OwnGoal = true;
-                    await _goalService.CreateGoalValidationAsync(goal);
+                    await CreateGoalToPlayerSend(goal);
                 }
             }
             
@@ -1969,7 +1985,7 @@ public class MatchService
             
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
 
-            if(player.Username is null)
+            if(string.IsNullOrWhiteSpace(player.Username))
             {
                 for (int i = 0; i < 3; i++)
                 {
@@ -1977,8 +1993,9 @@ public class MatchService
                     goal.MatchId = match.Id;
                     goal.PlayerTempId = player.Id;
                     goal.Minutes = 0;
+                    goal.TeamId = teamId != match.Visitor ? match.Visitor : match.Home;
                     goal.OwnGoal = true;
-                    await _goalService.CreateGoalValidationAsync(goal);
+                    await CreateGoalToPlayerTempSend(goal);
                 }
             }
 
@@ -1990,28 +2007,30 @@ public class MatchService
                     goal.MatchId = match.Id;
                     goal.PlayerId = player.Id;
                     goal.Minutes = 0;
+                    goal.TeamId = teamId != match.Visitor ? match.Visitor : match.Home;
                     goal.OwnGoal = true;
-                    await _goalService.CreateGoalValidationAsync(goal);
+                    await CreateGoalToPlayerSend(goal);
                 }
             }
 
-            await EndGameToLeagueSystemValidationAsync(matchId);
+            await EndGameToLeagueSystemValidationAsync(match.Id);
         }
 
         else
         {
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
 
-            if(player.Username is null)
+            if(string.IsNullOrWhiteSpace(player.Username))
             {
                 for (int i = 0; i < 3; i++)
                 {
                     var goal = new Goal();
                     goal.MatchId = match.Id;
                     goal.PlayerTempId = player.Id;
+                    goal.TeamId = teamId != match.Visitor ? match.Visitor : match.Home;
                     goal.Minutes = 0;
                     goal.OwnGoal = true;
-                    await _goalService.CreateGoalValidationAsync(goal);
+                    await CreateGoalToPlayerTempSend(goal);
                 }
             }
 
@@ -2022,12 +2041,68 @@ public class MatchService
                     var goal = new Goal();
                     goal.MatchId = match.Id;
                     goal.PlayerId = player.Id;
+                    goal.TeamId = teamId != match.Visitor ? match.Visitor : match.Home;
                     goal.Minutes = 0;
                     goal.OwnGoal = true;
-                    await _goalService.CreateGoalValidationAsync(goal);
+                    await CreateGoalToPlayerSend(goal);
                 }
             }
             await EndGameToKnockoutValidationAsync(matchId);
         }
     }
+    private async Task<User> GetPlayerOfteamSend(int id) =>
+		await _dbService.GetAsync<User>(
+			@"
+			SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id
+			UNION ALL
+			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id;",
+			new { id });
+    private async Task<int> CreateGoalToPlayerTempSend(Goal goal)
+    {
+        var id = 0;
+        if(goal.AssisterPlayerId == Guid.Empty && goal.AssisterPlayerTempId != Guid.Empty)
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerTempId, AssisterPlayerId, Minutes, Date) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, @AssisterPlayerTempId, null, @Minutes, @Date) RETURNING Id;",
+			goal);
+        }
+        else if(goal.AssisterPlayerId != Guid.Empty)
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId, Minutes, Date) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, @AssisterPlayerId, null, @Minutes, @Date) RETURNING Id;",
+			goal);
+        }
+        else
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId, Minutes, Date) VALUES (@MatchId, @TeamId, null, @PlayerTempId, @Set, @OwnGoal, null, null, @Minutes, @Date) RETURNING Id;",
+			goal);
+        }
+        return id;
+    }
+        
+    private async Task<int> CreateGoalToPlayerSend(Goal goal)
+    {
+        var id = 0;
+        if(goal.AssisterPlayerId == Guid.Empty && goal.AssisterPlayerTempId != Guid.Empty)
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerTempId, AssisterPlayerId, Minutes, Date) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, @AssisterPlayerTempId, null, @Minutes, @Date) RETURNING Id;",
+			goal);
+        }
+        else if(goal.AssisterPlayerId != Guid.Empty)
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId, Minutes, Date) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, @AssisterPlayerId, null, @Minutes, @Date) RETURNING Id;",
+			goal);
+        }
+        else
+        {
+            id = await _dbService.EditData(
+			"INSERT INTO goals (MatchId, TeamId, PlayerId, PlayerTempId, Set, OwnGoal, AssisterPlayerId, AssisterPlayerTempId, Minutes, Date) VALUES (@MatchId, @TeamId, @PlayerId, null, @Set, @OwnGoal, null, null, @Minutes, @Date) RETURNING Id;",
+			goal);
+        }
+        return id;
+    }
+      
 }

@@ -504,8 +504,27 @@ public class MatchController : ApiBaseController
 	///		
 	/// </remarks>
 	/// <response code="200">Obtém todos os jogadores do time para uma partida.</response>
-	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
+    /// Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": [
+    ///                {
+    ///                   "id": "9e6e84d5-28f5-4f46-b05f-85f5f229c52b",
+    ///                   "name": null,
+    ///                  "artisticName": null,
+    ///                   "number": 8,
+    ///                   "teamsId": 0,
+    ///                  "playerPosition": 1,
+    ///                  "isCaptain": false,
+    ///                   "picture": null,
+    ///                   "username": ""
+    ///               }
+    ///            ]
+	///		}   
 	/// </returns>
     [HttpGet]
     [Authorize]
@@ -526,6 +545,30 @@ public class MatchController : ApiBaseController
         }  
     }
 
+    /// <summary>
+	/// Usado para adicionar uma súmula à partida.
+	/// </summary>
+    /// <param name="match"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /matches/add-match-report
+    ///     {
+    ///         "Id": 4970,
+    ///         "MatchReport": "https://imagem.png"    
+    ///     }  
+	///		
+	/// </remarks>
+	/// <response code="200">Adiciona súmula a uma partida./response>
+	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+    ///   Exemplo de retorno:
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": ""
+	///		}
+	/// </returns>
     [HttpPut]
     [Authorize]
     [Route("/matches/add-match-report")]
@@ -544,8 +587,38 @@ public class MatchController : ApiBaseController
         }  
     }
 
+    /// <summary>
+	/// Usado para obter todos os eventos de uma partida.
+	/// </summary>
+    /// <param name="matchId"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /matches/{matchId:int}/get-all-events 
+	///		
+	/// </remarks>
+	/// <response code="200">Retorna todos os eventos de uma partida/response>
+	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+    ///   Exemplo de retorno:
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": [
+    ///		        {
+    ///                 "name": "expulso",
+    ///                 "playerId": "4475161a-1db9-49b4-b05f-2b153363b283",
+    ///                 "converted": false,
+    ///                 "teamId": 12,
+    ///                 "goal": false,
+    ///                 "foul": false,
+    ///                 "penalty": true
+    ///             }	    
+    ///          ]
+	///		}
+	/// </returns>
     [HttpGet]
-    [Route("/matches/{id:int}/get-all-events")]
+    [Route("/matches/{matchId:int}/get-all-events")]
     public async Task<IActionResult> GetAllEvents(int matchId)
     {
         try
@@ -561,8 +634,29 @@ public class MatchController : ApiBaseController
         }  
     }
 
+    /// <summary>
+	/// Usado para terminar a partida em WO.
+	/// </summary>
+    /// <param name="matchId"></param>
+    /// <param name="teamId"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /matches/{matchId:int}/teams/{teamId:int}/wo
+	///		
+	/// </remarks>
+	/// <response code="200">termina a partida em WO. </response>
+	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+    ///   Exemplo de retorno:
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": ""
+	///		}
+	/// </returns>
     [HttpPut]
-    [Route("/matches/{id:int}/teams/{team:id}/wo")]
+    [Route("/matches/{matchId:int}/teams/{teamId:int}/wo")]
     public async Task<IActionResult> WO(int matchId, int teamId)
     {
         try
