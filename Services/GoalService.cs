@@ -35,7 +35,7 @@ public class GoalService
         if(match.HomeUniform is null || match.VisitorUniform is null)
             throw new ApplicationException("É necessário definir os uniformes das equipes antes");
         
-        if (match.Local is null)
+        if (match.Road is null)
             throw new ApplicationException("É necessário definir o local da partida antes antes");
 
         if(goal.PlayerId == Guid.Empty)
@@ -951,4 +951,11 @@ public class GoalService
             }
         }
     }
+
+    public async Task RemoveAllGoalOfMatchValidation(int matchId) => await RemoveAllGoalOfMatchSend(matchId);
+    
+    private async Task RemoveAllGoalOfMatchSend(int matchId)
+        => await _dbService.EditData("DELETE FROM Goals WHERE MatchId = @matchId", new {matchId});
+    
+    
 }

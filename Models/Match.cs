@@ -15,10 +15,14 @@ public class Match
     public Phase Phase { get; set; }
     public bool Tied { get; set; }
     public int PreviousMatch { get; set; }
-    public string Local { get; set; }
     public string HomeUniform { get; set; }
     public string VisitorUniform { get; set; }
     public bool Prorrogation { get; set; }
+    public int Cep { get; set; }
+    public string City { get; set; }
+    public string Road { get; set; }
+    public int Number { get; set; }
+    public string MatchReport { get; set; }
 
     public Match(int championshipId, int home, int visitor, Phase phase)
     {
