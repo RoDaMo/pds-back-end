@@ -445,6 +445,9 @@ public class AuthService
 		for (var i = 0; i < 11; i++)
 			numberCpf[i] = int.Parse(cpf[i].ToString());
 		
+		if (numberCpf.Distinct().Count() == 1)
+			throw new ApplicationException(Resource.InvalidCpf);
+		
 		var sum = 0;
 		for (var i = 0; i < 9; i++)
 			sum += numberCpf[i] * (10 - i);
@@ -517,4 +520,59 @@ public class AuthService
 				)
 			).Index(Index)
 		);
+	
+	public async Task<bool> UserHasCnpjValidationAsync(Guid userId) => await UserHasCnpjSendAsync(userId);
+
+	private async Task<bool> UserHasCnpjSendAsync(Guid userId) =>
+		await _dbService.GetAsync<bool>("SELECT CASE WHEN COALESCE(TRIM(cnpj), '') = '' THEN false ELSE true END FROM users WHERE id = @userId", new { userId });
+
+	public async Task<bool> CnpjAlreadyExistsValidation(string cnpj) => await CnpjAlreadyExistsSend(cnpj);
+
+	private async Task<bool> CnpjAlreadyExistsSend(string cnpj)
+		=> await _dbService.GetAsync<bool>("SELECT COUNT(cnpj) FROM users WHERE cnpj = @cnpj", new { cnpj });
+	
+	public async Task<List<string>> AddCnpjUserValidationAsync(Guid userId, string cnpj)
+	{
+		if (await UserHasCnpjValidationAsync(userId)) throw new ApplicationException("Você já possui uma CNPJ vinculada à sua conta.");
+		if (await CnpjAlreadyExistsValidation(cnpj)) throw new ApplicationException("Essa CNPJ já foi cadastrada.");
+		var userValidator = new UserValidator();
+		var results = await userValidator.ValidateAsync(new User { Cnpj = cnpj }, option => option.IncludeRuleSets("Cnpj"));
+		
+		if (!results.IsValid) return results.Errors.Select(x => x.ErrorMessage).ToList();
+
+		var multiplicador1 = new[] { 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2 };
+		var multiplicador2 = new[] { 6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2 };
+
+		cnpj = cnpj.Trim().Replace(".", "").Replace("-", "").Replace("/", "");
+
+		if (cnpj.All(c => c == '0'))
+			throw new ApplicationException("CNPJ inválida");
+
+		var tempCnpj = cnpj[..12];
+
+		var digito = CalcularDigito(tempCnpj, multiplicador1);
+		digito += CalcularDigito(tempCnpj + digito, multiplicador2);
+
+		if (!cnpj.EndsWith(digito))
+			throw new ApplicationException("CNPJ inválida");
+
+		await AddCnpjUserSend(new() { Id = userId, Cnpj = cnpj });
+		return new();
+	}
+
+	private static string CalcularDigito(string valor, IReadOnlyList<int> multiplicadores)
+	{
+		var soma = valor.Select((t, i) => (t - '0') * multiplicadores[i]).Sum();
+
+		var resto = soma % 11;
+		if (resto < 2)
+			resto = 0;
+		else
+			resto = 11 - resto;
+
+		return resto.ToString();
+	}
+
+	private async Task AddCnpjUserSend(User user) 
+		=> await _dbService.EditData("UPDATE users SET cnpj = @cnpj WHERE id = @id", user);
 }
