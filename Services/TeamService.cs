@@ -15,18 +15,18 @@ public class TeamService
     private readonly ChampionshipService _championshipService;
 	private const string INDEX = "teams";
 	private const string INDEX2 = "users";
-	private readonly BracketingService _bracketingService;
-	private readonly MatchService _matchService;
+	private readonly Lazy<BracketingService> _bracketingService;
+	private readonly Lazy<MatchService> _matchService;
 	
     public TeamService(DbService dbService, ElasticService elasticService, AuthService authService,
-	 ChampionshipService championshipService, BracketingService bracketingService, MatchService matchService)
+	 ChampionshipService championshipService)
 	{
 		_dbService = dbService;
         _elasticService = elasticService;
         _authService = authService;
         _championshipService = championshipService;
-		_bracketingService = bracketingService;
-		_matchService = matchService;
+		_bracketingService = new Lazy<BracketingService>(() => new BracketingService(_dbService, this, championshipService));
+		_matchService =new Lazy<MatchService>(() => new MatchService(_dbService, _bracketingService.Value, new GoalService(_dbService, _bracketingService.Value)));
 	}
 
     public async Task<List<string>> CreateValidationAsync(TeamDTO teamDto, Guid userId)
@@ -156,16 +156,16 @@ public class TeamService
 		//checar se tem chaveamento
 		//checar se o status é igual a 0 ou 3
 
-		if(await _bracketingService.BracketingExists(championshipId) && 
+		if(await _bracketingService.Value.BracketingExists(championshipId) && 
 		(championship.Status == Enum.ChampionshipStatus.Active || championship.Status == Enum.ChampionshipStatus.Pendent) &&
 		championship.Deleted == false)
 		{
 			var matches = await _dbService.GetAll<Match>(
-				@"SELECT * FROM Matches WHERE (Visitor = @teamId OR Home = @teamId) AND ChampionshipId = @championshipId", new {teamId, championshipId});
+				@"SELECT * FROM Matches WHERE (Visitor = @teamId OR Home = @teamId) AND ChampionshipId = @championshipId AND Winner IS NULL AND Tied <> true", new {teamId, championshipId});
 			
 			foreach (var match in matches)
 			{
-				await _matchService.WoValidation(match.Id, teamId);
+				await _matchService.Value.WoValidation(match.Id, teamId);
 			}
 		}
 
@@ -309,4 +309,9 @@ public class TeamService
 		=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM teams WHERE Id = @teamId)", new {teamId});
 	private async Task<bool> CheckIfTeamHasCaptain(int teamId)
 		=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE PlayerTeamId = @teamId AND IsCaptain = true)", new {teamId});
+
+    public static implicit operator TeamService(Lazy<TeamService> v)
+    {
+        throw new NotImplementedException();
+    }
 }

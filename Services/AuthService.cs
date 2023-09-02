@@ -22,6 +22,7 @@ public class AuthService
 	private const string Index = "users";
 	private readonly OrganizerService _organizerService;
 	private const string INDEX = "championships";
+	private readonly Lazy<TeamService> _teamService;
 	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic) 
 	{
 		_secretKey = secretKey;
@@ -29,6 +30,13 @@ public class AuthService
 		_audience = audience;
 		_dbService = dbService;
 		_elastic = elastic;
+		// var championshipService = new ChampionshipService(_dbService, _elastic, this, backgroundJob, redisService, organizerService );
+		// _teamService = new Lazy<TeamService>(
+		// 	() => new TeamService(_dbService,
+		// 	_elastic, 
+		// 	this, 
+		// 	championshipService
+		// 	));
 	}
 
 	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate, string role = "user")
@@ -488,7 +496,7 @@ public class AuthService
 
 		if(user.TeamManagementId != 0)
 		{
-			await _teamService.DeleteTeamValidation(user.TeamManagementId, userId);
+			// await _teamService.DeleteTeamValidation(user.TeamManagementId, userId);
 		}
 		
 		await DeleteCurrentUserSend(userId);
@@ -497,7 +505,7 @@ public class AuthService
 	{
 		await DeleteSend(championship);
 		championship.Deleted = true;
-		await _elasticService._client.IndexAsync(championship, INDEX);
+		await _elastic._client.IndexAsync(championship, INDEX);
 		await _organizerService.DeleteValidation(new() { ChampionshipId = championship.Id, OrganizerId = championship.OrganizerId });
 	}
 
@@ -508,7 +516,7 @@ public class AuthService
 	}
 
 	private async Task DeleteCurrentUserSend(Guid userId) =>
-		await _dbService.EditData("UPDATE users SET deleted = true WHERE id =  @userId", new { userId });
+		await _dbService.EditData("UPDATE users SET deleted = true WHERE id = @userId", new { userId });
 	
 	public async Task IndexAllUsersValidation()
 	{
