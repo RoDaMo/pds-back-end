@@ -1897,16 +1897,19 @@ public class MatchService
     private async Task<User> GetUserById(Guid id)
         => await _dbService.GetAsync<User>("SELECT * FROM Users WHERE Id = @id", new {id});
 
-    public async Task WoValidation(int matchId, int teamId)
+    public async Task WoValidation(int matchId, int teamId, bool bypassStartingValidation = false)
     {
         var match = await GetMatchById(matchId);
         var championship = await GetChampionshipByMatchId(matchId);
 
         var player = await GetPlayerOfteamSend(teamId != match.Visitor ? match.Visitor : match.Home );
 
-        var validationResult = await HasMatchStarted(matchId, match);
-        if (validationResult != string.Empty)
-            throw new ApplicationException(validationResult);
+        if (!bypassStartingValidation)
+        {
+            var validationResult = await HasMatchStarted(matchId, match);
+            if (validationResult != string.Empty)
+                throw new ApplicationException(validationResult);
+        }
 
         if(match.Round != 0 && championship.Format == Format.GroupStage)
         {
