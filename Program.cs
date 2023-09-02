@@ -77,6 +77,8 @@ builder.Services.AddScoped<CaptchaService>();
 builder.Services.AddScoped<OrganizerService>();
 builder.Services.AddScoped<StatisticsService>();
 builder.Services.AddScoped<FoulService>();
+builder.Services.AddScoped<ReplacementService>();
+builder.Services.AddScoped<FirstStringService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>()));
 
