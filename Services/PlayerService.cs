@@ -154,7 +154,7 @@ public class PlayerService
 		return new();
 	}
 
-	private async Task<User> GetUserByIdAsync(Guid userId) 
+	public async Task<User> GetUserByIdAsync(Guid userId) 
 		=> await _dbService.GetAsync<User>("SELECT * FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
 	private async Task RemoveCaptainByTeamId(int teamId)
 	{
