@@ -54,9 +54,6 @@ public class ChampionshipValidator : AbstractValidator<Championship>
 			.Length(10, 10000)
 			.WithMessage(Resource.ChampionshipValidatorAtleast10);
 
-		RuleFor(c => c.NumberOfPlayers)
-			.NotEmpty()
-			.WithMessage(Resource.ChampionshipValidatorNumberOfPlayers);
 		RuleFor(championship => championship.SportsId)
 			.Must((championship, sportsId) =>
 			{

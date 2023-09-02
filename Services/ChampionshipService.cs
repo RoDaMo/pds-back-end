@@ -49,10 +49,6 @@ public class ChampionshipService
 		
 		switch (championship.SportsId)
 		{
-			case Sports.Football when championship.NumberOfPlayers < 11:
-				throw new ApplicationException(Resource.CreateValidationAsyncInvalidFootballPlayers);
-			case Sports.Volleyball when championship.NumberOfPlayers < 6:
-				throw new ApplicationException(Resource.CreateValidationAsyncInvalidVolleyPlayers);
 			case Sports.All:
 				throw new ApplicationException(Resource.CreateValidationAsyncInvalidSport);
 			default:
@@ -65,8 +61,8 @@ public class ChampionshipService
 	{
 		championship.Id = await _dbService.EditData(
 			@"
-			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, organizerId, numberofplayers, teamquantity, status, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch, deleted) 
-			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @OrganizerId, @NumberOfPlayers, @TeamQuantity, @Status, @DoubleMatchGroupStage, @DoubleMatchEliminations, @DoubleStartLeagueSystem, @FinalDoubleMatch, false) RETURNING Id;",
+			INSERT INTO championships (name, sportsid, initialdate, finaldate, logo, description, format, organizerId, teamquantity, status, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch, deleted) 
+			VALUES (@Name, @SportsId, @Initialdate, @Finaldate, @Logo, @Description, @Format, @OrganizerId, @TeamQuantity, @Status, @DoubleMatchGroupStage, @DoubleMatchEliminations, @DoubleStartLeagueSystem, @FinalDoubleMatch, false) RETURNING Id;",
 			championship);
 
 		// await _dbService.EditData(
@@ -199,7 +195,7 @@ public class ChampionshipService
 	private async Task UpdateSend(Championship championship) =>
 		await _dbService.EditData(
 			"UPDATE championships SET " +
-			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, teamquantity = @teamquantity, numberofplayers = @numberofplayers, doublematchgroupstage = @doublematchgroupstage, doublematcheliminations = @doublematcheliminations, doublestartleaguesystem = @doublestartleaguesystem, finaldoublematch = @finaldoublematch " +
+			"name = @name, initialdate = @initialdate, finaldate = @finaldate, rules = @rules, logo = @logo, description = @description, format = @format, teamquantity = @teamquantity, doublematchgroupstage = @doublematchgroupstage, doublematcheliminations = @doublematcheliminations, doublestartleaguesystem = @doublestartleaguesystem, finaldoublematch = @finaldoublematch " +
 			"WHERE id=@id",
 			championship);
 
