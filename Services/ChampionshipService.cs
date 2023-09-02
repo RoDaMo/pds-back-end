@@ -150,7 +150,7 @@ public class ChampionshipService
 	}
 
 	private async Task<Championship> GetByIdSend(int id) 
-		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, organizerid, teamquantity, numberofplayers, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch FROM championships WHERE id = @id", new { id });
+		=> await _dbService.GetAsync<Championship>("SELECT id, name, sportsid, initialdate, finaldate, rules, logo, description, format, organizerid, teamquantity, doublematchgroupstage, doublematcheliminations, doublestartleaguesystem, finaldoublematch FROM championships WHERE id = @id", new { id });
 	
 	private async Task<int> GetNumberOfPlayers(int championshipId)
 		=> await _dbService.GetAsync<int>("SELECT numberofplayers FROM championships WHERE id = @championshipId", new {championshipId});
