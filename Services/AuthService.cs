@@ -20,7 +20,8 @@ public class AuthService
 	private readonly DbService _dbService;
 	private readonly ElasticService _elastic;
 	private const string Index = "users";
-	
+	private readonly OrganizerService _organizerService;
+	private const string INDEX = "championships";
 	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic) 
 	{
 		_secretKey = secretKey;
@@ -139,7 +140,11 @@ public class AuthService
 	}
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
-		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture, teammanagementid, playerteamid, role, confirmemail FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
+		=> await _dbService.GetAsync<User>(
+			@"SELECT * FROM users WHERE id = @Id AND deleted = false
+			UNION ALL
+			SELECT  id, name, artisticname, number, email, teamsid as playerteamid, playerposition, iscaptain, picture, null as username FROM playertempprofiles WHERE id = @Id", 
+			new User { Id = userId });
 
 	public async Task SendEmailToConfirmAccount(Guid userId)
 	{
@@ -473,12 +478,33 @@ public class AuthService
 
 	public async Task DeleteCurrentUserValidation(Guid userId)
 	{
+		var user = await GetUserByIdAsync(userId);
+
+		if(user.ChampionshipId != 0)
+		{
+			var championship = await _dbService.GetAsync<Championship>("SELECT * FROM Championships WHERE Id = @id", new {id = user.ChampionshipId});
+			await DeleteValidation(championship);
+		}
+
+		if(user.TeamManagementId != 0)
+		{
+			await _teamService.DeleteTeamValidation(user.TeamManagementId, userId);
+		}
+		
 		await DeleteCurrentUserSend(userId);
-		await UpdateUser(userId);
 	}
-	private async Task UpdateUser(Guid userId)
+	public async Task DeleteValidation(Championship championship)
 	{
-		await _dbService.EditData("UPDATE users SET teammanagementid = null, SET PlayerTeamId = null  WHERE id = @userid;", new { userId });
+		await DeleteSend(championship);
+		championship.Deleted = true;
+		await _elasticService._client.IndexAsync(championship, INDEX);
+		await _organizerService.DeleteValidation(new() { ChampionshipId = championship.Id, OrganizerId = championship.OrganizerId });
+	}
+
+	private async Task DeleteSend(Championship championship)
+	{
+		await _dbService.EditData("UPDATE championships SET deleted = true WHERE id = @id", championship);
+		await _dbService.EditData("UPDATE users SET championshipid = null WHERE id = @organizerId", championship);
 	}
 
 	private async Task DeleteCurrentUserSend(Guid userId) =>

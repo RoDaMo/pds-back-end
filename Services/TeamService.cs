@@ -14,13 +14,19 @@ public class TeamService
     private readonly AuthService _authService;
     private readonly ChampionshipService _championshipService;
 	private const string INDEX = "teams";
+	private const string INDEX2 = "users";
+	private readonly BracketingService _bracketingService;
+	private readonly MatchService _matchService;
 	
-    public TeamService(DbService dbService, ElasticService elasticService, AuthService authService, ChampionshipService championshipService)
+    public TeamService(DbService dbService, ElasticService elasticService, AuthService authService,
+	 ChampionshipService championshipService, BracketingService bracketingService, MatchService matchService)
 	{
 		_dbService = dbService;
         _elasticService = elasticService;
         _authService = authService;
         _championshipService = championshipService;
+		_bracketingService = bracketingService;
+		_matchService = matchService;
 	}
 
     public async Task<List<string>> CreateValidationAsync(TeamDTO teamDto, Guid userId)
@@ -60,7 +66,7 @@ public class TeamService
 
 	public async Task<List<Team>> GetAllValidationAsync(Sports sport) => await GetAllSendAsync(sport);
 
-	private async Task<List<Team>> GetAllSendAsync(Sports sport) => await _dbService.GetAll<Team>("SELECT * FROM teams WHERE sportId = @sport", new { sport });
+	private async Task<List<Team>> GetAllSendAsync(Sports sport) => await _dbService.GetAll<Team>("SELECT * FROM teams WHERE sportId = @sport AND Deleted <> true", new { sport });
 
 	public async Task<Team> GetByIdValidationAsync(int id)
 	{
@@ -73,12 +79,17 @@ public class TeamService
 
 	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NOT NULL OR TeamManagementId <> 0);", new {userId});
 
-	private async Task UpdateUser(Guid userId)
+	private async Task UpdateUser(User user)
 	{
-		await _dbService.EditData("UPDATE users SET teammanagementid = null  WHERE id = @userid;", new { userId });
+		user.TeamManagementId = 0;
+		var resultado = await _elasticService._client.IndexAsync(user, INDEX2);
+		await _dbService.EditData("UPDATE users SET teammanagementid = null  WHERE id = @userid;", new { userId = user.Id });
 	}
 	private async Task UpdateUser(Guid userId, int teamId)
 	{
+		var user = await _authService.GetUserByIdAsync(userId);
+		user.TeamManagementId = teamId;
+		var resultado = await _elasticService._client.IndexAsync(user, INDEX2);
 		await _dbService.EditData("UPDATE users SET teammanagementid = @teamId  WHERE id = @userid;", new { userId, teamId });
 	}
 
@@ -138,6 +149,25 @@ public class TeamService
 	{
 		if (!await RelationAlreadyExistsValidation(teamId, championshipId))
 			throw new ApplicationException(Resource.RemoveTeamFromChampionshipValidationTeamNotLinked);
+		
+		var championship = await _championshipService.GetByIdValidation(championshipId);
+
+		//WO
+		//checar se tem chaveamento
+		//checar se o status é igual a 0 ou 3
+
+		if(await _bracketingService.BracketingExists(championshipId) && 
+		(championship.Status == Enum.ChampionshipStatus.Active || championship.Status == Enum.ChampionshipStatus.Pendent) &&
+		championship.Deleted == false)
+		{
+			var matches = await _dbService.GetAll<Match>(
+				@"SELECT * FROM Matches WHERE (Visitor = @teamId OR Home = @teamId) AND ChampionshipId = @championshipId", new {teamId, championshipId});
+			
+			foreach (var match in matches)
+			{
+				await _matchService.WoValidation(match.Id, teamId);
+			}
+		}
 
 		await RemoveTeamFromChampionshipSend(teamId, championshipId);
 	}
@@ -194,8 +224,10 @@ public class TeamService
 			throw new ApplicationException(Resource.TeamAlreadyDeleted);
 
 		await DeleteTeamSend(id);
-		await UpdateUser(userId);
-
+		await UpdateUser(user);
+		
+		team.Deleted = true;
+		var result = await _elasticService._client.IndexAsync(team, INDEX);
 		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
 
 		foreach (var championshipId in championshipsId)
@@ -219,7 +251,7 @@ public class TeamService
 			throw new ApplicationException(Resource.TeamAlreadyDeleted);
 
 		await DeleteTeamSend(id);
-		await UpdateUser(user.Id);
+		await UpdateUser(user);
 
 		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
 
@@ -234,10 +266,24 @@ public class TeamService
 	private async Task RemoveTeamOfAllPlayerTempProfiled(int teamId) 
 		=> await _dbService.EditData("UPDATE PlayerTempProfiles SET TeamsId = null WHERE TeamsId = @teamId", new {teamId});
 	 
-	private async Task<List<PlayerTempProfile>> RemoveTeamOfAllUsers(int teamId) 
-		=> await _dbService.GetAll<PlayerTempProfile>("UPDATE Users SET PlayerTeamId = null WHERE PlayerTeamId = @teamId", new {teamId});
+	private async Task RemoveTeamOfAllUsers(int teamId) 
+	{
+		var users = await _dbService.GetAll<User>("SELECT * FROM Users WHERE PlayerTeamId = @teamId", new {teamId});
+		foreach (var user in users)
+		{
+			user.PlayerTeamId = 0;
+			var resultado = await _elasticService._client.IndexAsync(user, INDEX2);
+		}
+		await _dbService.GetAll<PlayerTempProfile>("UPDATE Users SET PlayerTeamId = null WHERE PlayerTeamId = @teamId", new {teamId});
+	}
+		
 
-	private async Task<List<int>> GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(int teamId) => await _dbService.GetAll<int>("SELECT ChampionshipId FROM championships_teams WHERE TeamId = @teamId", new {teamId});
+	private async Task<List<int>> GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(int teamId) 
+		=> await _dbService.GetAll<int>(
+			@"SELECT ChampionshipId FROM championships_teams ct
+			JOIN Championships c ON ct.ChampionshipId = c.ChampionshipId
+			WHERE ct.TeamId = @teamId AND (c.Status = 0 OR c.Status = 3) AND c.Deleted <> true", 
+			new {teamId});
 
 	private async Task DeleteTeamSend(int id) => await _dbService.EditData("UPDATE teams SET deleted = true WHERE id = @id", new { id });
 
@@ -263,5 +309,4 @@ public class TeamService
 		=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM teams WHERE Id = @teamId)", new {teamId});
 	private async Task<bool> CheckIfTeamHasCaptain(int teamId)
 		=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE PlayerTeamId = @teamId AND IsCaptain = true)", new {teamId});
-	
 }

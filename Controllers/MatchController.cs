@@ -293,7 +293,7 @@ public class MatchController : ApiBaseController
         try
         {
             result = await _matchService.UpdateMatchValidationAsync(match);
-            return ApiOk(result);
+            return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }
 
         catch (ApplicationException ex)
