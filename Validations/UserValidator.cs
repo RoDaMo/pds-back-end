@@ -103,6 +103,19 @@ public partial class UserValidator : AbstractValidator<User>
                 .Matches(@"^\d+$")
                 .WithMessage(Resource.UserValidatorOnlyNumbers);
         });
+        
+        RuleSet("Cnpj", () =>
+        {
+            RuleFor(t => t.Cnpj)
+                .NotEmpty()
+                .WithMessage("CNPJ não pode estar vazia.");
+            RuleFor(t => t.Cpf)
+                .Length(11, 11)
+                .WithMessage("CNPJ inválida.");
+            RuleFor(t => t.Cpf)
+                .Matches(@"^\d+$")
+                .WithMessage("Insira somente números.");
+        });
     }
     
     // used to improve validation performance,
