@@ -1913,7 +1913,7 @@ public class MatchService
     private async Task<List<Goal>> GetAllGoalsByMatchId(int matchId)
         => await _dbService.GetAll<Goal>("SELECT * FROM Goals WHERE MatchId = @matchId", new {matchId});
     private async Task<List<Foul>> GetAllFoulsByMatcId(int matchId)
-        => await _dbService.GetAll<Foul>("SELECT * FROM Fouls WHERE MatchId = @matchId", new {matchId});
+        => await _dbService.GetAll<Foul>("SELECT * FROM Fouls WHERE MatchId = @matchId ORDER BY Id DESC", new {matchId});
     private async Task<List<Penalty>> GetAllPenaltiesByMatchId(int matchId)
         => await _dbService.GetAll<Penalty>("SELECT * FROM Penalties WHERE MatchId = @matchId ORDER BY Id", new {matchId});
     private async Task<PlayerTempProfile> GetTempById(Guid id)
