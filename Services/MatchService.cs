@@ -1849,9 +1849,10 @@ public class MatchService
                     PlayerId = (foul.PlayerId == Guid.Empty) ? foul.PlayerTempId : foul.PlayerId,
                     Minutes = foul.Minutes,
                     YellowCard = foul.YellowCard,
+                    TeamId = teamId,
                     Goal = false,
                     Foul = true,
-                    Penalty = false,
+                    Penalty = false
                 };
                 events.Add(foulEvent);
             }
