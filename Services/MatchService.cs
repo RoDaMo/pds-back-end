@@ -2009,6 +2009,7 @@ public class MatchService
                 throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
             
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
+            await _dbService.EditData("DELETE FROM Fouls WHERE MatchId = @matchId", new {matchId = match.Id});
 
             if(string.IsNullOrWhiteSpace(player.Username))
             {
@@ -2044,6 +2045,7 @@ public class MatchService
         else
         {
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
+            await _dbService.EditData("DELETE FROM Fouls WHERE MatchId = @matchId", new {matchId = match.Id});
 
             if(string.IsNullOrWhiteSpace(player.Username))
             {
