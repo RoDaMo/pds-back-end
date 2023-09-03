@@ -479,7 +479,6 @@ public class AuthService
 
 	public async Task<User> DeleteCurrentUserValidation(User user)
 	{
-		// var user = await GetUserByIdAsync(userId);
 
 		if (user is null)
 			throw new ApplicationException("Esse usuário não existe");

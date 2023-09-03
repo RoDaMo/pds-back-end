@@ -108,7 +108,7 @@ public class MatchController : ApiBaseController
 
         try
         {
-            await _matchService.EndGameToKnockoutValidationAsync(matchId);
+            await _matchService.EndGameToKnockoutValidationAsync(matchId, true);
             return ApiOk(result);
         }
 
@@ -198,7 +198,7 @@ public class MatchController : ApiBaseController
 
         try
         {
-            await _matchService.EndGameToLeagueSystemValidationAsync(matchId);
+            await _matchService.EndGameToLeagueSystemValidationAsync(matchId, true);
             return ApiOk(result);
         }
 
@@ -241,7 +241,7 @@ public class MatchController : ApiBaseController
 
         try
         {
-            await _matchService.EndGameToGroupStageValidationAsync(matchId);
+            await _matchService.EndGameToGroupStageValidationAsync(matchId, true);
             return ApiOk(result);
         }
 
@@ -661,7 +661,7 @@ public class MatchController : ApiBaseController
     {
         try
         {
-            await _matchService.WoValidation(matchId, teamId);
+            await _matchService.WoValidation(matchId, teamId, true);
             return ApiOk();
         }
 

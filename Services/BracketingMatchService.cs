@@ -14,5 +14,5 @@ public class BracketingMatchService
     }
 
 
-    public async Task WoValidation(int matchId, int teamId) => await _matchService.WoValidation(matchId, teamId);
+    public async Task WoValidation(int matchId, int teamId) => await _matchService.WoValidation(matchId, teamId, false);
 }

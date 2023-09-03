@@ -182,7 +182,7 @@ public class TeamService
 	public async Task<List<Championship>> GetChampionshipsOfTeamValidation(int id) => await GetChampionshipsOfTeamSend(id);
 
 	private async Task<List<Championship>> GetChampionshipsOfTeamSend(int id)
-		=> await _dbService.GetAll<Championship>("SELECT c.id, c.name, c.logo, c.description, c.format, c.sportsid FROM championships c JOIN championships_teams ct ON c.id = ct.championshipid WHERE ct.teamid = @id", new { id });
+		=> await _dbService.GetAll<Championship>("SELECT c.id, c.name, c.logo, c.description, c.format, c.sportsid FROM championships c JOIN championships_teams ct ON c.id = ct.championshipid WHERE ct.teamid = @id AND c.Deleted = false", new { id });
 
 	public async Task<List<string>> UpdateTeamValidation(TeamDTO teamDto, Guid userId)
 	{
