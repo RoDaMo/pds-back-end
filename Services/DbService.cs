@@ -60,16 +60,16 @@ public class DbService
 	public async Task<int> EditData(string command, object parms)
 	{
 
-		// try
-		// {
+		try
+		{
 			var result = await _db.ExecuteScalarAsync<int>(command, parms);
 
 			return result;
-		// }
-		// catch (Exception)
-		// {
-		// 	throw new ApplicationException(Resource.GenericErrorMessage);
-		// }
+		}
+		catch (Exception)
+		{
+			throw new ApplicationException(Resource.GenericErrorMessage);
+		}
 
 	}
 
