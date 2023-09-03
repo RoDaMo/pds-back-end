@@ -34,7 +34,7 @@ public class TeamService
 		var teamValidator = new TeamValidator();
 
 		var result = await teamValidator.ValidateAsync(teamDto);
-		if (!await _authService.UserHasCpfValidationAsync(userId) || !await _authService.UserHasCnpjValidationAsync(userId))
+		if (!await _authService.UserHasCpfValidationAsync(userId) && !await _authService.UserHasCnpjValidationAsync(userId))
 			throw new ApplicationException(Resource.CreateValidationAsyncCpfNeeded);
 		
 		if (!result.IsValid)
