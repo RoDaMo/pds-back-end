@@ -6,15 +6,10 @@ namespace PlayOffsApi.Services;
 public class BracketingService
 {
     private readonly DbService _dbService;
-	private readonly TeamService _teamService;
-	private readonly ChampionshipService _championshipService;
 
-
-    public BracketingService(DbService dbService, TeamService teamService, ChampionshipService championshipService)
+    public BracketingService(DbService dbService)
 	{
 		_dbService = dbService;
-		_teamService = teamService;
-		_championshipService = championshipService;
 	}
 
 	public async Task<List<Match>> CreateKnockoutValidationAsync(int championshipId)

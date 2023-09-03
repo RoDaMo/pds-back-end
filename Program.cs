@@ -77,8 +77,10 @@ builder.Services.AddScoped<CaptchaService>();
 builder.Services.AddScoped<OrganizerService>();
 builder.Services.AddScoped<StatisticsService>();
 builder.Services.AddScoped<FoulService>();
+builder.Services.AddScoped<WoService>();
+builder.Services.AddScoped<BracketingMatchService>();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>()));
+builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>(), sp.GetRequiredService<WoService>()));
 
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");

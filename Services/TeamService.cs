@@ -15,18 +15,17 @@ public class TeamService
     private readonly ChampionshipService _championshipService;
 	private const string INDEX = "teams";
 	private const string INDEX2 = "users";
-	private readonly Lazy<BracketingService> _bracketingService;
-	private readonly Lazy<MatchService> _matchService;
+	private readonly BracketingMatchService _bracketingMatchService;
+	
 	
     public TeamService(DbService dbService, ElasticService elasticService, AuthService authService,
-	 ChampionshipService championshipService)
+	 ChampionshipService championshipService, BracketingMatchService bracketingMatchService)
 	{
 		_dbService = dbService;
         _elasticService = elasticService;
         _authService = authService;
         _championshipService = championshipService;
-		_bracketingService = new Lazy<BracketingService>(() => new BracketingService(_dbService, this, championshipService));
-		_matchService =new Lazy<MatchService>(() => new MatchService(_dbService, _bracketingService.Value, new GoalService(_dbService, _bracketingService.Value)));
+		_bracketingMatchService = bracketingMatchService;
 	}
 
     public async Task<List<string>> CreateValidationAsync(TeamDTO teamDto, Guid userId)
@@ -156,7 +155,7 @@ public class TeamService
 		//checar se tem chaveamento
 		//checar se o status é igual a 0 ou 3
 
-		if(await _bracketingService.Value.BracketingExists(championshipId) && 
+		if(await BracketingExists(championshipId) && 
 		(championship.Status == Enum.ChampionshipStatus.Active || championship.Status == Enum.ChampionshipStatus.Pendent) &&
 		championship.Deleted == false)
 		{
@@ -165,12 +164,14 @@ public class TeamService
 			
 			foreach (var match in matches)
 			{
-				await _matchService.Value.WoValidation(match.Id, teamId);
+				await _bracketingMatchService.WoValidation(match.Id, teamId);
 			}
 		}
 
 		await RemoveTeamFromChampionshipSend(teamId, championshipId);
 	}
+	public async Task<bool> BracketingExists(int championshipId)
+	=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM Matches WHERE championshipId = @championshipId)", new {championshipId});
 
 	private async Task RemoveTeamFromChampionshipSend(int teamId, int championshipId)
 		=> await _dbService.EditData("DELETE FROM championships_teams WHERE teamId = @teamId AND championshipId = @championshipId", new { teamId, championshipId });

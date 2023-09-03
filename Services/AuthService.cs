@@ -22,14 +22,15 @@ public class AuthService
 	private const string Index = "users";
 	private readonly OrganizerService _organizerService;
 	private const string INDEX = "championships";
-	private readonly Lazy<TeamService> _teamService;
-	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic) 
+	private readonly WoService _woService;
+	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic, WoService woService) 
 	{
 		_secretKey = secretKey;
 		_issuer = issuer;
 		_audience = audience;
 		_dbService = dbService;
 		_elastic = elastic;
+		_woService = woService;
 		// var championshipService = new ChampionshipService(_dbService, _elastic, this, backgroundJob, redisService, organizerService );
 		// _teamService = new Lazy<TeamService>(
 		// 	() => new TeamService(_dbService,
@@ -496,7 +497,7 @@ public class AuthService
 
 		if(user.TeamManagementId != 0)
 		{
-			// await _teamService.DeleteTeamValidation(user.TeamManagementId, userId);
+			await _woService.DeleteTeamValidation(user);
 		}
 		
 		await DeleteCurrentUserSend(userId);
