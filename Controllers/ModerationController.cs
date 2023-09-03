@@ -85,8 +85,10 @@ public class ModerationController : ApiBaseController
     public async Task<IActionResult> DeleteTeam(int id)
     {
         try
-        {        
+        {
+            Console.WriteLine("qual foi");        
             await _teamService.DeleteTeamValidation(id);
+            Console.WriteLine("chegou");
             return ApiOk(Resource2.TeamDeleted);
         }
         catch (ApplicationException ex)

@@ -242,6 +242,8 @@ public class TeamService
 
 	public async Task DeleteTeamValidation(int id)
 	{
+        Console.WriteLine("entrou");
+
 		var team = await GetByIdValidationAsync(id);
 		if (team is null)
 			throw new ApplicationException(Resource.TeamDoesNotExist);
@@ -253,6 +255,9 @@ public class TeamService
 
 		await DeleteTeamSend(id);
 		await UpdateUser(user);
+
+        Console.WriteLine("aqui");
+
 
 		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
 
