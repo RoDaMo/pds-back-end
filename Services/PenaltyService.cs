@@ -206,22 +206,101 @@ public class PenaltyService
 			penalty);
     private async Task<List<Penalty>> GetPenaltiesByTeamIdAndMatchId(int teamId, int matchId)
         => await _dbService.GetAll<Penalty>("SELECT * FROM penalties WHERE TeamId = @teamId AND MatchId = @matchId;", new {teamId, matchId});
+    // private async Task<int> DefineWinner(int teamId, int matchId)
+    // {
+    //     var id = await _dbService.EditData("UPDATE matches SET Winner = @teamId WHERE id = @matchId returning id", new {teamId, matchId});
+    //     var match = await GetMatchById(matchId);
+    //     if(await CheckIfMatchesOfCurrentPhaseHaveEnded(match.ChampionshipId, match.Phase) && match.Phase != Phase.Finals)
+    //     {
+    //         var matches = await _dbService.GetAll<Match>("SELECT * from matches WHERE ChampionshipId = @championshipId AND Phase = @phase", new {match.ChampionshipId, match.Phase});
+    //         var newPhase = match.Phase + 1;
+    //         for (int i = 0; i <= matches.Count() / 2; i = i + 2)
+    //         {
+    //             var newMatch = new Match(match.ChampionshipId, matches[i].Winner, matches[i+1].Winner, newPhase);
+    //             await CreateMatchSend(newMatch);
+    //         }
+
+    //     }
+    //     return id;
+    // }
     private async Task<int> DefineWinner(int teamId, int matchId)
     {
-        var id = await _dbService.EditData("UPDATE matches SET Winner = @teamId WHERE id = @matchId returning id", new {teamId, matchId});
-        var match = await GetMatchById(matchId);
-        if(await CheckIfMatchesOfCurrentPhaseHaveEnded(match.ChampionshipId, match.Phase) && match.Phase != Phase.Finals)
+        var id = await UpdateMatchToDefineWinner(teamId, matchId);
+        var match2 = await GetMatchById(matchId);
+        var championship2 = await GetChampionshipByMatchId(matchId);
+        if(await CheckIfMatchesOfCurrentPhaseHaveEnded(match2.ChampionshipId, match2.Phase) && match2.Phase != Phase.Finals)
         {
-            var matches = await _dbService.GetAll<Match>("SELECT * from matches WHERE ChampionshipId = @championshipId AND Phase = @phase", new {match.ChampionshipId, match.Phase});
-            var newPhase = match.Phase + 1;
-            for (int i = 0; i <= matches.Count() / 2; i = i + 2)
-            {
-                var newMatch = new Match(match.ChampionshipId, matches[i].Winner, matches[i+1].Winner, newPhase);
-                await CreateMatchSend(newMatch);
+            var newPhase = match2.Phase + 1;
+
+            if((newPhase != Phase.Finals && championship2.DoubleMatchEliminations) || (newPhase == Phase.Finals && championship2.FinalDoubleMatch))
+		    {
+                var winners = await GetWinners(championship2, match2.Phase); 
+                for (int i = 0; i <= winners.Count()-2; i = i + 2)
+                {
+                    var newMatch = new Match(match2.ChampionshipId, winners[i], winners[i+1], newPhase);
+                    var previousMatch = await CreateMatchSend(newMatch);
+                    var newMatch2 = new Match(match2.ChampionshipId, winners[i+1],  winners[i], newPhase, previousMatch.Id);
+                    await CreateMatchSend2(newMatch2);
+                }
             }
 
+            else
+            {
+                var winners = await GetWinners(championship2, match2.Phase); 
+                for (int i = 0; i <= winners.Count()-2; i = i + 2)
+                {
+                    var newMatch = new Match(match2.ChampionshipId, winners[i], winners[i+1], newPhase);
+                    await CreateMatchSend(newMatch);
+                }
+            }
         }
         return id;
+    }
+    private async Task<Match> CreateMatchSend2(Match match)
+	{
+		var id = await _dbService.EditData(
+			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase, Round, PreviousMatch) VALUES(@ChampionshipId, @Home, @Visitor, @Phase, @Round, @PreviousMatch) returning id", match
+			);
+		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
+	}
+    private async Task<List<int>> GetWinners(Championship championship, Phase phase)
+    {
+        var winners = new List<int>();
+        var aux = 1;
+        var matches = await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Id", new {championship.Id, phase});
+        if((championship.DoubleMatchEliminations && phase != Phase.Finals) || (championship.FinalDoubleMatch && phase == Phase.Finals))
+            aux = 2;
+
+        for (int i = 0; i < matches.Count(); i = i + aux)
+        {
+            var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Visitor);
+            var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Home);
+            if(aggregateVisitorPoints > aggregateHomePoints)
+            {
+                winners.Add(matches[i].Visitor);
+            }
+            else if(aggregateVisitorPoints < aggregateHomePoints)
+            {
+                winners.Add(matches[i].Home);
+            }
+            else
+            {
+                winners.Add(matches[i].Winner);
+            }
+        }
+        return winners;
+    }
+    private async Task<int> UpdateMatchToDefineWinner(int teamId, int matchId)
+    {
+        if(teamId == 0)
+        {
+            return await _dbService.EditData("UPDATE matches SET Tied = true WHERE id = @matchId returning id", new {teamId, matchId});
+        }
+        return await _dbService.EditData("UPDATE matches SET Winner = @teamId WHERE id = @matchId returning id", new {teamId, matchId});
+    }
+    private async Task UpdateMatchToDefineTie(int matchId)
+    {
+        await _dbService.EditData("UPDATE matches SET Tied = true WHERE Id = @matchId", new {matchId});
     }
     private async Task<bool> CheckIfMatchesOfCurrentPhaseHaveEnded(int championshipId, Phase phase)
     {
