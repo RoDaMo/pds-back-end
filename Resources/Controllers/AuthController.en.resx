@@ -154,7 +154,7 @@
     <value>User deleted successfully</value>
   </data>
   <data name="AddCpfCPFVinculadoComSucesso" xml:space="preserve">
-    <value>CPF linked successfully</value>
+    <value>{0} linked successfully</value>
   </data>
   <data name="ForgotPasswordRedefinicaoSenha" xml:space="preserve">
     <value>Password reset request made.</value>

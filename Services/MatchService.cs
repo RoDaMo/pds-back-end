@@ -782,9 +782,8 @@ public class MatchService
             @"SELECT COUNT(g.Id)
             FROM Goals g
             JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND 
-            (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            WHERE m.ChampionshipId = @championshipId AND (m.Visitor = @teamId OR m.Home = @teamId) AND
+            ((g.TeamId = @teamId AND g.OwnGoal = false) OR (g.TeamId <> @teamId AND g.OwnGoal = true))",
             new { championshipId, teamId });
     private async Task<int> HeadToHeadWins(int teamId1, int teamId2, int championshipId)
         => await _dbService.GetAsync<int>(
@@ -1374,9 +1373,13 @@ public class MatchService
             matchDTO.HomeEmblem = home.Emblem;
             matchDTO.HomeName = home.Name;
             matchDTO.HomeId = home.Id;
+            matchDTO.HomeUniformHome = home.UniformHome;
+            matchDTO.HomeUniformAway = home.UniformAway;
             matchDTO.HomeGoals = await GetPointsFromTeamById(match.Id, match.Home);
             matchDTO.VisitorEmblem = visitor.Emblem;
             matchDTO.VisitorName = visitor.Name;
+            matchDTO.VisitorUniformHome = visitor.UniformHome;
+            matchDTO.VisitorUniformAway = visitor.UniformAway;
             matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
             matchDTO.VisitorId = visitor.Id;
             matchDTO.Cep = match.Cep;
@@ -1386,6 +1389,7 @@ public class MatchService
             matchDTO.MatchReport = match.MatchReport;
             matchDTO.Arbitrator = match.Arbitrator;
             matchDTO.Date = match.Date;
+            matchDTO.Penalties = match.Penalties;
             matchDTO.ChampionshipId = match.ChampionshipId;
             matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
 			return matchDTO;
@@ -1865,9 +1869,10 @@ public class MatchService
                     PlayerId = (foul.PlayerId == Guid.Empty) ? foul.PlayerTempId : foul.PlayerId,
                     Minutes = foul.Minutes,
                     YellowCard = foul.YellowCard,
+                    TeamId = teamId,
                     Goal = false,
                     Foul = true,
-                    Penalty = false,
+                    Penalty = false
                 };
                 events.Add(foulEvent);
             }
@@ -1928,7 +1933,7 @@ public class MatchService
     private async Task<List<Goal>> GetAllGoalsByMatchId(int matchId)
         => await _dbService.GetAll<Goal>("SELECT * FROM Goals WHERE MatchId = @matchId", new {matchId});
     private async Task<List<Foul>> GetAllFoulsByMatcId(int matchId)
-        => await _dbService.GetAll<Foul>("SELECT * FROM Fouls WHERE MatchId = @matchId", new {matchId});
+        => await _dbService.GetAll<Foul>("SELECT * FROM Fouls WHERE MatchId = @matchId ORDER BY Id DESC", new {matchId});
     private async Task<List<Penalty>> GetAllPenaltiesByMatchId(int matchId)
         => await _dbService.GetAll<Penalty>("SELECT * FROM Penalties WHERE MatchId = @matchId ORDER BY Id", new {matchId});
     private async Task<PlayerTempProfile> GetTempById(Guid id)
@@ -1964,6 +1969,7 @@ public class MatchService
                 throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
             
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
+            await _dbService.EditData("DELETE FROM Fouls WHERE MatchId = @matchId", new {matchId = match.Id});
 
             if(string.IsNullOrWhiteSpace(player.Username))
             {
@@ -2122,6 +2128,54 @@ public class MatchService
 			goal);
         }
         return id;
+    }
+
+    public async Task ActivePenaltiesValidationAsync(int matchId)
+    {
+        var match = await GetMatchById(matchId);
+        var championship = await GetChampionshipByMatchId(matchId);
+
+        if(match is null)
+            throw new ApplicationException("Partida passada não existe");
+
+        if(championship.SportsId == Sports.Volleyball)
+            throw new ApplicationException("Vôlei não apresenta disputa de pênaltis");
+        
+        if(championship.Format == Format.LeagueSystem)
+            throw new ApplicationException("Esse formato de campeonato não apresenta disputa de pênaltis");
+        
+        if(championship.Format == Format.GroupStage && match.Round != 0)
+            throw new ApplicationException("Fase atual do campeonato não apresenta disputa de pênaltis");
+
+        if(match.Phase != Phase.Finals && championship.DoubleMatchEliminations ||
+            match.Phase == Phase.Finals && championship.FinalDoubleMatch)
+        {
+            var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Visitor);
+            var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Home);
+            if(match.PreviousMatch == 0)
+            {
+                throw new ApplicationException("Primeira partida não pode apresentar disputa de pênaltis");
+            }
+            else if(await CheckIfFirstMatchHasNotFinished(match.PreviousMatch))
+            {
+               throw new ApplicationException("Primeira partida ainda não foi finalizada");
+            }
+            else if(aggregateHomePoints != aggregateVisitorPoints)
+            {
+                throw new ApplicationException("Partida precisa estar empatada para iniciar a disputa de pênaltis");
+            }
+        }
+
+        else
+        {
+            var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
+            var homePoints = await GetPointsFromTeamById(matchId, match.Home);
+
+            if(visitorPoints != homePoints)
+                throw new ApplicationException("Partida precisa estar empatada para iniciar a disputa de pênaltis");
+        }
+        
+        await _dbService.EditData("UPDATE Matches SET Penalties = true WHERE id=@matchId", new {matchId});
     }
       
 }

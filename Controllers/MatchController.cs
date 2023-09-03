@@ -671,4 +671,47 @@ public class MatchController : ApiBaseController
             return ApiBadRequest(ex.Message);
         }  
     }
+
+    ///<summary>
+    /// Usado para iniciar as cobranças de pênaltis da partida.
+	/// </summary>
+    /// <param name="matchId"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /matches/{matchId}/penalties
+	///		
+	/// </remarks>
+	/// <response code="200">Inicia as cobranças de pênaltis da partida</response>
+	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
+    [HttpPut]
+    [Authorize]
+    [Route("/matches/{matchId:int}/penalties")]
+    public async Task<IActionResult> Penalties(int matchId)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            await _matchService.ActivePenaltiesValidationAsync(matchId);
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }   
+    }
 }

@@ -60,7 +60,7 @@ namespace PlayOffsApi.Resources.Controllers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to CPF vinculado com sucesso.
+        ///   Looks up a localized string similar to {0} vinculado com sucesso.
         /// </summary>
         public static string AddCpfCPFVinculadoComSucesso {
             get {

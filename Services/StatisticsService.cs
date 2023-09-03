@@ -214,9 +214,8 @@ public class StatisticsService
             @"SELECT COUNT(g.Id)
             FROM Goals g
             JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND 
-            (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            WHERE m.ChampionshipId = @championshipId AND (m.Visitor = @teamId OR m.Home = @teamId) AND
+            ((g.TeamId = @teamId AND g.OwnGoal = false) OR (g.TeamId <> @teamId AND g.OwnGoal = true))",
             new { championshipId, teamId });
     private async Task<int> AmountOfMatches(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
@@ -614,9 +613,10 @@ public class StatisticsService
         var strikers = new List<StrikerDTO>();
         
         var players = await _dbService.GetAll<PlayerGoalsSummaryDTO>(
-                @"SELECT COALESCE(PlayerId, PlayerTempId) AS PlayerIdOrTempId, COUNT(*) AS Goals
-                FROM goals
-                WHERE OwnGoal = false
+                @"SELECT COALESCE(g.PlayerId, g.PlayerTempId) AS PlayerIdOrTempId, COUNT(*) AS Goals
+                FROM goals g
+                JOIN Matches m ON g.MatchId = m.Id
+                WHERE g.OwnGoal = false AND m.ChampionshipId = @championshipId
                 GROUP BY COALESCE(PlayerId, PlayerTempId)
                 ORDER BY Goals DESC
                 LIMIT 15;", 

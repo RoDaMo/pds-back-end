@@ -365,7 +365,7 @@ public class BracketingService
 	private async Task DeleteClassificationsByChampionshipId(int championshipId)
 		=> await _dbService.EditData("DELETE FROM Classifications WHERE ChampionshipId = @championshipId", new {championshipId});
 	private async Task<Championship> GetByIdSend(int id) 
-			=> await _dbService.GetAsync<Championship>("SELECT format, status, teamquantity, numberofplayers, DoubleMatchGroupStage, DoubleMatchEliminations, DoubleStartLeagueSystem, FinalDoubleMatch FROM championships WHERE id = @id", new { id });
+			=> await _dbService.GetAsync<Championship>("SELECT format, status, teamquantity, DoubleMatchGroupStage, DoubleMatchEliminations, DoubleStartLeagueSystem, FinalDoubleMatch FROM championships WHERE id = @id", new { id });
 	public async Task<bool> BracketingExists(int championshipId)
 	=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM Matches WHERE championshipId = @championshipId)", new {championshipId});	
 }

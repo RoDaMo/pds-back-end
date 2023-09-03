@@ -146,7 +146,7 @@
     <value>Erro</value>
   </data>
   <data name="AddCpfCPFVinculadoComSucesso" xml:space="preserve">
-    <value>CPF vinculado com sucesso</value>
+    <value>{0} vinculado com sucesso</value>
   </data>
   <data name="GetByIdUsuarioNaoExiste" xml:space="preserve">
     <value>Usuário não existe</value>

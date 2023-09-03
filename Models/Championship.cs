@@ -33,7 +33,6 @@ public class Championship
 	public Format Format { get; set; }
 	public Guid OrganizerId { get; set; }
 	public User Organizer { get; set; }
-	public int NumberOfPlayers { get; set; }
 	public bool Deleted { get; set; }
 	public List<Team> Teams { get; set; }
 	
