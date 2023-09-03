@@ -8,7 +8,7 @@ public class MatchValidator : AbstractValidator<Match>
     public MatchValidator()
     {
         RuleFor(m => m.Date)
-            .Must(date => date >= DateTime.UtcNow)
+            .Must(date => date.ToUniversalTime() >= DateTime.UtcNow)
             .WithMessage("A data não pode ser anterior à data de hoje.")
             .When(date => date is not null);
         RuleFor(m => m.Arbitrator)
