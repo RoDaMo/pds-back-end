@@ -73,7 +73,7 @@ public class TeamService
 
 	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NOT NULL);", new {userId});
 
-	private async Task UpdateUser(Guid userId, int teamId)
+	private async Task UpdateUser(Guid userId, int? teamId)
 	{
 		await _dbService.EditData("UPDATE users SET teammanagementid = @teamId  WHERE id = @userid;", new { teamId, userId });
 	}
@@ -190,7 +190,7 @@ public class TeamService
 			throw new ApplicationException(Resource.TeamAlreadyDeleted);
 
 		await DeleteTeamSend(id);
-		await UpdateUser(userId, id);
+		await UpdateUser(userId, null);
 	}
 
 	private async Task DeleteTeamSend(int id) => await _dbService.EditData("UPDATE teams SET deleted = true WHERE id = @id", new { id });
