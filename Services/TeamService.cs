@@ -34,7 +34,7 @@ public class TeamService
 		var teamValidator = new TeamValidator();
 
 		var result = await teamValidator.ValidateAsync(teamDto);
-		if (!await _authService.UserHasCpfValidationAsync(userId))
+		if (!await _authService.UserHasCpfValidationAsync(userId) || !await _authService.UserHasCnpjValidationAsync(userId))
 			throw new ApplicationException(Resource.CreateValidationAsyncCpfNeeded);
 		
 		if (!result.IsValid)
@@ -79,7 +79,7 @@ public class TeamService
 
 	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
 
-	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NOT NULL OR TeamManagementId <> 0);", new {userId});
+	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND (TeamManagementId IS NOT NULL OR TeamManagementId <> 0));", new {userId});
 
 	private async Task UpdateUser(User user)
 	{

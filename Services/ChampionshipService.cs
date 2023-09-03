@@ -42,7 +42,7 @@ public class ChampionshipService
 			return errorMessages;
 		}
 
-		if (!await _authService.UserHasCpfValidationAsync(championship.Organizer.Id))
+		if (!await _authService.UserHasCpfValidationAsync(championship.Organizer.Id) || !await _authService.UserHasCnpjValidationAsync(championship.Organizer.Id))
 			throw new ApplicationException(Resource.CreateValidationAsyncCpfNotNull);
 
 		championship.Status = ChampionshipStatus.Pendent;
