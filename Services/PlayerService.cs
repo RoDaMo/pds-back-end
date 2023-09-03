@@ -135,10 +135,10 @@ public class PlayerService
 
 			if (tempPlayer.IsCaptain)
 			{
-				await _playerTempProfileService.RemoveCaptainByTeamId(tempPlayer.TeamsId);
+				await RemoveCaptainByTeamId(tempPlayer.TeamsId);
 				return new();
 			}
-			await _playerTempProfileService.RemoveCaptainByTeamId(tempPlayer.TeamsId);
+			await RemoveCaptainByTeamId(tempPlayer.TeamsId);
 			await _playerTempProfileService.MakePlayerCaptain(tempPlayer.Id);
 			return new();
 		}
