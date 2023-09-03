@@ -167,7 +167,7 @@ public class TeamService
 			
 			foreach (var match in matches)
 			{
-				await _bracketingMatchService.WoValidation(match.Id, teamId);
+				await _bracketingMatchService.WoValidation(match.Id, match.Visitor == teamId ? match.Home : match.Visitor);
 			}
 		}
 
@@ -259,15 +259,13 @@ public class TeamService
 		if (team.Deleted)
 			throw new ApplicationException(Resource.TeamAlreadyDeleted);
 
-
-
 		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
 
 		foreach (var championshipId in championshipsId)
 		{
 			await RemoveTeamFromChampionshipValidation(team.Id, championshipId);
 		}
-		
+
 		await UpdateUser(user);
 		await RemoveTeamOfAllPlayerTempProfiled(team.Id);
 		await RemoveTeamOfAllUsers(team.Id);
