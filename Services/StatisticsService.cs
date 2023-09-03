@@ -231,7 +231,7 @@ public class StatisticsService
             WHERE (Visitor = @teamId OR Home = @teamId) AND 
             ChampionshipId = @championshipId AND
             (Winner IS NOT NULL OR Tied = TRUE)
-            ORDER BY Date DESC
+            ORDER BY Id DESC
             LIMIT 3", 
             new {teamId, championshipId});
         var matchesDTO = new List<MatchDTO>();
