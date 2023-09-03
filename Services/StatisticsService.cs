@@ -214,9 +214,8 @@ public class StatisticsService
             @"SELECT COUNT(g.Id)
             FROM Goals g
             JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND 
-            (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            WHERE m.ChampionshipId = @championshipId AND (m.Visitor = @teamId OR m.Home = @teamId) AND
+            ((g.TeamId = @teamId AND g.OwnGoal = false) OR (g.TeamId <> @teamId AND g.OwnGoal = true))",
             new { championshipId, teamId });
     private async Task<int> AmountOfMatches(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
