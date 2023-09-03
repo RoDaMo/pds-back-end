@@ -154,10 +154,6 @@ public class TeamService
 		
 		var championship = await _championshipService.GetByIdValidation(championshipId);
 
-		//WO
-		//checar se tem chaveamento
-		//checar se o status é igual a 0 ou 3
-
 		if(await BracketingExists(championshipId) && 
 		(championship.Status == Enum.ChampionshipStatus.Active || championship.Status == Enum.ChampionshipStatus.Pendent) &&
 		championship.Deleted == false)
@@ -167,7 +163,8 @@ public class TeamService
 			
 			foreach (var match in matches)
 			{
-				await _bracketingMatchService.WoValidation(match.Id, match.Visitor == teamId ? match.Home : match.Visitor);
+				if(match.Winner == 0 && !match.Tied)
+					await _bracketingMatchService.WoValidation(match.Id, match.Visitor == teamId ? match.Home : match.Visitor);
 			}
 		}
 
@@ -248,8 +245,6 @@ public class TeamService
 
 	public async Task DeleteTeamValidation(int id)
 	{
-        Console.WriteLine("entrou");
-
 		var team = await GetByIdValidationAsync(id);
 		if (team is null)
 			throw new ApplicationException(Resource.TeamDoesNotExist);
