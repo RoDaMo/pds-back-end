@@ -1108,35 +1108,35 @@ public class MatchService
     {
         var match = await GetMatchById(matchId);
         var championship = await GetChampionshipByMatchId(matchId);
-        if(match is null)
-        {
-            throw new ApplicationException("Partida passada não existe.");
-        }
-        if(await DepartureDateNotSet(matchId))
-        {
-            throw new ApplicationException("Data da partida não definida.");
-        }
-        if(match.Date.ToUniversalTime() >= DateTime.UtcNow)
-        {
-            throw new ApplicationException("Partida ainda não inciou");
-        }
-        if(match.Winner != 0)
-        {
-            throw new ApplicationException("Partida já possui um vencedor.");
-        }
-        if(match.Tied)
-        {
-            throw new ApplicationException("Partida já terminou em empate.");
-        }
+        // if(match is null)
+        // {
+        //     throw new ApplicationException("Partida passada não existe.");
+        // }
+        // if(await DepartureDateNotSet(matchId))
+        // {
+        //     throw new ApplicationException("Data da partida não definida.");
+        // }
+        // if(match.Date.ToUniversalTime() >= DateTime.UtcNow)
+        // {
+        //     throw new ApplicationException("Partida ainda não inciou");
+        // }
+        // if(match.Winner != 0)
+        // {
+        //     throw new ApplicationException("Partida já possui um vencedor.");
+        // }
+        // if(match.Tied)
+        // {
+        //     throw new ApplicationException("Partida já terminou em empate.");
+        // }
 
-        if(match.HomeUniform is null || match.VisitorUniform is null)
-            throw new ApplicationException("É necessário definir os uniformes das equipes antes");
+        // if(match.HomeUniform is null || match.VisitorUniform is null)
+        //     throw new ApplicationException("É necessário definir os uniformes das equipes antes");
         
-        if (match.Road is null)
-            throw new ApplicationException("É necessário definir o local da partida antes antes");
+        // if (match.Road is null)
+        //     throw new ApplicationException("É necessário definir o local da partida antes antes");
         
-        if(await CheckIfLastMatchHasEnded(match))
-            throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
+        // if(await CheckIfLastMatchHasEnded(match))
+        //     throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
 
         var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
         var homePoints = await GetPointsFromTeamById(matchId, match.Home);
@@ -1958,10 +1958,10 @@ public class MatchService
 
         if(match.Round != 0 && championship.Format == Format.GroupStage)
         {
-            if(match.Tied)
-                throw new ApplicationException("Partida já terminou em empate.");
-            if(await CheckIfLastMatchHasEnded(match))
-                throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
+            // if(match.Tied)
+            //     throw new ApplicationException("Partida já terminou em empate.");
+            // if(await CheckIfLastMatchHasEnded(match))
+            //     throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
             
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
 

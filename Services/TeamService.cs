@@ -259,10 +259,6 @@ public class TeamService
 		if (team.Deleted)
 			throw new ApplicationException(Resource.TeamAlreadyDeleted);
 
-		await DeleteTeamSend(id);
-		await UpdateUser(user);
-
-        Console.WriteLine("aqui");
 
 
 		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
@@ -271,9 +267,12 @@ public class TeamService
 		{
 			await RemoveTeamFromChampionshipValidation(team.Id, championshipId);
 		}
-
+		
+		await UpdateUser(user);
 		await RemoveTeamOfAllPlayerTempProfiled(team.Id);
 		await RemoveTeamOfAllUsers(team.Id);
+		await DeleteTeamSend(id);
+		await _elasticService._client.IndexAsync(team, INDEX);
 	}
 	private async Task RemoveTeamOfAllPlayerTempProfiled(int teamId) 
 		=> await _dbService.EditData("UPDATE PlayerTempProfiles SET TeamsId = null WHERE TeamsId = @teamId", new {teamId});
