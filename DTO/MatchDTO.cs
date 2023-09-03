@@ -29,6 +29,7 @@ public class MatchDTO
     public string HomeUniformAway { get; set; }
     public string VisitorUniformHome { get; set; }
     public string VisitorUniformAway { get; set; }
+    public bool Penalties { get; set; }
 
     public MatchDTO()
     {

@@ -23,6 +23,7 @@ public class Match
     public string Road { get; set; }
     public int Number { get; set; }
     public string MatchReport { get; set; }
+    public bool Penalties { get; set; }
 
     public Match(int championshipId, int home, int visitor, Phase phase)
     {
