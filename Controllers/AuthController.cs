@@ -661,7 +661,7 @@ public class AuthController : ApiBaseController
 			if (user.ChampionshipId != 0)
 				await _organizerService.DeleteValidation(new() { ChampionshipId = user.ChampionshipId, OrganizerId = user.Id });
 
-			await _authService.DeleteCurrentUserValidation(userId);
+			await _authService.DeleteCurrentUserValidation(user);
 			
 			Response.Cookies.Delete("playoffs-token");
 			Response.Cookies.Delete("playoffs-refresh-token");

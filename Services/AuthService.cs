@@ -477,9 +477,9 @@ public class AuthService
 	private async Task AddCpfUserSend(User user) 
 		=> await _dbService.EditData("UPDATE users SET cpf = @cpf WHERE id = @id", user);
 
-	public async Task<User> DeleteCurrentUserValidation(Guid userId)
+	public async Task<User> DeleteCurrentUserValidation(User user)
 	{
-		var user = await GetUserByIdAsync(userId);
+		// var user = await GetUserByIdAsync(userId);
 
 		if (user is null)
 			throw new ApplicationException("Esse usuário não existe");
@@ -490,7 +490,7 @@ public class AuthService
 			await DeleteValidation(championship);
 		}
 
-		await DeleteCurrentUserSend(userId);
+		await DeleteCurrentUserSend(user.Id);
 		return user;
 	}
 	public async Task DeleteValidation(Championship championship)

@@ -126,7 +126,7 @@ public class ModerationController : ApiBaseController
 				await _woService.DeleteTeamValidation(user.TeamManagementId, user.Id);
             if (user.ChampionshipId != 0)
 				await _organizerService.DeleteValidation(new() { ChampionshipId = user.ChampionshipId, OrganizerId = user.Id });
-            await _authService.DeleteCurrentUserValidation(id);
+            await _authService.DeleteCurrentUserValidation(user);
 	            
             return ApiOk(Resource3.DeleteUsuarioExcluidoComSucesso);
         }
