@@ -114,7 +114,7 @@ public class AuthService
 		var result2 = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorEmail"));
 
 		if (result.IsValid || result2.IsValid)
-			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE username = @Username OR email = @Email", user);
+			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE (username = @Username OR email = @Email) AND Deleted = false ", user);
 
 		throw new ApplicationException(Resource.InvalidUsername);
 	}
