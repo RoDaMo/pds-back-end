@@ -79,7 +79,7 @@ public class TeamService
 
 	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
 
-	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND TeamManagementId IS NOT NULL OR TeamManagementId <> 0);", new {userId});
+	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND (TeamManagementId IS NOT NULL OR TeamManagementId <> 0));", new {userId});
 
 	private async Task UpdateUser(User user)
 	{
