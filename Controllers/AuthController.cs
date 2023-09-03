@@ -653,7 +653,10 @@ public class AuthController : ApiBaseController
 		try
 		{
 			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-			await _authService.DeleteCurrentUserValidation(userId);
+			var user = await _authService.DeleteCurrentUserValidation(userId);
+			if (user.ChampionshipId != 0)
+				await _organizerService.DeleteValidation(new() { ChampionshipId = user.ChampionshipId, OrganizerId = user.Id });
+			
 			Response.Cookies.Delete("playoffs-token");
 			Response.Cookies.Delete("playoffs-refresh-token");
 			

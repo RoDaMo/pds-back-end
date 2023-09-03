@@ -5,21 +5,13 @@ namespace PlayOffsApi.Services;
 public class WoService
 {
     private readonly TeamService _teamService;
-    private readonly AuthService _authService;
-    private readonly ChampionshipService _championshipService;
-    private readonly BracketingMatchService _bracketingMatchService;
-    public WoService(DbService dbService, ElasticService elasticService, string secretKey, string issuer, string audience, 
-    RedisService redisService, OrganizerService organizerService, IBackgroundJobsService backgroundJobs)
+    public WoService(TeamService teamService)
     {
-        _authService = new AuthService(secretKey, issuer, audience, dbService, elasticService, this);
-        _championshipService = new ChampionshipService(dbService, elasticService, _authService, backgroundJobs, redisService, organizerService);
-        _bracketingMatchService = new BracketingMatchService(dbService);
-        _teamService = new TeamService(dbService, elasticService, _authService, _championshipService, _bracketingMatchService);
+        _teamService = teamService;
     }
 
-    public async Task DeleteTeamValidation(User user)
+    public async Task DeleteTeamValidation(int teamId, Guid userId)
     {
-        await _teamService.DeleteTeamValidation(user.TeamManagementId, user.Id);
+        await _teamService.DeleteTeamValidation(teamId, userId);
     }
-    
 }

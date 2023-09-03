@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PlayOffsApi.API;
-using PlayOffsApi.Resources.Services;
+// using PlayOffsApi.Resources.Services;
 using PlayOffsApi.Services;
 using Resource = PlayOffsApi.Resources.Championship;
 using Resource2 = PlayOffsApi.Resources.Controllers.TeamController;
@@ -18,20 +18,24 @@ namespace PlayOffsApi.Controllers;
 [Authorize(Roles = "admin")]
 public class ModerationController : ApiBaseController
 {
-    private readonly Services.ChampionshipService _championshipService;
-    private readonly Services.TeamService _teamService;
-    private readonly Services.AuthService _authService;
+    private readonly ChampionshipService _championshipService;
+    private readonly TeamService _teamService;
+    private readonly AuthService _authService;
     private readonly ErrorLogService _error;
-    private readonly Services.PlayerTempProfileService _playerTempService;
+    private readonly PlayerTempProfileService _playerTempService;
+    private readonly WoService _woService;
+    private readonly OrganizerService _organizerService;
     /// <inheritdoc />
     
-    public ModerationController(Services.ChampionshipService championshipService, ErrorLogService error, 
-    Services.TeamService teamService, Services.AuthService authService, Services.PlayerTempProfileService playerTempService)
+    public ModerationController(ChampionshipService championshipService, ErrorLogService error, TeamService teamService, AuthService authService, PlayerTempProfileService playerTempService, WoService woService, OrganizerService organizerService)
     {
-        _championshipService = championshipService;
-        _teamService = teamService;
-        _authService = authService;
-         _playerTempService = playerTempService;
+		_championshipService = championshipService;
+		_error = error;
+		_teamService = teamService;
+		_authService = authService;
+		_playerTempService = playerTempService;
+		_woService = woService;
+		_organizerService = organizerService;
     }
 
     /// <summary>
@@ -86,9 +90,7 @@ public class ModerationController : ApiBaseController
     {
         try
         {
-            Console.WriteLine("qual foi");        
             await _teamService.DeleteTeamValidation(id);
-            Console.WriteLine("chegou");
             return ApiOk(Resource2.TeamDeleted);
         }
         catch (ApplicationException ex)
@@ -114,17 +116,24 @@ public class ModerationController : ApiBaseController
 	/// </returns>
     [HttpDelete]
     [Route("/moderation/users/{id:guid}")]
+    [AllowAnonymous]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
         try
-        {        
+        {
+	        var user = await _authService.GetUserByIdAsync(id);
+            if (user.TeamManagementId != 0)
+				await _woService.DeleteTeamValidation(user.TeamManagementId, user.Id);
+            if (user.ChampionshipId != 0)
+				await _organizerService.DeleteValidation(new() { ChampionshipId = user.ChampionshipId, OrganizerId = user.Id });
             await _authService.DeleteCurrentUserValidation(id);
+	            
             return ApiOk(Resource3.DeleteUsuarioExcluidoComSucesso);
         }
         catch (ApplicationException ex)
         {
             await _error.HandleExceptionValidationAsync(HttpContext, ex);
-            return ApiBadRequest(Resource3.DeleteHouveErroExcluirUsuario);
+            return ApiBadRequest(ex.Message);
         }
     }
 

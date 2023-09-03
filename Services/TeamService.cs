@@ -70,6 +70,9 @@ public class TeamService
 	public async Task<Team> GetByIdValidationAsync(int id)
 	{
 		var team = await GetByIdSendAsync(id);
+		if (team is null)
+			return null;
+		
 		team.Technician = await GetTechnicianFromTeam(team.Id);
 		return team;
 	}
@@ -218,19 +221,16 @@ public class TeamService
 			throw new ApplicationException(Resource.TeamDoesNotExist);
 
 		var user = await _authService.GetUserByIdAsync(userId);
+		if (user is null)
+			throw new ApplicationException("Usuário não existe");
+		
 		if (user.TeamManagementId != team.Id)
 			throw new ApplicationException(Resource.UserNotAllowedToDelete);
 
 		if (team.Deleted)
 			throw new ApplicationException(Resource.TeamAlreadyDeleted);
 
-		await DeleteTeamSend(id);
-		await UpdateUser(user);
-		
-		team.Deleted = true;
-		var result = await _elasticService._client.IndexAsync(team, INDEX);
 		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
-
 		foreach (var championshipId in championshipsId)
 		{
 			await RemoveTeamFromChampionshipValidation(team.Id, championshipId);
@@ -238,6 +238,12 @@ public class TeamService
 		
 		await RemoveTeamOfAllPlayerTempProfiled(team.Id);
 		await RemoveTeamOfAllUsers(team.Id);
+		await DeleteTeamSend(id);
+		await UpdateUser(user);
+		
+		team.Deleted = true;
+		var result = await _elasticService._client.IndexAsync(team, INDEX);
+
 	}
 
 	public async Task DeleteTeamValidation(int id)
@@ -287,7 +293,7 @@ public class TeamService
 	private async Task<List<int>> GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(int teamId) 
 		=> await _dbService.GetAll<int>(
 			@"SELECT ChampionshipId FROM championships_teams ct
-			JOIN Championships c ON ct.ChampionshipId = c.ChampionshipId
+			JOIN Championships c ON ct.ChampionshipId = c.Id
 			WHERE ct.TeamId = @teamId AND (c.Status = 0 OR c.Status = 3) AND c.Deleted <> true", 
 			new {teamId});
 

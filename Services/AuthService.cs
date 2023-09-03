@@ -20,24 +20,15 @@ public class AuthService
 	private readonly DbService _dbService;
 	private readonly ElasticService _elastic;
 	private const string Index = "users";
-	private readonly OrganizerService _organizerService;
 	private const string INDEX = "championships";
-	private readonly WoService _woService;
-	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic, WoService woService) 
+
+	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic) 
 	{
 		_secretKey = secretKey;
 		_issuer = issuer;
 		_audience = audience;
 		_dbService = dbService;
 		_elastic = elastic;
-		_woService = woService;
-		// var championshipService = new ChampionshipService(_dbService, _elastic, this, backgroundJob, redisService, organizerService );
-		// _teamService = new Lazy<TeamService>(
-		// 	() => new TeamService(_dbService,
-		// 	_elastic, 
-		// 	this, 
-		// 	championshipService
-		// 	));
 	}
 
 	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate, string role = "user")
@@ -150,9 +141,10 @@ public class AuthService
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
 		=> await _dbService.GetAsync<User>(
-			@"SELECT * FROM users WHERE id = @Id AND deleted = false
+			@"
+			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username, championshipid, teammanagementid FROM users WHERE id = @Id AND deleted = false
 			UNION ALL
-			SELECT  id, name, artisticname, number, email, teamsid as playerteamid, playerposition, iscaptain, picture, null as username FROM playertempprofiles WHERE id = @Id", 
+			SELECT  id, name, artisticname, number, email, teamsid as playerteamid, playerposition, iscaptain, picture, null as username, null as championshipId, null as teammanagementid FROM playertempprofiles WHERE id = @Id", 
 			new User { Id = userId });
 
 	public async Task SendEmailToConfirmAccount(Guid userId)
@@ -485,29 +477,32 @@ public class AuthService
 	private async Task AddCpfUserSend(User user) 
 		=> await _dbService.EditData("UPDATE users SET cpf = @cpf WHERE id = @id", user);
 
-	public async Task DeleteCurrentUserValidation(Guid userId)
+	public async Task<User> DeleteCurrentUserValidation(Guid userId)
 	{
 		var user = await GetUserByIdAsync(userId);
 
+		if (user is null)
+			throw new ApplicationException("Esse usuário não existe");
+		
 		if(user.ChampionshipId != 0)
 		{
 			var championship = await _dbService.GetAsync<Championship>("SELECT * FROM Championships WHERE Id = @id", new {id = user.ChampionshipId});
 			await DeleteValidation(championship);
 		}
 
-		if(user.TeamManagementId != 0)
-		{
-			await _woService.DeleteTeamValidation(user);
-		}
+		// if(user.TeamManagementId != 0)
+		// {
+		// 	await _woService.DeleteTeamValidation(user);
+		// }
 		
 		await DeleteCurrentUserSend(userId);
+		return user;
 	}
 	public async Task DeleteValidation(Championship championship)
 	{
 		await DeleteSend(championship);
 		championship.Deleted = true;
 		await _elastic._client.IndexAsync(championship, INDEX);
-		await _organizerService.DeleteValidation(new() { ChampionshipId = championship.Id, OrganizerId = championship.OrganizerId });
 	}
 
 	private async Task DeleteSend(Championship championship)
