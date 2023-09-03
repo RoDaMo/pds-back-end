@@ -134,16 +134,61 @@ public class PenaltyService
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date IS NULL);", new {matchId});
     // private async Task<bool> DidMatchNotStart(int matchId)
     //     => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND date <> CURRENT_DATE);", new {matchId});
+    private async Task<Championship> GetChampionshipByMatchId(int matchId)
+        => await _dbService.GetAsync<Championship>(
+            @"SELECT c.*
+            FROM Championships c
+            JOIN Matches m ON c.Id = m.ChampionshipId
+            WHERE m.Id = @matchId;
+            ", 
+            new {matchId});
+    private async Task<int> GetPointsFromTeamByIdInTwoMatches(int matchId, int teamId)
+        => await _dbService.GetAsync<int>(
+            @"SELECT COUNT(*) FROM goals 
+            WHERE (MatchId = @matchId OR MatchId = (SELECT Id FROM matches WHERE PreviousMatch = @matchId) OR MatchId =  (SELECT PreviousMatch FROM matches WHERE id = @matchId)) AND 
+            (TeamId = @teamId AND OwnGoal = false OR TeamId <> @teamId AND OwnGoal = true)",
+        new {matchId, teamId});
+    private async Task<bool> CheckIfFirstMatchHasNotFinished(int matchId)
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE Id = @matchId AND (WINNER IS NULL AND Tied = false))", new {matchId});
     private async Task<bool> AreTeamsTied(int matchId)
     {
         var match = await GetMatchById(matchId);
-        var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
-        var homePoints = await GetPointsFromTeamById(matchId, match.Home);
-        if(homePoints == visitorPoints)
+        var championship = await GetChampionshipByMatchId(matchId);
+
+        if(match is null)
+           return false;
+
+        if(championship.SportsId == Sports.Volleyball)
+            return false;
+        
+        if(championship.Format == Format.LeagueSystem)
+            return false;
+        
+        if(championship.Format == Format.GroupStage && match.Round != 0)
+           return false;
+
+        if(match.Phase != Phase.Finals && championship.DoubleMatchEliminations ||
+            match.Phase == Phase.Finals && championship.FinalDoubleMatch)
         {
-            return true;
+            var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Visitor);
+            var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Home);
+            if(match.PreviousMatch == 0)
+                return false;
+            else if(await CheckIfFirstMatchHasNotFinished(match.PreviousMatch))
+                return false;
+            else if(aggregateHomePoints != aggregateVisitorPoints)
+            return false;
         }
-        return false;
+
+        else
+        {
+            var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
+            var homePoints = await GetPointsFromTeamById(matchId, match.Home);
+
+            if(visitorPoints != homePoints)
+                return false;
+        }
+        return true;
     }
     private async Task<Match> GetMatchById(int matchId)
         => await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @matchId", new{matchId});
