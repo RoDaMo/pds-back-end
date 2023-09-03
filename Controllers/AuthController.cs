@@ -24,9 +24,10 @@ public class AuthController : ApiBaseController
 	private readonly DateTime _expires = DateTime.UtcNow.AddDays(1);
 	private readonly ErrorLogService _error;
 	private readonly OrganizerService _organizerService;
+	private readonly WoService _woService;
 
 	/// <inheritdoc />
-	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error, CaptchaService captcha, OrganizerService organizerService)
+	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error, CaptchaService captcha, OrganizerService organizerService, WoService woService)
 	{
 		_authService = authService;
 		_redisService = redisService;
@@ -40,6 +41,7 @@ public class AuthController : ApiBaseController
 			SameSite = SameSiteMode.None,
 			Expires = _expires
 		};
+		_woService = woService;
 	}
 
 	/// <summary>
@@ -653,9 +655,12 @@ public class AuthController : ApiBaseController
 		try
 		{
 			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+		
 			var user = await _authService.DeleteCurrentUserValidation(userId);
 			if (user.ChampionshipId != 0)
 				await _organizerService.DeleteValidation(new() { ChampionshipId = user.ChampionshipId, OrganizerId = user.Id });
+			if(user.TeamManagementId != 0)
+				await _woService.DeleteTeamValidation(user.TeamManagementId, user.Id);
 			
 			Response.Cookies.Delete("playoffs-token");
 			Response.Cookies.Delete("playoffs-refresh-token");

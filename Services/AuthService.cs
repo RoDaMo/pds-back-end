@@ -490,11 +490,6 @@ public class AuthService
 			await DeleteValidation(championship);
 		}
 
-		// if(user.TeamManagementId != 0)
-		// {
-		// 	await _woService.DeleteTeamValidation(user);
-		// }
-		
 		await DeleteCurrentUserSend(userId);
 		return user;
 	}
