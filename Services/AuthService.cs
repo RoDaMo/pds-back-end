@@ -20,7 +20,8 @@ public class AuthService
 	private readonly DbService _dbService;
 	private readonly ElasticService _elastic;
 	private const string Index = "users";
-	
+	private const string INDEX = "championships";
+
 	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic) 
 	{
 		_secretKey = secretKey;
@@ -113,7 +114,7 @@ public class AuthService
 		var result2 = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorEmail"));
 
 		if (result.IsValid || result2.IsValid)
-			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE username = @Username OR email = @Email", user);
+			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE (username = @Username OR email = @Email) AND Deleted = false ", user);
 
 		throw new ApplicationException(Resource.InvalidUsername);
 	}
@@ -149,6 +150,7 @@ public class AuthService
 
 		return (user is null) ? player : user;
 	}
+
 	public async Task SendEmailToConfirmAccount(Guid userId)
 	{
 
@@ -482,10 +484,36 @@ public class AuthService
 	private async Task AddCpfUserSend(User user) 
 		=> await _dbService.EditData("UPDATE users SET cpf = @cpf WHERE id = @id", user);
 
-	public async Task DeleteCurrentUserValidation(Guid userId) => await DeleteCurrentUserSend(userId);
+	public async Task<User> DeleteCurrentUserValidation(User user)
+	{
+
+		if (user is null)
+			throw new ApplicationException("Esse usuário não existe");
+		
+		if(user.ChampionshipId != 0)
+		{
+			var championship = await _dbService.GetAsync<Championship>("SELECT * FROM Championships WHERE Id = @id", new {id = user.ChampionshipId});
+			await DeleteValidation(championship);
+		}
+
+		await DeleteCurrentUserSend(user.Id);
+		return user;
+	}
+	public async Task DeleteValidation(Championship championship)
+	{
+		await DeleteSend(championship);
+		championship.Deleted = true;
+		await _elastic._client.IndexAsync(championship, INDEX);
+	}
+
+	private async Task DeleteSend(Championship championship)
+	{
+		await _dbService.EditData("UPDATE championships SET deleted = true WHERE id = @id", championship);
+		await _dbService.EditData("UPDATE users SET championshipid = null WHERE id = @organizerId", championship);
+	}
 
 	private async Task DeleteCurrentUserSend(Guid userId) =>
-		await _dbService.EditData("UPDATE users SET deleted = true WHERE id =  @userId", new { userId });
+		await _dbService.EditData("UPDATE users SET deleted = true WHERE id = @userId", new { userId });
 	
 	public async Task IndexAllUsersValidation()
 	{

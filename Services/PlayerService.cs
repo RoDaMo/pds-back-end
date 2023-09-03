@@ -135,10 +135,10 @@ public class PlayerService
 
 			if (tempPlayer.IsCaptain)
 			{
-				await _playerTempProfileService.RemoveCaptainByTeamId(tempPlayer.TeamsId);
+				await RemoveCaptainByTeamId(tempPlayer.TeamsId);
 				return new();
 			}
-			await _playerTempProfileService.RemoveCaptainByTeamId(tempPlayer.TeamsId);
+			await RemoveCaptainByTeamId(tempPlayer.TeamsId);
 			await _playerTempProfileService.MakePlayerCaptain(tempPlayer.Id);
 			return new();
 		}
@@ -158,7 +158,10 @@ public class PlayerService
 		=> await _dbService.GetAsync<User>("SELECT * FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
 	private async Task RemoveCaptainByTeamId(int teamId)
 	{
-		await _dbService.EditData("UPDATE users SET IsCaptain = false WHERE PlayerTeamId = @teamId", new {teamId});
+		await _dbService.EditData(
+			@"UPDATE users SET IsCaptain = false WHERE PlayerTeamId = @teamId; 
+			UPDATE playertempprofiles SET IsCaptain = false WHERE TeamsId = @teamId;", 
+			new {teamId});
 	}
 	private async Task MakePlayerCaptain(Guid playerId)
 		=> await _dbService.EditData("UPDATE users SET IsCaptain = true WHERE Id = @playerId", new {playerId});
