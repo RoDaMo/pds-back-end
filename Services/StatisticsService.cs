@@ -614,9 +614,10 @@ public class StatisticsService
         var strikers = new List<StrikerDTO>();
         
         var players = await _dbService.GetAll<PlayerGoalsSummaryDTO>(
-                @"SELECT COALESCE(PlayerId, PlayerTempId) AS PlayerIdOrTempId, COUNT(*) AS Goals
-                FROM goals
-                WHERE OwnGoal = false
+                @"SELECT COALESCE(g.PlayerId, g.PlayerTempId) AS PlayerIdOrTempId, COUNT(*) AS Goals
+                FROM goals g
+                JOIN Matches m ON g.MatchId = m.Id
+                WHERE g.OwnGoal = false AND m.ChampionshipId = @championshipId
                 GROUP BY COALESCE(PlayerId, PlayerTempId)
                 ORDER BY Goals DESC
                 LIMIT 15;", 
