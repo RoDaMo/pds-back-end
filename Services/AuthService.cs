@@ -139,8 +139,16 @@ public class AuthService
 	}
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
-		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture, teammanagementid, playerteamid, role, confirmemail FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
+	{
+		var user = await _dbService.GetAsync<User>(
+			@"SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture, teammanagementid, playerteamid, role, confirmemail,artisticname, Number, playerposition, iscaptain, picture  FROM users WHERE id = @Id AND deleted = false", 
+			new User { Id = userId });
+		var player =  await _dbService.GetAsync<User>(
+			@"SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, iscaptain, picture, null as username FROM playertempprofiles WHERE id = @Id", 
+			new User { Id = userId });
 
+		return (user is null) ? player : user;
+	}
 	public async Task SendEmailToConfirmAccount(Guid userId)
 	{
 
