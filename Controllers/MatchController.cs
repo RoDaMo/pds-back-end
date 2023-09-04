@@ -292,7 +292,6 @@ public class MatchController : ApiBaseController
 
         try
         {
-            throw new ApplicationException(DateTime.UtcNow.ToString());
             result = await _matchService.UpdateMatchValidationAsync(match);
             return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }

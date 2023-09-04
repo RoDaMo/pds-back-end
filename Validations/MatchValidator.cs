@@ -18,6 +18,6 @@ public class MatchValidator : AbstractValidator<Match>
     private bool BeValidDate(DateTime userDate)
     {
         DateTime serverUtcTime = DateTime.UtcNow;
-        return userDate.Date >= serverUtcTime;
+        return userDate.ToUniversalTime() >= serverUtcTime;
     }
 }
