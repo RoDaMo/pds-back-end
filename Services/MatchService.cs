@@ -1381,13 +1381,11 @@ public class MatchService
             matchDTO.HomeEmblem = home.Emblem;
             matchDTO.HomeName = home.Name;
             matchDTO.HomeId = home.Id;
-            matchDTO.HomeUniformHome = home.UniformHome;
-            matchDTO.HomeUniformAway = home.UniformAway;
+            matchDTO.HomeUniform = match.HomeUniform;
             matchDTO.HomeGoals = await GetPointsFromTeamById(match.Id, match.Home);
             matchDTO.VisitorEmblem = visitor.Emblem;
             matchDTO.VisitorName = visitor.Name;
-            matchDTO.VisitorUniformHome = visitor.UniformHome;
-            matchDTO.VisitorUniformAway = visitor.UniformAway;
+            matchDTO.VisitorUniform = match.VisitorUniform;
             matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
             matchDTO.VisitorId = visitor.Id;
             matchDTO.Cep = match.Cep;

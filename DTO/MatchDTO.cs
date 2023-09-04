@@ -25,10 +25,8 @@ public class MatchDTO
     public string Road { get; set; }
     public int Number { get; set; }
     public string MatchReport { get; set; }
-    public string HomeUniformHome { get; set; }
-    public string HomeUniformAway { get; set; }
-    public string VisitorUniformHome { get; set; }
-    public string VisitorUniformAway { get; set; }
+    public string HomeUniform { get; set; }
+    public string VisitorUniform { get; set; }
     public bool Penalties { get; set; }
 
     public MatchDTO()
