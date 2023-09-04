@@ -267,25 +267,33 @@ public class PenaltyService
     {
         var winners = new List<int>();
         var aux = 1;
-        var matches = await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Id", new {championship.Id, phase});
+        var matches = await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Id", new {championshipId = championship.Id, phase});
         if((championship.DoubleMatchEliminations && phase != Phase.Finals) || (championship.FinalDoubleMatch && phase == Phase.Finals))
             aux = 2;
 
         for (int i = 0; i < matches.Count(); i = i + aux)
         {
-            var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Visitor);
-            var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Home);
-            if(aggregateVisitorPoints > aggregateHomePoints)
+            if(!matches[i].Tied)
             {
-                winners.Add(matches[i].Visitor);
+                var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Visitor);
+                var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Home);
+                if(aggregateVisitorPoints > aggregateHomePoints)
+                {
+                    winners.Add(matches[i].Visitor);
+                }
+                else if(aggregateVisitorPoints < aggregateHomePoints)
+                {
+                    winners.Add(matches[i].Home);
+                }
+                else
+                {
+                    winners.Add(matches[i].Winner);
+                }
             }
-            else if(aggregateVisitorPoints < aggregateHomePoints)
-            {
-                winners.Add(matches[i].Home);
-            }
+
             else
             {
-                winners.Add(matches[i].Winner);
+                winners.Add(matches[i+1].Winner);
             }
         }
         return winners;
