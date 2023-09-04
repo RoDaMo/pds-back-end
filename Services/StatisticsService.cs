@@ -655,6 +655,7 @@ public class StatisticsService
                     Name = user.Name,
                     Picture = user.Name,
                     TeamEmblem = team.Emblem,
+                    TeamId = team.Id,
                     ID = user.Id
                 };
                 strikers.Add(striker);
@@ -669,6 +670,7 @@ public class StatisticsService
                     Name = playerTemp.Name,
                     Picture = playerTemp.Picture,
                     TeamEmblem = team.Emblem,
+                    TeamId = team.Id,
                     ID = playerTemp.Id
                 };
                 strikers.Add(striker);
