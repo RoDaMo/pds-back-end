@@ -531,7 +531,8 @@ public class AuthService
 		}
 	}
 
-	private async Task<List<User>> GetAllUsersForIndexingSend() => await _dbService.GetAll<User>("SELECT * FROM users", new {});
+	private async Task<List<User>> GetAllUsersForIndexingSend() 
+		=> await _dbService.GetAll<User>("SELECT id, name, username, email, passwordhash, deleted, birthday, cpf, teammanagementid, artisticname, number, playerteamid, iscaptain, picture, championshipid, bio, confirmemail, role, playerposition, cnpj FROM users", new {});
 
 	public async Task<List<User>> GetUsersByUsernameValidation(string username, bool filtrarSuborganizadores = false)
 	{
