@@ -19,8 +19,9 @@ public class ChampionshipService
 	private readonly IBackgroundJobsService _backgroundJobs;
 	private readonly OrganizerService _organizerService;
 	private const string INDEX = "championships";
+     private readonly ILogger<ChampionshipService> _logger;
 
-	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, IBackgroundJobsService backgroundJobs, RedisService redisService, OrganizerService organizerService)
+	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, IBackgroundJobsService backgroundJobs, RedisService redisService, OrganizerService organizerService, ILogger<ChampionshipService> logger)
 	{
 		_dbService = dbService;
 		_elasticService = elasticService;
@@ -28,6 +29,7 @@ public class ChampionshipService
 		_backgroundJobs = backgroundJobs;
 		_redisService = redisService;
 		_organizerService = organizerService;
+        _logger = logger;
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
 	{
@@ -75,6 +77,8 @@ public class ChampionshipService
 
 		await _organizerService.InsertValidation(new Organizer { ChampionshipId = championship.Id, MainOrganizer = true, OrganizerId = championship.Organizer.Id });
 
+		
+		_logger.LogInformation("Campeonato criado");
 		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Inactive), TimeSpan.FromDays(14));
 		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Active), championship.InitialDate - DateTime.UtcNow);
 	}
