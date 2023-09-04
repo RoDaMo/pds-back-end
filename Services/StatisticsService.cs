@@ -649,22 +649,28 @@ public class StatisticsService
             if(user is not null)
             {
                 var team = await GetByTeamIdSendAsync(user.PlayerTeamId);
-                var striker = new StrikerDTO();
-                striker.Goals = player.Goals;
-                striker.Name = user.Name;
-                striker.Picture = user.Name;
-                striker.TeamEmblem = team.Emblem;
+                var striker = new StrikerDTO
+                {
+                    Goals = player.Goals,
+                    Name = user.Name,
+                    Picture = user.Name,
+                    TeamEmblem = team.Emblem,
+                    ID = user.Id
+                };
                 strikers.Add(striker);
             }
             else
             {
                 var playerTemp = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Id = @id", new {id = player.PlayerIdOrTempId});
                 var team = await GetByTeamIdSendAsync(playerTemp.TeamsId);
-                var striker = new StrikerDTO();
-                striker.Goals = player.Goals;
-                striker.Name = playerTemp.Name;
-                striker.Picture = playerTemp.Picture;
-                striker.TeamEmblem = team.Emblem;
+                var striker = new StrikerDTO
+                {
+                    Goals = player.Goals,
+                    Name = playerTemp.Name,
+                    Picture = playerTemp.Picture,
+                    TeamEmblem = team.Emblem,
+                    ID = playerTemp.Id
+                };
                 strikers.Add(striker);
             }
         }
