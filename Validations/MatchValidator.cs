@@ -8,7 +8,7 @@ public class MatchValidator : AbstractValidator<Match>
     public MatchValidator()
     {
         RuleFor(m => m.Date)
-             .Must(BeValidDate)
+            .Must(BeValidDate)
             .WithMessage("A data não pode ser anterior à data de hoje.");
         RuleFor(m => m.Arbitrator)
             .Length(4, 200)
@@ -18,6 +18,6 @@ public class MatchValidator : AbstractValidator<Match>
     private bool BeValidDate(DateTime userDate)
     {
         DateTime serverUtcTime = DateTime.UtcNow;
-        return userDate.ToUniversalTime().Date >= serverUtcTime;
+        return userDate.Date >= serverUtcTime;
     }
 }
