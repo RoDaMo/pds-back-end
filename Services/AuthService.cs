@@ -512,15 +512,21 @@ public class AuthService
 		await _dbService.EditData("UPDATE users SET championshipid = null WHERE id = @organizerId", championship);
 	}
 
-	private async Task DeleteCurrentUserSend(Guid userId) =>
+	private async Task DeleteCurrentUserSend(Guid userId)
+	{
+		var user = await GetUserByIdAsync(userId);
+		
 		await _dbService.EditData("UPDATE users SET deleted = true WHERE id = @userId", new { userId });
-	
+		user.Deleted = true;
+		
+		await _elastic._client.IndexAsync(user, Index);
+	}
+
 	public async Task IndexAllUsersValidation()
 	{
 		var users = await GetAllUsersForIndexingSend();
 		foreach (var user in users)
 		{
-			
 			await _elastic._client.IndexAsync(user, Index);
 		}
 	}
