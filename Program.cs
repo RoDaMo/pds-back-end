@@ -13,8 +13,8 @@ using PlayOffsApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+// builder.Logging.ClearProviders();
+// builder.Logging.AddConsole();
 
 var ISSUER = config["JwtSettings:Issuer"];
 var AUDIENCE = config["JwtSettings:Audience"];
