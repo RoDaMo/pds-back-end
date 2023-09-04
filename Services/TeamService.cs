@@ -301,7 +301,7 @@ public class TeamService
 			SELECT id, name, artisticname, number, email, playerteamid as teamsid, playerposition, iscaptain, picture, username, isCaptain FROM users WHERE playerteamid = @id;",
 			new { id });
 
-	private async Task<User> GetTechnicianFromTeam(int teamId) => await _dbService.GetAsync<User>("SELECT picture, name FROM users WHERE teammanagementId = @teamId", new { teamId });
+	private async Task<User> GetTechnicianFromTeam(int teamId) => await _dbService.GetAsync<User>("SELECT id, picture, name FROM users WHERE teammanagementId = @teamId", new { teamId });
 
 	public async Task<bool> VerifyTeamHasCaptain(int teamId)
 	{
