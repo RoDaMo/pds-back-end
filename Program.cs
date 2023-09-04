@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PlayOffsApi.HostedService;
 using PlayOffsApi.Middleware;
+using PlayOffsApi.Models;
 using PlayOffsApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -84,7 +85,7 @@ builder.Services.AddScoped<FoulService>();
 builder.Services.AddScoped<BracketingMatchService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<WoService>();
-builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>()));
+builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>(), sp.GetRequiredService<Logger<User>>()));
 
 
 

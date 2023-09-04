@@ -21,14 +21,16 @@ public class AuthService
 	private readonly ElasticService _elastic;
 	private const string Index = "users";
 	private const string INDEX = "championships";
+	private readonly ILogger<User> _logger;
 
-	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic) 
+	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic, ILogger<User> logger) 
 	{
 		_secretKey = secretKey;
 		_issuer = issuer;
 		_audience = audience;
 		_dbService = dbService;
 		_elastic = elastic;
+		_logger = logger;
 	}
 
 	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate, string role = "user")
@@ -527,6 +529,7 @@ public class AuthService
 		var users = await GetAllUsersForIndexingSend();
 		foreach (var user in users)
 		{
+			_logger.LogInformation("AUTHSERVICE: ID do usuário: {user.Id}; Delete do usuario: {delete}", user.Id, user.Deleted);
 			await _elastic._client.IndexAsync(user, Index);
 		}
 	}
