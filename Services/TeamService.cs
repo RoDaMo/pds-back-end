@@ -130,9 +130,15 @@ public class TeamService
 
 		if (!await _championshipService.CanMoreTeamsBeAddedValidation(championshipId))
 			throw new ApplicationException("O limite de times para esse campeonato já foi atingido");
+		
+		if(await CheckIfTeamWereDeleted(teamId))
+			throw new ApplicationException("Time indisponível");
 			
 		await AddTeamToChampionshipSend(teamId, championshipId);
 	}
+	private async Task<bool> CheckIfTeamWereDeleted(int teamId)
+		=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM Teams WHERE id = @teamId AND Deleted = true)",
+		 new {teamId});
 
 	private async Task AddTeamToChampionshipSend(int teamId, int championshipId)
 	{
