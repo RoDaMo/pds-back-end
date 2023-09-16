@@ -1,5 +1,6 @@
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Core.Search;
+using Elastic.Clients.Elasticsearch.QueryDsl;
 using PlayOffsApi.DTO;
 using PlayOffsApi.Enum;
 using PlayOffsApi.HostedService;
@@ -78,11 +79,11 @@ public class ChampionshipService
 			throw new ApplicationException(Generic.GenericErrorMessage);
 
 		await _organizerService.InsertValidation(new Organizer { ChampionshipId = championship.Id, MainOrganizer = true, OrganizerId = championship.Organizer.Id });
-
 		
 		_logger.LogInformation("Campeonato criado");
 		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Inactive), TimeSpan.FromDays(14));
 		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Active), championship.InitialDate - DateTime.UtcNow);
+		await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Finished), championship.FinalDate - DateTime.UtcNow);
 	}
 
 	public async Task<(List<Championship> campionships, long total)> GetByFilterValidationAsync(string name, Sports sport, DateTime start, DateTime finish, string pitId, string[] sort, ChampionshipStatus status)
@@ -112,21 +113,12 @@ public class ChampionshipService
 		=> await _elasticService.SearchAsync<Championship>(el =>
 		{
 			el.Index(_index).From(0).Size(15).Pit(pitId).Sort(config => config.Score(new ScoreSort { Order = SortOrder.Desc }));
-			
+
 			if (sort.Any()) el.SearchAfter(sort);
 			
 			el.Query(q => q
 				.Bool(b => b
 					.Must(
-						must =>
-						{
-							if (string.IsNullOrEmpty(name)) return;
-							must.Match(mpp => mpp
-								.Field(f => f.Name)
-								.Query(name)
-								.Fuzziness(new Fuzziness("Auto"))
-							);
-						},
 						must2 => must2
 							.Range(r => r
 								.DateRange(d => d.Field(f => f.InitialDate).Gte(start).Lte(finish))
@@ -135,7 +127,16 @@ public class ChampionshipService
 							.Term(t => t.Field(f => f.Deleted).Value(false)),
 						must4 => must4.Term(t => t.Field(f => f.Status).Value((int)championshipStatus)),
 						must5 => must5.Range(r => r
-							.DateRange(d => d.Field(f => f.FinalDate).Gte(start).Lte(finish))
+							.DateRange(d => d
+								.Field(f => f.FinalDate)
+								.Gte(start)
+							)
+						),
+						must6 => must6.Range(r => r
+							.DateRange(d => d
+								.Field(f => f.InitialDate)
+								.Lte(finish)
+							)
 						)
 					)
 					.Filter(fi =>
@@ -144,6 +145,12 @@ public class ChampionshipService
 							fi.Term(t => t.Field(f => f.SportsId).Value((int)sport));
 						}
 					)
+				)
+				.Match(m => m
+					.Field(f => f.Name)
+					.Query(name)
+					.Fuzziness(new Fuzziness("auto"))
+					.AutoGenerateSynonymsPhraseQuery()
 				)
 			);
 		});
@@ -167,12 +174,20 @@ public class ChampionshipService
 		if (oldChamp is null)
 			throw new ApplicationException(Resource.InvalidChampionship);
 
-		if (oldChamp.Status == ChampionshipStatus.Pendent && oldChamp.InitialDate != championship.InitialDate)
+		await using var redisDatabase = await _redisService.GetDatabase();
+		if (oldChamp.InitialDate != championship.InitialDate)
 		{
-			await using var redisDatabase = await _redisService.GetDatabase();
 			await redisDatabase.AddAsync($"cancelJob_championship:{championship.Id}", oldChamp.InitialDate);
 			
 			await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Active), championship.InitialDate - DateTime.UtcNow);
+			championship.Status = oldChamp.Status == ChampionshipStatus.Active ? ChampionshipStatus.Pendent : oldChamp.Status;
+		}
+
+		if (oldChamp.FinalDate != championship.FinalDate)
+		{
+			await redisDatabase.AddAsync($"cancelJob_championship:{championship.Id}", oldChamp.FinalDate);
+			
+			await _backgroundJobs.EnqueueJob(() => _backgroundJobs.ChangeChampionshipStatusValidation(championship.Id, (int)ChampionshipStatus.Finished), championship.FinalDate - DateTime.UtcNow);
 		}
 
 		var result = await new ChampionshipValidator().ValidateAsync(championship);

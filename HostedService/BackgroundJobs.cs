@@ -79,8 +79,8 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
     public async Task EnqueueJob(Expression<Func<Task>> methodExpression, TimeSpan? period = null)
     {
         var (methodName, parameters) = GetMethodDetails(methodExpression);
-        _logger.LogInformation("Nome do método: "+ methodName);
-        _logger.LogInformation("Período: "+ period);
+        _logger.LogInformation("Nome do método: {methodName}", methodName);
+        _logger.LogInformation("Período: {period}", period);
 
         var jobObject = new BackgroundJob
         {
@@ -97,10 +97,10 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
         }
 
         var scheduledDate = DateTime.UtcNow.Add(period.Value);
-        _logger.LogInformation("scheduledDate: "+ scheduledDate);
+        _logger.LogInformation("scheduledDate: {scheduledDate} ", scheduledDate);
 
         var unixTimestamp = (long)(scheduledDate - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-        _logger.LogInformation("unixTimestamp: "+ unixTimestamp);
+        _logger.LogInformation("unixTimestamp: {unixTimestamp} ", unixTimestamp);
         await database.AddItemToSortedSetAsync("scheduled_jobs", jobObjectSerialized, unixTimestamp, _cts);
     }
     
@@ -126,7 +126,7 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
         await removalTask; 
 
         var jobs = fetchedJobs.Select(job => JsonSerializer.Deserialize<BackgroundJob>(job)).Where(backgroundJob => backgroundJob is not null).ToList();
-        _logger.LogInformation("Quantidade de jobs: "+ jobs.Count);
+        _logger.LogInformation("Quantidade de jobs: {jobsCount}", jobs.Count);
         
         foreach (var job in jobs)  
         {
@@ -176,7 +176,9 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
 
         await ChangeChampionshipStatusSend(championshipId, statusEnum, dbService);
         championship.Status = statusEnum;
-        await elasticService._client.IndexAsync(championship, "championships", _cts);
+        
+        var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
+        await elasticService._client.IndexAsync(championship, string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "championships" : "championships-dev", _cts);
     }
 
     private static async Task ChangeChampionshipStatusSend(int championshipId, ChampionshipStatus status, DbService dbService) 
