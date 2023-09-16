@@ -115,6 +115,15 @@ public class ChampionshipService
 			el.Index(_index).From(0).Size(15).Pit(pitId).Sort(config => config.Score(new ScoreSort { Order = SortOrder.Desc }));
 
 			if (sort.Any()) el.SearchAfter(sort);
+			Action<MatchQueryDescriptor<Championship>> queryName = null;
+			if (!string.IsNullOrEmpty(name))
+			{
+				queryName = m => m
+					.Field(f => f.Name)
+					.Query(name)
+					.Fuzziness(new Fuzziness(2))
+					.AutoGenerateSynonymsPhraseQuery();
+			}
 			
 			el.Query(q => q
 				.Bool(b => b
@@ -137,7 +146,14 @@ public class ChampionshipService
 								.Field(f => f.InitialDate)
 								.Lte(finish)
 							)
-						)
+						),
+						must7 =>
+						{
+							if (queryName is null)
+								must7.MatchAll();
+							else
+								must7.Match(queryName);
+						}
 					)
 					.Filter(fi =>
 						{
@@ -145,12 +161,6 @@ public class ChampionshipService
 							fi.Term(t => t.Field(f => f.SportsId).Value((int)sport));
 						}
 					)
-				)
-				.Match(m => m
-					.Field(f => f.Name)
-					.Query(name)
-					.Fuzziness(new Fuzziness("auto"))
-					.AutoGenerateSynonymsPhraseQuery()
 				)
 			);
 		});
