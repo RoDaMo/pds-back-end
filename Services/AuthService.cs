@@ -19,8 +19,8 @@ public class AuthService
 	private readonly string _audience;
 	private readonly DbService _dbService;
 	private readonly ElasticService _elastic;
-	private const string Index = "users";
-	private const string INDEX = "championships";
+	private readonly string _index;
+	private readonly string _championshipIndex;
 	private readonly ILogger<User> _logger;
 
 	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic, ILogger<User> logger) 
@@ -31,6 +31,9 @@ public class AuthService
 		_dbService = dbService;
 		_elastic = elastic;
 		_logger = logger;
+		var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
+		_index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "users" : "users-dev";
+		_championshipIndex = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "championships" : "championships-dev";
 	}
 
 	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate, string role = "user")
@@ -100,7 +103,7 @@ public class AuthService
 		else
 			newUser.ConfirmEmail = true;
 		
-		await _elastic._client.IndexAsync(newUser, Index);
+		await _elastic._client.IndexAsync(newUser, _index);
 		resultId.Add(newUser.Id.ToString());
 
 		return resultId;
@@ -217,7 +220,7 @@ public class AuthService
 
         user.ConfirmEmail = true;
         await UpdateConfirmEmailAsync(user);
-        await _elastic._client.IndexAsync(user, Index);
+        await _elastic._client.IndexAsync(user, _index);
 
 		if (user.PlayerTeamId != 0)
 		{
@@ -332,7 +335,7 @@ public class AuthService
 		actualUser.PasswordHash = EncryptPassword(user.Password);
 		
 		await UpdatePasswordSendAsync(actualUser);
-		await _elastic._client.IndexAsync(actualUser, Index);
+		await _elastic._client.IndexAsync(actualUser, _index);
 
 		return errorMessages;
 	}
@@ -391,7 +394,7 @@ public class AuthService
 		
 
 		await UpdateProfileSendAsync(actualUser);
-		await _elastic._client.IndexAsync(actualUser, Index);
+		await _elastic._client.IndexAsync(actualUser, _index);
 
 		return errorMessages;
 	}
@@ -425,7 +428,7 @@ public class AuthService
 		actualUser.PasswordHash = EncryptPassword(updatePasswordDTO.NewPassword);
 
 		await UpdatePasswordSendAsync(actualUser);
-		await _elastic._client.IndexAsync(actualUser, Index);
+		await _elastic._client.IndexAsync(actualUser, _index);
 
 		return errorMessages;
 	}
@@ -505,7 +508,7 @@ public class AuthService
 	{
 		await DeleteSend(championship);
 		championship.Deleted = true;
-		await _elastic._client.IndexAsync(championship, INDEX);
+		await _elastic._client.IndexAsync(championship, _championshipIndex);
 	}
 
 	private async Task DeleteSend(Championship championship)
@@ -521,7 +524,7 @@ public class AuthService
 		await _dbService.EditData("UPDATE users SET deleted = true WHERE id = @userId", new { userId });
 		user.Deleted = true;
 		
-		await _elastic._client.IndexAsync(user, Index);
+		await _elastic._client.IndexAsync(user, _index);
 	}
 
 	public async Task IndexAllUsersValidation()
@@ -530,7 +533,7 @@ public class AuthService
 		foreach (var user in users)
 		{
 			_logger.LogInformation("AUTHSERVICE: ID do usuário: {user.Id}; Delete do usuario: {delete}", user.Id, user.Deleted);
-			await _elastic._client.IndexAsync(user, Index);
+			await _elastic._client.IndexAsync(user, _index);
 		}
 	}
 
@@ -564,7 +567,7 @@ public class AuthService
 							m7.Term(t => t.Field(f => f.IsOrganizer).Value(false));
 						})
 				)
-			).Index(Index)
+			).Index(_index)
 		);
 	
 	public async Task<bool> UserHasCnpjValidationAsync(Guid userId) => await UserHasCnpjSendAsync(userId);

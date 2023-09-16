@@ -13,8 +13,8 @@ public class TeamService
     private readonly ElasticService _elasticService;
     private readonly AuthService _authService;
     private readonly ChampionshipService _championshipService;
-	private const string INDEX = "teams";
-	private const string INDEX2 = "users";
+	private readonly string _index;
+	private readonly string _userIndex;
 	private readonly BracketingMatchService _bracketingMatchService;
 	
 	
@@ -26,6 +26,9 @@ public class TeamService
         _authService = authService;
         _championshipService = championshipService;
 		_bracketingMatchService = bracketingMatchService;
+		var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
+		_index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "teams" : "teams-dev";
+		_userIndex = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "users" : "users-dev";
 	}
 
     public async Task<List<string>> CreateValidationAsync(TeamDTO teamDto, Guid userId)
@@ -51,7 +54,7 @@ public class TeamService
 		team.Id =  await CreateSendAsync(team);
 		await UpdateUser(userId, team.Id);
 
-		var resultado = await _elasticService._client.IndexAsync(team, INDEX);
+		var resultado = await _elasticService._client.IndexAsync(team, _index);
 		if (!resultado.IsValidResponse)
 			throw new ApplicationException(Generic.GenericErrorMessage);
 		
@@ -84,14 +87,14 @@ public class TeamService
 	private async Task UpdateUser(User user)
 	{
 		user.TeamManagementId = 0;
-		var resultado = await _elasticService._client.IndexAsync(user, INDEX2);
+		var resultado = await _elasticService._client.IndexAsync(user, _userIndex);
 		await _dbService.EditData("UPDATE users SET teammanagementid = null  WHERE id = @userid;", new { userId = user.Id });
 	}
 	private async Task UpdateUser(Guid userId, int teamId)
 	{
 		var user = await _authService.GetUserByIdAsync(userId);
 		user.TeamManagementId = teamId;
-		var resultado = await _elasticService._client.IndexAsync(user, INDEX2);
+		var resultado = await _elasticService._client.IndexAsync(user, _userIndex);
 		await _dbService.EditData("UPDATE users SET teammanagementid = @teamId  WHERE id = @userid;", new { userId, teamId });
 	}
 
@@ -111,7 +114,7 @@ public class TeamService
 	private async Task<SearchResponse<Team>> SearchTeamsSend(string query, Sports sports)
 		=> await _elasticService.SearchAsync<Team>(el =>
 		{
-			el.Index(INDEX);
+			el.Index(_index);
 			el.Query(q => q.Bool(b => b.
 					Must(
 						must => must.MatchPhrasePrefix(mpp => mpp.Field(f => f.Name).Query(query)),
@@ -208,7 +211,7 @@ public class TeamService
 		team.Id = teamDto.Id;
 		await UpdateTeamSend(team);
 		
-		var resultado = await _elasticService._client.IndexAsync(team, INDEX);
+		var resultado = await _elasticService._client.IndexAsync(team, _index);
 		if (!resultado.IsValidResponse)
 			throw new ApplicationException(Generic.GenericErrorMessage);
 		
@@ -245,7 +248,7 @@ public class TeamService
 		await UpdateUser(user);
 		
 		team.Deleted = true;
-		var result = await _elasticService._client.IndexAsync(team, INDEX);
+		var result = await _elasticService._client.IndexAsync(team, _index);
 
 	}
 
@@ -271,7 +274,7 @@ public class TeamService
 		await RemoveTeamOfAllPlayerTempProfiled(team.Id);
 		await RemoveTeamOfAllUsers(team.Id);
 		await DeleteTeamSend(id);
-		await _elasticService._client.IndexAsync(team, INDEX);
+		await _elasticService._client.IndexAsync(team, _index);
 	}
 	private async Task RemoveTeamOfAllPlayerTempProfiled(int teamId) 
 		=> await _dbService.EditData("UPDATE PlayerTempProfiles SET TeamsId = null WHERE TeamsId = @teamId", new {teamId});
@@ -282,7 +285,7 @@ public class TeamService
 		foreach (var user in users)
 		{
 			user.PlayerTeamId = 0;
-			var resultado = await _elasticService._client.IndexAsync(user, INDEX2);
+			var resultado = await _elasticService._client.IndexAsync(user, _userIndex);
 		}
 		await _dbService.GetAll<PlayerTempProfile>("UPDATE Users SET PlayerTeamId = null WHERE PlayerTeamId = @teamId", new {teamId});
 	}

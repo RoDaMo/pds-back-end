@@ -18,7 +18,7 @@ public class ChampionshipService
 	private readonly AuthService _authService;  
 	private readonly IBackgroundJobsService _backgroundJobs;
 	private readonly OrganizerService _organizerService;
-	private const string INDEX = "championships";
+	private readonly string _index;
      private readonly ILogger<ChampionshipService> _logger;
 
 	public ChampionshipService(DbService dbService, ElasticService elasticService, AuthService authService, IBackgroundJobsService backgroundJobs, RedisService redisService, OrganizerService organizerService, ILogger<ChampionshipService> logger)
@@ -30,6 +30,8 @@ public class ChampionshipService
 		_redisService = redisService;
 		_organizerService = organizerService;
         _logger = logger;
+        var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
+        _index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "championships" : "championships-dev";
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
 	{
@@ -71,7 +73,7 @@ public class ChampionshipService
 		// 	"UPDATE users SET championshipId = @championshipId WHERE id = @userId", new
 		// 		{ championshipId = championship.Id, userId = championship.Organizer.Id });
 
-		var resultado = await _elasticService._client.IndexAsync(championship, INDEX);
+		var resultado = await _elasticService._client.IndexAsync(championship, _index);
 		if (!resultado.IsValidResponse)
 			throw new ApplicationException(Generic.GenericErrorMessage);
 
@@ -87,7 +89,7 @@ public class ChampionshipService
 	{
 		finish = finish == DateTime.MinValue ? DateTime.MaxValue : finish;
 		var pit = string.IsNullOrEmpty(pitId)
-			? await _elasticService.OpenPointInTimeAsync(Indices.Index(INDEX))
+			? await _elasticService.OpenPointInTimeAsync(Indices.Index(_index))
 			: new() { Id = pitId, KeepAlive = 120000 };
 
 		var listSort = new List<FieldValue>();
@@ -109,7 +111,7 @@ public class ChampionshipService
 		ChampionshipStatus championshipStatus)
 		=> await _elasticService.SearchAsync<Championship>(el =>
 		{
-			el.Index(INDEX).From(0).Size(15).Pit(pitId).Sort(config => config.Score(new ScoreSort { Order = SortOrder.Desc }));
+			el.Index(_index).From(0).Size(15).Pit(pitId).Sort(config => config.Score(new ScoreSort { Order = SortOrder.Desc }));
 			
 			if (sort.Any()) el.SearchAfter(sort);
 			
@@ -189,7 +191,7 @@ public class ChampionshipService
 		}
 		
 		await UpdateSend(championship);
-		await _elasticService._client.IndexAsync(championship, INDEX);
+		await _elasticService._client.IndexAsync(championship, _index);
 
 		return new();
 	}
@@ -212,7 +214,7 @@ public class ChampionshipService
 	{
 		await DeleteSend(championship);
 		championship.Deleted = true;
-		await _elasticService._client.IndexAsync(championship, INDEX);
+		await _elasticService._client.IndexAsync(championship, _index);
 		await _organizerService.DeleteValidation(new() { ChampionshipId = championship.Id, OrganizerId = championship.OrganizerId });
 	}
 
@@ -235,7 +237,7 @@ public class ChampionshipService
 	{
 		var championships = await GetAllChampionshipsForIndexingSend();
 		foreach (var championship in championships)
-			await _elasticService._client.IndexAsync(championship, INDEX);
+			await _elasticService._client.IndexAsync(championship, _index);
 	}
 
 	private async Task<List<Championship>> GetAllChampionshipsForIndexingSend() => await _dbService.GetAll<Championship>("SELECT * FROM championships", new {});

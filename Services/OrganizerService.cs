@@ -7,11 +7,14 @@ public class OrganizerService
     private readonly DbService _dbService;
     private readonly ElasticService _elasticService;
     private readonly AuthService _authService;
+    private readonly string _index;
     public OrganizerService(DbService dbService, ElasticService elasticService, AuthService authService)
     {
         _dbService = dbService;
         _elasticService = elasticService;
         _authService = authService;
+        var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
+        _index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "users" : "users-dev";
     }
 
     public async Task InsertValidation(Organizer model) => await InsertSend(model);
@@ -24,7 +27,7 @@ public class OrganizerService
 
         var user = await _authService.GetUserByIdAsync(model.OrganizerId);
         user.IsOrganizer = true;
-        await _elasticService._client.IndexAsync(user, "users");
+        await _elasticService._client.IndexAsync(user, _index);
     }
 
     public async Task DeleteValidation(Organizer model) => await DeleteSend(model);
@@ -37,7 +40,7 @@ public class OrganizerService
         var user = await _authService.GetUserByIdAsync(model.OrganizerId);
         user.IsOrganizer = false;
         user.ChampionshipId = 0;
-        await _elasticService._client.IndexAsync(user, "users");
+        await _elasticService._client.IndexAsync(user, _index);
     }
 
     public async Task<Organizer> IsUserAnOrganizerValidation(Organizer model) => await IsUserAnOrganizerSend(model);
