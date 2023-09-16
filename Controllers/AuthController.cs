@@ -432,9 +432,9 @@ public class AuthController : ApiBaseController
 				profileImg = user.Picture,
 				name = user.Name,
 				id = user.Id,
-				championshipId = organizer.ChampionshipId,
+				championshipId = organizer?.ChampionshipId,
 				isOrganizer,
-				isSubOrganizer = !organizer.MainOrganizer,
+				isSubOrganizer = !organizer?.MainOrganizer,
 				teamManagementId = user.TeamManagementId,
 				role = user.Role
 			});
