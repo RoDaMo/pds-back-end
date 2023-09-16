@@ -323,8 +323,10 @@ public class TeamService
 	private async Task<bool> CheckIfTeamHasCaptain(int teamId)
 		=> await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE PlayerTeamId = @teamId AND IsCaptain = true)", new {teamId});
 
-    public static implicit operator TeamService(Lazy<TeamService> v)
-    {
-        throw new NotImplementedException();
-    }
+	public async Task IndexAllTeamsValidation()
+	{
+		var teams = await _dbService.GetAll<Team>("SELECT id, emblem, uniformhome, uniformaway, deleted, sportsid, name FROM teams", new {});
+		foreach (var team in teams)
+			await _elasticService._client.IndexAsync(team, _index);
+	}
 }

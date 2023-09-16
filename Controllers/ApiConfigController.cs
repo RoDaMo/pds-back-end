@@ -18,15 +18,15 @@ public class ApiConfigController : ApiBaseController
     private readonly ChampionshipService _championshipService;
     private readonly AuthService _authService;
     private readonly ErrorLogService _error;
-    private readonly IBackgroundJobsService _backgroundService;
+    private readonly TeamService _teamService;
 
     /// <inheritdoc />
-    public ApiConfigController(ChampionshipService championshipService, ErrorLogService error, AuthService authService, ImageService imageService, IBackgroundJobsService backgroundService)
+    public ApiConfigController(ChampionshipService championshipService, ErrorLogService error, AuthService authService, ImageService imageService, IBackgroundJobsService backgroundService, TeamService teamService)
     {
         _championshipService = championshipService;
         _error = error;
         _authService = authService;
-        _backgroundService = backgroundService;
+        _teamService = teamService;
     }
 
     [HttpPut]
@@ -53,6 +53,22 @@ public class ApiConfigController : ApiBaseController
         try
         {
             await _authService.IndexAllUsersValidation();
+            return ApiOk();
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message, GenericError.GenericErrorMessage);
+        } 
+    }
+    
+    [HttpPut]
+    [Route("/api/config/team")]
+    public async Task<IActionResult> IndexAllTeams()
+    {
+        try
+        {
+            await _teamService.IndexAllTeamsValidation();
             return ApiOk();
         }
         catch (ApplicationException ex)
