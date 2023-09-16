@@ -11,6 +11,7 @@ public class PlayerService
     private readonly ElasticService _elasticService;
 	private readonly TeamService _teamService;
 	private readonly PlayerTempProfileService _playerTempProfileService;
+	private readonly string _index;
 
     public PlayerService(DbService dbService, ElasticService elasticService, TeamService teamService, PlayerTempProfileService playerTempProfileService)
 	{
@@ -18,6 +19,8 @@ public class PlayerService
         _elasticService = elasticService;
 		_teamService = teamService;
 		_playerTempProfileService = playerTempProfileService;
+		var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
+		_index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "users" : "users-dev";
 	}
 
     public async Task<List<string>> CreateValidationAsync(User user, Guid userId)
@@ -65,6 +68,8 @@ public class PlayerService
 	        throw new ApplicationException(Resource.CreateValidationAsyncAlreadyBelongsTeam);
 
         await CreateSendAsync(user);
+        user = await GetUserByIdAsync(user.Id);
+        await _elasticService._client.IndexAsync(user, _index);
 		return errorMessages;
 	}
 
@@ -103,6 +108,8 @@ public class PlayerService
 	    }
 	    
 	    await RemovePlayerFromTeamSend(teamId, id);
+	    var user = await GetUserByIdAsync(id);
+	    await _elasticService._client.IndexAsync(user, _index);
     }
 
     private async Task RemovePlayerFromTeamSend(int userTeamManagementId, Guid id) =>
@@ -155,7 +162,7 @@ public class PlayerService
 	}
 
 	private async Task<User> GetUserByIdAsync(Guid userId) 
-		=> await _dbService.GetAsync<User>("SELECT * FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
+		=> await _dbService.GetAsync<User>("SELECT id, name, username, email, passwordhash, deleted, birthday, cpf, teammanagementid, artisticname, number, playerteamid, iscaptain, picture, championshipid, bio, confirmemail, role, playerposition, cnpj FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
 	private async Task RemoveCaptainByTeamId(int teamId)
 	{
 		await _dbService.EditData(
