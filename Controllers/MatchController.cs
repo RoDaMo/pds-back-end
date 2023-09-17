@@ -528,7 +528,7 @@ public class MatchController : ApiBaseController
 	///		}   
 	/// </returns>
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     [Route("/matches/{matchId:int}/teams/{teamId:int}/players")]
     public async Task<IActionResult> GetAllPlayersValidInTeam(int matchId, int teamId)
     {
