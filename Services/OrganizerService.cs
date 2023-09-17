@@ -69,6 +69,6 @@ public class OrganizerService
 
     private async Task<List<Championship>> GetAllChampionshipsByOrganizerSend(Guid id) =>
         await _dbService.GetAll<Championship>(
-            "SELECT c.* FROM championships c INNER JOIN organizers cu on c.id = cu.championshipid WHERE cu.organizerid = @organizerId AND c.deleted = false",
+            "SELECT c.id, c.name, c.sportsid, c.initialdate, c.finaldate, c.rules, c.logo, c.description, c.format, c.organizerid, c.teamquantity, c.status, c.doublematchgroupstage, c.doublematcheliminations, c.doublestartleaguesystem, c.finaldoublematch, c.numberofplayers FROM championships c INNER JOIN organizers cu on c.id = cu.championshipid WHERE cu.organizerid = @organizerId AND c.deleted = false",
             new { organizerId = id });
 }
