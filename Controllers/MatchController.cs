@@ -389,6 +389,7 @@ public class MatchController : ApiBaseController
 	/// </returns>
     [HttpGet]
     [Route("/matches/{matchId:int}")]
+    [AllowAnonymous]
     public async Task<IActionResult> Show(int matchId)
     {
         try
