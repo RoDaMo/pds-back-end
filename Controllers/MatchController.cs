@@ -428,7 +428,7 @@ public class MatchController : ApiBaseController
 	///		
 	/// </returns>
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     [Route("/matches/{matchId:int}/penalties")]
     public async Task<IActionResult> CanThereBePenalties(int matchId)
     {
