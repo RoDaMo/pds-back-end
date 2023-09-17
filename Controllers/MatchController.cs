@@ -620,6 +620,7 @@ public class MatchController : ApiBaseController
 	/// </returns>
     [HttpGet]
     [Route("/matches/{matchId:int}/get-all-events")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAllEvents(int matchId)
     {
         try
