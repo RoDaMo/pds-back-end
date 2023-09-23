@@ -244,7 +244,7 @@ public class OrganizerController  : ApiBaseController
     ///  <returns>
     ///  </returns>
     [HttpGet]
-    [Route("/organizer/championship/{id:guid}")]
+    [Route("/organizer/{id:guid}/championship")]
     [AllowAnonymous]
     public async Task<IActionResult> GetAllChampionshipsFromOrganizer(Guid id)
     {

@@ -86,6 +86,7 @@ builder.Services.AddScoped<BracketingMatchService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<WoService>();
 builder.Services.AddScoped<Logger<User>>();
+builder.Services.AddScoped<TodoService>();
 builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>(), sp.GetRequiredService<Logger<User>>()));
 
 

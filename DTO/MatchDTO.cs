@@ -1,3 +1,5 @@
+using PlayOffsApi.Enum;
+
 namespace PlayOffsApi.DTO;
 
 public class MatchDTO
@@ -28,6 +30,8 @@ public class MatchDTO
     public string HomeUniform { get; set; }
     public string VisitorUniform { get; set; }
     public bool Penalties { get; set; }
+    public int Round { get; set; }
+    public Phase Phase { get; set; }
 
     public MatchDTO()
     {
