@@ -168,6 +168,9 @@ public class ChampionshipService
 	public async Task<Championship> GetByIdValidation(int id)
 	{
 		var championship = await GetByIdSend(id);
+		if (championship is null)
+			return null;
+		
 		championship.Teams = await GetAllTeamsOfChampionshipValidation(id);
 		return championship;
 	}
