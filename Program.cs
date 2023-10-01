@@ -81,6 +81,8 @@ builder.Services.AddScoped<CaptchaService>();
 builder.Services.AddScoped<OrganizerService>();
 builder.Services.AddScoped<StatisticsService>();
 builder.Services.AddScoped<FoulService>();
+builder.Services.AddScoped<ReplacementService>();
+builder.Services.AddScoped<FirstStringService>();
 // builder.Services.AddScoped<WoService>();
 builder.Services.AddScoped<BracketingMatchService>();
 builder.Services.AddHttpContextAccessor();

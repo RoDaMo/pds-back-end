@@ -605,7 +605,7 @@ public class MatchService
     }
     private async Task<bool> CheckIfMatchExists(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId)", new {matchId});
-    private async Task<Match> GetMatchById(int matchId)
+    public async Task<Match> GetMatchById(int matchId)
         => await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @matchId", new{matchId});
     private async Task<int> GetPointsFromTeamById(int matchId, int teamId)
         => await _dbService.GetAsync<int>("SELECT COUNT(*) FROM goals WHERE MatchId = @matchId AND (TeamId = @teamId AND OwnGoal = false OR TeamId <> @teamId AND OwnGoal = true)", new {matchId, teamId});
@@ -1567,7 +1567,7 @@ public class MatchService
 		return players;
     }
 
-    private async Task<bool> CheckIfIsSuspended(User user, Match match)
+    public async Task<bool> CheckIfIsSuspended(User user, Match match)
 	{
         var championship = await GetChampionshipByMatchId(match.Id);
 		if(!string.IsNullOrWhiteSpace(user.Username))
@@ -1954,6 +1954,12 @@ public class MatchService
 
         var player = await GetPlayerOfteamSend(teamId != match.Visitor ? match.Visitor : match.Home );
 
+        if (!bypassStartingValidation)
+        {
+            var validationResult = await HasMatchStarted(matchId, match);
+            if (validationResult != string.Empty)
+                throw new ApplicationException(validationResult);
+        }
         if(match is null && valid)
             throw new ApplicationException("Partida passada não existe");
         if(await DepartureDateNotSet(matchId) && valid)
@@ -2083,6 +2089,23 @@ public class MatchService
             await EndGameToKnockoutValidationAsync(matchId, false);
         }
     }
+
+    public async Task<string> HasMatchStarted(int matchId, Match match)
+    {
+        if (match is null)
+            return "Partida passada não existe";
+        if (await DepartureDateNotSet(matchId))
+            return "Data da partida não definida.";
+        if (match.Date.ToUniversalTime() >= DateTime.UtcNow)
+            return "Partida ainda não inciou";
+        if (match.Winner != 0)
+            return "Partida já possui um vencedor.";
+        if (match.HomeUniform is null || match.VisitorUniform is null)
+            return "É necessário definir os uniformes das equipes antes";
+
+        return match.Road is null ? "É necessário definir o local da partida antes antes" : string.Empty;
+    }
+
     private async Task<User> GetPlayerOfteamSend(int id) =>
 		await _dbService.GetAsync<User>(
 			@"
