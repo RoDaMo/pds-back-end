@@ -136,7 +136,8 @@ public class TeamController : ApiBaseController
                 name = result.Name,
                 technician = new {
                     name = result.Technician.Name,
-                    picture = result.Technician.Picture
+                    picture = result.Technician.Picture,
+                    id = result.Technician.Id
                 }
             });
         }
@@ -259,6 +260,7 @@ public class TeamController : ApiBaseController
 	/// </returns>
     [HttpGet]
     [Route("/teams/championship/{id:int}")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetTeamChampionships(int id)
     {
         try
@@ -363,6 +365,7 @@ public class TeamController : ApiBaseController
 	/// </returns>
     [HttpGet]
     [Route("/teams/{id:int}/players")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAllPlayersOfTeam(int id)
     {
         try

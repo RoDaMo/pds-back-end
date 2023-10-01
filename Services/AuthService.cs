@@ -19,15 +19,21 @@ public class AuthService
 	private readonly string _audience;
 	private readonly DbService _dbService;
 	private readonly ElasticService _elastic;
-	private const string Index = "users";
-	
-	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic) 
+	private readonly string _index;
+	private readonly string _championshipIndex;
+	private readonly ILogger<User> _logger;
+
+	public AuthService(string secretKey, string issuer, string audience, DbService dbService, ElasticService elastic, ILogger<User> logger) 
 	{
 		_secretKey = secretKey;
 		_issuer = issuer;
 		_audience = audience;
 		_dbService = dbService;
 		_elastic = elastic;
+		_logger = logger;
+		var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
+		_index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "users" : "users-dev";
+		_championshipIndex = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "championships" : "championships-dev";
 	}
 
 	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate, string role = "user")
@@ -97,7 +103,7 @@ public class AuthService
 		else
 			newUser.ConfirmEmail = true;
 		
-		await _elastic._client.IndexAsync(newUser, Index);
+		await _elastic._client.IndexAsync(newUser, _index);
 		resultId.Add(newUser.Id.ToString());
 
 		return resultId;
@@ -113,7 +119,7 @@ public class AuthService
 		var result2 = await userValidator.ValidateAsync(user, options => options.IncludeRuleSets("IdentificadorEmail"));
 
 		if (result.IsValid || result2.IsValid)
-			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE username = @Username OR email = @Email", user);
+			return await _dbService.GetAsync<bool>("SELECT COUNT(1) FROM users WHERE (username = @Username OR email = @Email) AND Deleted = false ", user);
 
 		throw new ApplicationException(Resource.InvalidUsername);
 	}
@@ -139,7 +145,16 @@ public class AuthService
 	}
 
 	public async Task<User> GetUserByIdAsync(Guid userId) 
-		=> await _dbService.GetAsync<User>("SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture, teammanagementid, playerteamid, role, confirmemail FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
+	{
+		var user = await _dbService.GetAsync<User>(
+			@"SELECT Id, Name, Username, Email, Deleted, Birthday, cpf, bio, picture, teammanagementid, playerteamid, role, confirmemail,artisticname, Number, playerposition, iscaptain, picture  FROM users WHERE id = @Id AND deleted = false", 
+			new User { Id = userId });
+		var player =  await _dbService.GetAsync<User>(
+			@"SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, iscaptain, picture, null as username FROM playertempprofiles WHERE id = @Id", 
+			new User { Id = userId });
+
+		return (user is null) ? player : user;
+	}
 
 	public async Task SendEmailToConfirmAccount(Guid userId)
 	{
@@ -205,7 +220,7 @@ public class AuthService
 
         user.ConfirmEmail = true;
         await UpdateConfirmEmailAsync(user);
-        await _elastic._client.IndexAsync(user, Index);
+        await _elastic._client.IndexAsync(user, _index);
 
 		if (user.PlayerTeamId != 0)
 		{
@@ -320,7 +335,7 @@ public class AuthService
 		actualUser.PasswordHash = EncryptPassword(user.Password);
 		
 		await UpdatePasswordSendAsync(actualUser);
-		await _elastic._client.IndexAsync(actualUser, Index);
+		await _elastic._client.IndexAsync(actualUser, _index);
 
 		return errorMessages;
 	}
@@ -379,7 +394,7 @@ public class AuthService
 		
 
 		await UpdateProfileSendAsync(actualUser);
-		await _elastic._client.IndexAsync(actualUser, Index);
+		await _elastic._client.IndexAsync(actualUser, _index);
 
 		return errorMessages;
 	}
@@ -413,7 +428,7 @@ public class AuthService
 		actualUser.PasswordHash = EncryptPassword(updatePasswordDTO.NewPassword);
 
 		await UpdatePasswordSendAsync(actualUser);
-		await _elastic._client.IndexAsync(actualUser, Index);
+		await _elastic._client.IndexAsync(actualUser, _index);
 
 		return errorMessages;
 	}
@@ -445,6 +460,9 @@ public class AuthService
 		for (var i = 0; i < 11; i++)
 			numberCpf[i] = int.Parse(cpf[i].ToString());
 		
+		if (numberCpf.Distinct().Count() == 1)
+			throw new ApplicationException(Resource.InvalidCpf);
+		
 		var sum = 0;
 		for (var i = 0; i < 9; i++)
 			sum += numberCpf[i] * (10 - i);
@@ -471,22 +489,56 @@ public class AuthService
 	private async Task AddCpfUserSend(User user) 
 		=> await _dbService.EditData("UPDATE users SET cpf = @cpf WHERE id = @id", user);
 
-	public async Task DeleteCurrentUserValidation(Guid userId) => await DeleteCurrentUserSend(userId);
+	public async Task<User> DeleteCurrentUserValidation(User user)
+	{
 
-	private async Task DeleteCurrentUserSend(Guid userId) =>
-		await _dbService.EditData("UPDATE users SET deleted = true WHERE id =  @userId", new { userId });
-	
+		if (user is null)
+			throw new ApplicationException("Esse usuário não existe");
+		
+		if(user.ChampionshipId != 0)
+		{
+			var championship = await _dbService.GetAsync<Championship>("SELECT * FROM Championships WHERE Id = @id", new {id = user.ChampionshipId});
+			await DeleteValidation(championship);
+		}
+
+		await DeleteCurrentUserSend(user.Id);
+		return user;
+	}
+	public async Task DeleteValidation(Championship championship)
+	{
+		await DeleteSend(championship);
+		championship.Deleted = true;
+		await _elastic._client.IndexAsync(championship, _championshipIndex);
+	}
+
+	private async Task DeleteSend(Championship championship)
+	{
+		await _dbService.EditData("UPDATE championships SET deleted = true WHERE id = @id", championship);
+		await _dbService.EditData("UPDATE users SET championshipid = null WHERE id = @organizerId", championship);
+	}
+
+	private async Task DeleteCurrentUserSend(Guid userId)
+	{
+		var user = await GetUserByIdAsync(userId);
+		
+		await _dbService.EditData("UPDATE users SET deleted = true WHERE id = @userId", new { userId });
+		user.Deleted = true;
+		
+		await _elastic._client.IndexAsync(user, _index);
+	}
+
 	public async Task IndexAllUsersValidation()
 	{
 		var users = await GetAllUsersForIndexingSend();
 		foreach (var user in users)
 		{
-			
-			await _elastic._client.IndexAsync(user, Index);
+			_logger.LogInformation("AUTHSERVICE: ID do usuário: {user.Id}; Delete do usuario: {delete}", user.Id, user.Deleted);
+			await _elastic._client.IndexAsync(user, _index);
 		}
 	}
 
-	private async Task<List<User>> GetAllUsersForIndexingSend() => await _dbService.GetAll<User>("SELECT * FROM users", new {});
+	private async Task<List<User>> GetAllUsersForIndexingSend() 
+		=> await _dbService.GetAll<User>("SELECT id, name, username, email, passwordhash, deleted, birthday, cpf, teammanagementid, artisticname, number, playerteamid, iscaptain, picture, championshipid, bio, confirmemail, role, playerposition, cnpj FROM users", new {});
 
 	public async Task<List<User>> GetUsersByUsernameValidation(string username, bool filtrarSuborganizadores = false)
 	{
@@ -515,6 +567,61 @@ public class AuthService
 							m7.Term(t => t.Field(f => f.IsOrganizer).Value(false));
 						})
 				)
-			).Index(Index)
+			).Index(_index)
 		);
+	
+	public async Task<bool> UserHasCnpjValidationAsync(Guid userId) => await UserHasCnpjSendAsync(userId);
+
+	private async Task<bool> UserHasCnpjSendAsync(Guid userId) =>
+		await _dbService.GetAsync<bool>("SELECT CASE WHEN COALESCE(TRIM(cnpj), '') = '' THEN false ELSE true END FROM users WHERE id = @userId", new { userId });
+
+	public async Task<bool> CnpjAlreadyExistsValidation(string cnpj) => await CnpjAlreadyExistsSend(cnpj);
+
+	private async Task<bool> CnpjAlreadyExistsSend(string cnpj)
+		=> await _dbService.GetAsync<bool>("SELECT COUNT(cnpj) FROM users WHERE cnpj = @cnpj", new { cnpj });
+	
+	public async Task<List<string>> AddCnpjUserValidationAsync(Guid userId, string cnpj)
+	{
+		if (await UserHasCnpjValidationAsync(userId)) throw new ApplicationException("Você já possui uma CNPJ vinculada à sua conta.");
+		if (await CnpjAlreadyExistsValidation(cnpj)) throw new ApplicationException("Essa CNPJ já foi cadastrada.");
+		var userValidator = new UserValidator();
+		var results = await userValidator.ValidateAsync(new User { Cnpj = cnpj }, option => option.IncludeRuleSets("Cnpj"));
+		
+		if (!results.IsValid) return results.Errors.Select(x => x.ErrorMessage).ToList();
+
+		var multiplicador1 = new[] { 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2 };
+		var multiplicador2 = new[] { 6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2 };
+
+		cnpj = cnpj.Trim().Replace(".", "").Replace("-", "").Replace("/", "");
+
+		if (cnpj.All(c => c == '0'))
+			throw new ApplicationException("CNPJ inválida");
+
+		var tempCnpj = cnpj[..12];
+
+		var digito = CalcularDigito(tempCnpj, multiplicador1);
+		digito += CalcularDigito(tempCnpj + digito, multiplicador2);
+
+		if (!cnpj.EndsWith(digito))
+			throw new ApplicationException("CNPJ inválida");
+
+		await AddCnpjUserSend(new() { Id = userId, Cnpj = cnpj });
+		return new();
+	}
+
+	private static string CalcularDigito(string valor, IReadOnlyList<int> multiplicadores)
+	{
+		var soma = valor.Select((t, i) => (t - '0') * multiplicadores[i]).Sum();
+
+		var resto = soma % 11;
+		if (resto < 2)
+			resto = 0;
+		else
+			resto = 11 - resto;
+
+		return resto.ToString();
+	}
+
+	private async Task AddCnpjUserSend(User user) 
+		=> await _dbService.EditData("UPDATE users SET cnpj = @cnpj WHERE id = @id", user);
 }

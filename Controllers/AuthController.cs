@@ -24,9 +24,10 @@ public class AuthController : ApiBaseController
 	private readonly DateTime _expires = DateTime.UtcNow.AddDays(1);
 	private readonly ErrorLogService _error;
 	private readonly OrganizerService _organizerService;
+	private readonly WoService _woService;
 
 	/// <inheritdoc />
-	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error, CaptchaService captcha, OrganizerService organizerService)
+	public AuthController(AuthService authService, RedisService redisService, ErrorLogService error, CaptchaService captcha, OrganizerService organizerService, WoService woService)
 	{
 		_authService = authService;
 		_redisService = redisService;
@@ -40,6 +41,7 @@ public class AuthController : ApiBaseController
 			SameSite = SameSiteMode.None,
 			Expires = _expires
 		};
+		_woService = woService;
 	}
 
 	/// <summary>
@@ -75,8 +77,8 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken)) 
-				throw new ApplicationException(Resource.InvalidCaptcha);
+			// if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken)) 
+			// 	throw new ApplicationException(Resource.InvalidCaptcha);
 			
 			await using var redis = await _redisService.GetDatabase();
 			user = await _authService.VerifyCredentials(user);
@@ -430,9 +432,9 @@ public class AuthController : ApiBaseController
 				profileImg = user.Picture,
 				name = user.Name,
 				id = user.Id,
-				championshipId = organizer.ChampionshipId,
+				championshipId = organizer?.ChampionshipId,
 				isOrganizer,
-				isSubOrganizer = !organizer.MainOrganizer,
+				isSubOrganizer = !organizer?.MainOrganizer,
 				teamManagementId = user.TeamManagementId,
 				role = user.Role
 			});
@@ -537,7 +539,7 @@ public class AuthController : ApiBaseController
 	}
 
     /// <summary>
-	/// Usado para verificar se usuário possui CPF cadastrado.
+	/// Usado para verificar se usuário possui CPF ou CNPJ cadastrado.
 	/// </summary>
 	/// <remarks>
 	/// Exemplo de requisição:
@@ -545,7 +547,7 @@ public class AuthController : ApiBaseController
 	///		GET /auth/cpf
 	///		
 	/// </remarks>
-	/// <response code="200">Retorna se o usuário tem ou não CPF cadastrado.</response>
+	/// <response code="200">Retorna se o usuário tem ou não CPF ou CNPJ cadastrado.</response>
 	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	/// </returns>
@@ -557,8 +559,10 @@ public class AuthController : ApiBaseController
 		try
 		{
 			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-			var hasCpf = await _authService.UserHasCpfValidationAsync(userId);
-			return ApiOk(hasCpf);
+			var hasCpfOrCnpj = await _authService.UserHasCpfValidationAsync(userId);
+			hasCpfOrCnpj = hasCpfOrCnpj || await _authService.UserHasCnpjValidationAsync(userId);
+			
+			return ApiOk(hasCpfOrCnpj);
 		}
 		catch (ApplicationException ex)
 		{
@@ -568,7 +572,7 @@ public class AuthController : ApiBaseController
 	}
 
 	/// <summary>
-	/// Usado para adicionar CPF para usuário atual.
+	/// Usado para adicionar CPF ou CNPJ para usuário atual.
 	/// </summary>
 	/// <remarks>
 	/// Exemplo de requisição:
@@ -577,24 +581,30 @@ public class AuthController : ApiBaseController
 	///		"78641357068"
 	///		
 	/// </remarks>
-	/// <response code="200">Cadastra CPF para usuário atual.</response>
+	/// <response code="200">Cadastra CPF ou CNPJ para usuário atual.</response>
 	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
 	/// </returns>
 	[Authorize]
 	[HttpPost]
 	[Route("/auth/cpf")]
-	public async Task<IActionResult> AddCpf([FromBody] string cpf)
+	public async Task<IActionResult> AddCpf([FromBody] string cpfOrCnpj)
 	{
 		try
 		{
 			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-			var resultados = await _authService.AddCpfUserValidationAsync(userId, cpf);
+			
+			List<string> resultados;
+			var isCnpj = cpfOrCnpj.Length > 11;
+			if (isCnpj)
+				resultados = await _authService.AddCnpjUserValidationAsync(userId, cpfOrCnpj);
+			else
+				resultados = await _authService.AddCpfUserValidationAsync(userId, cpfOrCnpj);
 			
 			if (resultados.Any())
 				return ApiBadRequest(resultados);
 			
-			return ApiOk(Resource.AddCpfCPFVinculadoComSucesso);
+			return ApiOk(string.Format(Resource.AddCpfCPFVinculadoComSucesso, isCnpj ? "CNPJ" : "CPF"));
 		}
 		catch (ApplicationException ex)
 		{
@@ -653,7 +663,14 @@ public class AuthController : ApiBaseController
 		try
 		{
 			var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-			await _authService.DeleteCurrentUserValidation(userId);
+			var user = await _authService.GetUserByIdAsync(userId);
+			if(user.TeamManagementId != 0)
+				await _woService.DeleteTeamValidation(user.TeamManagementId, user.Id);
+			if (user.ChampionshipId != 0)
+				await _organizerService.DeleteValidation(new() { ChampionshipId = user.ChampionshipId, OrganizerId = user.Id });
+
+			await _authService.DeleteCurrentUserValidation(user);
+			
 			Response.Cookies.Delete("playoffs-token");
 			Response.Cookies.Delete("playoffs-refresh-token");
 			

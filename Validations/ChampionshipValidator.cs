@@ -20,7 +20,7 @@ public class ChampionshipValidator : AbstractValidator<Championship>
 			.NotEmpty()
 			.WithMessage(Resource.InitialDateNotNull);
 		RuleFor(c => c.InitialDate)
-			.GreaterThanOrEqualTo(c => DateTime.UtcNow.Date)
+			.Must(BeValidDate)
 			.WithMessage(Resource.InitialDateRange);
 		RuleFor(c => c.InitialDate)
 			.LessThanOrEqualTo(c => c.FinalDate)
@@ -54,9 +54,6 @@ public class ChampionshipValidator : AbstractValidator<Championship>
 			.Length(10, 10000)
 			.WithMessage(Resource.ChampionshipValidatorAtleast10);
 
-		RuleFor(c => c.NumberOfPlayers)
-			.NotEmpty()
-			.WithMessage(Resource.ChampionshipValidatorNumberOfPlayers);
 		RuleFor(championship => championship.SportsId)
 			.Must((championship, sportsId) =>
 			{
@@ -81,6 +78,12 @@ public class ChampionshipValidator : AbstractValidator<Championship>
             .When(championship => championship.DoubleMatchGroupStage)
             .WithMessage("Partida duplas para fase de grupos disponível apenas para esse formato");
 	}
+
+	private bool BeValidDate(DateTime userDate)
+    {
+        DateTime serverUtcTime = DateTime.UtcNow - TimeSpan.FromHours(3);
+        return userDate.ToUniversalTime().Date >= serverUtcTime.Date;
+    }
 
 	private static bool IsPowerOfTwo(int x) => (x is not 0 && (x & (x - 1)) is 0) || (x >= 4 && x % 2 == 0 && x <= 20);
 }

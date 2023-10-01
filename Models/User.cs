@@ -39,4 +39,5 @@ public class User
 	public bool IsOrganizer { get; set; }
 	public int Position { get; set; }
 	public int Line { get; set; }
+	public string Cnpj { get; set; }
 }

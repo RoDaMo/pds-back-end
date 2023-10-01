@@ -108,7 +108,7 @@ public class MatchController : ApiBaseController
 
         try
         {
-            await _matchService.EndGameToKnockoutValidationAsync(matchId);
+            await _matchService.EndGameToKnockoutValidationAsync(matchId, true);
             return ApiOk(result);
         }
 
@@ -198,7 +198,7 @@ public class MatchController : ApiBaseController
 
         try
         {
-            await _matchService.EndGameToLeagueSystemValidationAsync(matchId);
+            await _matchService.EndGameToLeagueSystemValidationAsync(matchId, true);
             return ApiOk(result);
         }
 
@@ -241,7 +241,7 @@ public class MatchController : ApiBaseController
 
         try
         {
-            await _matchService.EndGameToGroupStageValidationAsync(matchId);
+            await _matchService.EndGameToGroupStageValidationAsync(matchId, true);
             return ApiOk(result);
         }
 
@@ -293,7 +293,7 @@ public class MatchController : ApiBaseController
         try
         {
             result = await _matchService.UpdateMatchValidationAsync(match);
-            return ApiOk(result);
+            return result.Any() ? ApiBadRequest(result) : ApiOk(result);
         }
 
         catch (ApplicationException ex)
@@ -389,6 +389,7 @@ public class MatchController : ApiBaseController
 	/// </returns>
     [HttpGet]
     [Route("/matches/{matchId:int}")]
+    [AllowAnonymous]
     public async Task<IActionResult> Show(int matchId)
     {
         try
@@ -427,7 +428,7 @@ public class MatchController : ApiBaseController
 	///		
 	/// </returns>
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     [Route("/matches/{matchId:int}/penalties")]
     public async Task<IActionResult> CanThereBePenalties(int matchId)
     {
@@ -527,7 +528,7 @@ public class MatchController : ApiBaseController
 	///		}   
 	/// </returns>
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     [Route("/matches/{matchId:int}/teams/{teamId:int}/players")]
     public async Task<IActionResult> GetAllPlayersValidInTeam(int matchId, int teamId)
     {
@@ -619,6 +620,7 @@ public class MatchController : ApiBaseController
 	/// </returns>
     [HttpGet]
     [Route("/matches/{matchId:int}/get-all-events")]
+    [AllowAnonymous]
     public async Task<IActionResult> GetAllEvents(int matchId)
     {
         try
@@ -661,7 +663,7 @@ public class MatchController : ApiBaseController
     {
         try
         {
-            await _matchService.WoValidation(matchId, teamId);
+            await _matchService.WoValidation(matchId, teamId, true);
             return ApiOk();
         }
 
@@ -670,5 +672,48 @@ public class MatchController : ApiBaseController
             await _error.HandleExceptionValidationAsync(HttpContext, ex);
             return ApiBadRequest(ex.Message);
         }  
+    }
+
+    ///<summary>
+    /// Usado para iniciar as cobranças de pênaltis da partida.
+	/// </summary>
+    /// <param name="matchId"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		PUT /matches/{matchId}/penalties
+	///		
+	/// </remarks>
+	/// <response code="200">Inicia as cobranças de pênaltis da partida</response>
+	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	///	Exemplo de retorno:
+	///
+	///		{
+	///			"message": "",
+	///			"succeed": true,
+	///			"results": []
+	///		}
+	///		
+	/// </returns>
+    [HttpPut]
+    [Authorize]
+    [Route("/matches/{matchId:int}/penalties")]
+    public async Task<IActionResult> Penalties(int matchId)
+    {
+        var result = new List<string>();
+
+        try
+        {
+            await _matchService.ActivePenaltiesValidationAsync(matchId);
+            return ApiOk(result);
+        }
+
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            result.Add(ex.Message);
+            return ApiBadRequest(result);
+        }   
     }
 }

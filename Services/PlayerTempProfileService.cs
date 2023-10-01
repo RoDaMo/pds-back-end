@@ -68,7 +68,7 @@ public class PlayerTempProfileService
 			throw new ApplicationException(Resource.CreateValidationAsyncPlayerWithNumberExists);
 		}
 
-		if(await ChecksIfNumberAlreadyExistsInUser(playerTempProfile.Number))
+		if(await ChecksIfNumberAlreadyExistsInUser(playerTempProfile.Number, playerTempProfile.TeamsId))
 		{
 			throw new ApplicationException(Resource.CreateValidationAsyncExists);
 		}
@@ -87,7 +87,7 @@ public class PlayerTempProfileService
 	private async Task<bool> ChecksIfEmailAlreadyExistsInPlayerTempProfiles(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT email FROM playertempprofiles WHERE email = @email);", new {email});
 	private async Task<bool> ChecksIfEmailAlreadyExistsInUsers(string email) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT email FROM users WHERE email = @email);", new {email});
 	private async Task<bool> ChecksIfNumberAlreadyExistsInPlayerTemp(int number, int teamsId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM playertempprofiles WHERE number = @number AND teamsid = @teamsId);", new {number, teamsId});
-	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number);", new {number});
+	private async Task<bool> ChecksIfNumberAlreadyExistsInUser(int number, int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT name FROM users WHERE number = @number AND PlayerTeamId = @teamId);", new {number, teamId});
     private async Task<bool> ChecksIfTeamExists(int teamId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT id FROM teams WHERE id = @teamId);", new {teamId});
 
     public async Task<PlayerTempProfile> GetTempPlayerById(Guid id) 
@@ -98,4 +98,7 @@ public class PlayerTempProfileService
 
     public async Task MakePlayerCaptain(Guid playerId)
 	    => await _dbService.EditData("UPDATE playertempprofiles SET IsCaptain = true WHERE Id = @playerId", new {playerId});
+	
+	public async Task DeletePlayerTempValidation(Guid id) => await DeletePlayerTempSend(id);
+	private async Task DeletePlayerTempSend(Guid id) => await _dbService.EditData("DELETE FROM PlayerTempProfiles WHERE Id = @id", new {id});
 }

@@ -214,9 +214,8 @@ public class StatisticsService
             @"SELECT COUNT(g.Id)
             FROM Goals g
             JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND 
-            (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            WHERE m.ChampionshipId = @championshipId AND (m.Visitor = @teamId OR m.Home = @teamId) AND
+            ((g.TeamId = @teamId AND g.OwnGoal = false) OR (g.TeamId <> @teamId AND g.OwnGoal = true))",
             new { championshipId, teamId });
     private async Task<int> AmountOfMatches(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
@@ -232,7 +231,7 @@ public class StatisticsService
             WHERE (Visitor = @teamId OR Home = @teamId) AND 
             ChampionshipId = @championshipId AND
             (Winner IS NOT NULL OR Tied = TRUE)
-            ORDER BY Date DESC
+            ORDER BY Id DESC
             LIMIT 3", 
             new {teamId, championshipId});
         var matchesDTO = new List<MatchDTO>();
@@ -614,9 +613,10 @@ public class StatisticsService
         var strikers = new List<StrikerDTO>();
         
         var players = await _dbService.GetAll<PlayerGoalsSummaryDTO>(
-                @"SELECT COALESCE(PlayerId, PlayerTempId) AS PlayerIdOrTempId, COUNT(*) AS Goals
-                FROM goals
-                WHERE OwnGoal = false
+                @"SELECT COALESCE(g.PlayerId, g.PlayerTempId) AS PlayerIdOrTempId, COUNT(*) AS Goals
+                FROM goals g
+                JOIN Matches m ON g.MatchId = m.Id
+                WHERE g.OwnGoal = false AND m.ChampionshipId = @championshipId
                 GROUP BY COALESCE(PlayerId, PlayerTempId)
                 ORDER BY Goals DESC
                 LIMIT 15;", 
@@ -649,22 +649,30 @@ public class StatisticsService
             if(user is not null)
             {
                 var team = await GetByTeamIdSendAsync(user.PlayerTeamId);
-                var striker = new StrikerDTO();
-                striker.Goals = player.Goals;
-                striker.Name = user.Name;
-                striker.Picture = user.Name;
-                striker.TeamEmblem = team.Emblem;
+                var striker = new StrikerDTO
+                {
+                    Goals = player.Goals,
+                    Name = user.Name,
+                    Picture = user.Name,
+                    TeamEmblem = team.Emblem,
+                    TeamId = team.Id,
+                    ID = user.Id
+                };
                 strikers.Add(striker);
             }
             else
             {
                 var playerTemp = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Id = @id", new {id = player.PlayerIdOrTempId});
                 var team = await GetByTeamIdSendAsync(playerTemp.TeamsId);
-                var striker = new StrikerDTO();
-                striker.Goals = player.Goals;
-                striker.Name = playerTemp.Name;
-                striker.Picture = playerTemp.Picture;
-                striker.TeamEmblem = team.Emblem;
+                var striker = new StrikerDTO
+                {
+                    Goals = player.Goals,
+                    Name = playerTemp.Name,
+                    Picture = playerTemp.Picture,
+                    TeamEmblem = team.Emblem,
+                    TeamId = team.Id,
+                    ID = playerTemp.Id
+                };
                 strikers.Add(striker);
             }
         }

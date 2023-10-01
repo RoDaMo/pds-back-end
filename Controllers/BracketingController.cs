@@ -257,6 +257,7 @@ public class BracketingController : ApiBaseController
 	/// </returns>
     [HttpGet]
     [Route("/bracketing/exists/{id:int}")]
+    [AllowAnonymous]
     public async Task<IActionResult> BracketingExists(int id)
     {
         try

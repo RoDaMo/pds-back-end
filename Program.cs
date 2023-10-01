@@ -3,15 +3,19 @@ using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PlayOffsApi.HostedService;
 using PlayOffsApi.Middleware;
+using PlayOffsApi.Models;
 using PlayOffsApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 var ISSUER = config["JwtSettings:Issuer"];
 var AUDIENCE = config["JwtSettings:Audience"];
@@ -79,8 +83,15 @@ builder.Services.AddScoped<StatisticsService>();
 builder.Services.AddScoped<FoulService>();
 builder.Services.AddScoped<ReplacementService>();
 builder.Services.AddScoped<FirstStringService>();
+// builder.Services.AddScoped<WoService>();
+builder.Services.AddScoped<BracketingMatchService>();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>()));
+builder.Services.AddScoped<WoService>();
+builder.Services.AddScoped<Logger<User>>();
+builder.Services.AddScoped<TodoService>();
+builder.Services.AddScoped<ReportService>();
+builder.Services.AddScoped(sp => new AuthService(KEY, ISSUER, AUDIENCE, sp.GetRequiredService<DbService>(), sp.GetRequiredService<ElasticService>(), sp.GetRequiredService<Logger<User>>()));
+
 
 
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");

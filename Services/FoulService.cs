@@ -91,11 +91,11 @@ public class FoulService
                 }
 
                 if(match.Round != 0 && championship.Format == Enum.Format.GroupStage)
-                    await _matchService.EndGameToGroupStageValidationAsync(match.Id);
+                    await _matchService.EndGameToGroupStageValidationAsync(match.Id, true);
                 else if(match.Round != 0 && championship.Format == Enum.Format.LeagueSystem)
-                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id);
+                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id, true);
                 else
-                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id);
+                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id, true);
             }
         }
         else
@@ -133,11 +133,11 @@ public class FoulService
                 }
 
                 if(match.Round != 0 && championship.Format == Enum.Format.GroupStage)
-                    await _matchService.EndGameToGroupStageValidationAsync(match.Id);
+                    await _matchService.EndGameToGroupStageValidationAsync(match.Id, true);
                 else if(match.Round != 0 && championship.Format == Enum.Format.LeagueSystem)
-                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id);
+                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id, true);
                 else
-                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id);
+                    await _matchService.EndGameToLeagueSystemValidationAsync(match.Id, true);
             }           
         }
         return new();

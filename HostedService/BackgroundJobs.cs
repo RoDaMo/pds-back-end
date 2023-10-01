@@ -14,6 +14,7 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private IRedisSubscriptionAsync _subscription;
     private CancellationToken _cts;
+     private readonly ILogger<BackgroundJob> _logger;
     // private const string BucketName = "playoffs-armazenamento";
     // private readonly AWSCredentials _awsCredentials = new EnvironmentVariablesAWSCredentials();
     private readonly string _mountPath = Environment.GetEnvironmentVariable("MOUNT_PATH");
@@ -29,10 +30,11 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
     };
 
     // private AmazonS3Client GetClient => new(_awsCredentials, RegionEndpoint.SAEast1);
-    public BackgroundJobs(RedisService redisService, IServiceScopeFactory serviceScopeFactory)
+    public BackgroundJobs(RedisService redisService, IServiceScopeFactory serviceScopeFactory, ILogger<BackgroundJob> logger)
     {
         _redisService = redisService;
         _serviceScopeFactory = serviceScopeFactory;
+        _logger = logger;
     }
     
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -77,6 +79,9 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
     public async Task EnqueueJob(Expression<Func<Task>> methodExpression, TimeSpan? period = null)
     {
         var (methodName, parameters) = GetMethodDetails(methodExpression);
+        _logger.LogInformation("Nome do método: {methodName}", methodName);
+        _logger.LogInformation("Período: {period}", period);
+
         var jobObject = new BackgroundJob
         {
             MethodName = methodName, 
@@ -92,7 +97,10 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
         }
 
         var scheduledDate = DateTime.UtcNow.Add(period.Value);
+        _logger.LogInformation("scheduledDate: {scheduledDate} ", scheduledDate);
+
         var unixTimestamp = (long)(scheduledDate - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+        _logger.LogInformation("unixTimestamp: {unixTimestamp} ", unixTimestamp);
         await database.AddItemToSortedSetAsync("scheduled_jobs", jobObjectSerialized, unixTimestamp, _cts);
     }
     
@@ -118,6 +126,8 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
         await removalTask; 
 
         var jobs = fetchedJobs.Select(job => JsonSerializer.Deserialize<BackgroundJob>(job)).Where(backgroundJob => backgroundJob is not null).ToList();
+        _logger.LogInformation("Quantidade de jobs: {jobsCount}", jobs.Count);
+        
         foreach (var job in jobs)  
         {
             ExecuteBackgroundJob(job);
@@ -146,19 +156,29 @@ public class BackgroundJobs : BackgroundService, IBackgroundJobsService
         var cancelJob = await database.GetValueAsync($"cancelJob_championship:{championshipId}", _cts);
         var championship = await dbService.GetAsync<Championship>("SELECT * FROM championships WHERE id = @id", new { championshipId });
 
+        _logger.LogInformation(cancelJob);
+        _logger.LogInformation("Data de início do camp: " + championship.InitialDate);
+
         if (cancelJob is not null)
             if (DateTime.Parse(cancelJob) != championship.InitialDate) return;
 
         var statusEnum = (ChampionshipStatus)status;
+
+        _logger.LogInformation("Status que o campeonato irá ser setado: " + statusEnum);
+        _logger.LogInformation("Se a lista de atividade do campeonato tem alguma coisa: " + activityFromChampionship.Any());
+
         if (activityFromChampionship.Any() && statusEnum == ChampionshipStatus.Inactive)
         {
             var lastActivity = activityFromChampionship.OrderByDescending(d => d.DateOfActivity).Last();
+              _logger.LogInformation("Data da última atividade: " + lastActivity.DateOfActivity);
             if (DateTime.UtcNow - lastActivity.DateOfActivity < TimeSpan.FromDays(14)) return;
         }
 
         await ChangeChampionshipStatusSend(championshipId, statusEnum, dbService);
         championship.Status = statusEnum;
-        await elasticService._client.IndexAsync(championship, "championships", _cts);
+        
+        var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
+        await elasticService._client.IndexAsync(championship, string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "championships" : "championships-dev", _cts);
     }
 
     private static async Task ChangeChampionshipStatusSend(int championshipId, ChampionshipStatus status, DbService dbService) 

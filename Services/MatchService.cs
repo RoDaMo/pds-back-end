@@ -22,20 +22,40 @@ public class MatchService
         _goalService = goalService;
     }
 
-    public async Task EndGameToKnockoutValidationAsync(int matchId)
+    public async Task EndGameToKnockoutValidationAsync(int matchId, bool valid)
     {
         var match = await GetMatchById(matchId);
-        var validationResult = await HasMatchStarted(matchId, match);
-        if (validationResult != string.Empty)
-            throw new ApplicationException(validationResult);
+        if(match is null && valid)
+        {
+            throw new ApplicationException("Partida passada não existe.");
+        }
+        if(await DepartureDateNotSet(matchId) && valid)
+        {
+            throw new ApplicationException("Data da partida não definida.");
+        }
+        if(match.Date.ToUniversalTime() >= DateTime.UtcNow && valid)
+        {
+            throw new ApplicationException("Partida ainda não inciou");
+        }
+        if(match.Winner != 0 && valid)
+        {
+            throw new ApplicationException("Partida já possui um vencedor.");
+        }
 
         var championship = await GetByIdSend(match.ChampionshipId);
+
+        if((match.HomeUniform is null || match.VisitorUniform is null) && valid)
+            throw new ApplicationException("É necessário definir os uniformes das equipes antes");
+        
+        if (match.Road is null)
+            throw new ApplicationException("É necessário definir o local da partida antes antes");
+
         if(championship.DoubleMatchEliminations && match.Phase != Phase.Finals || 
         championship.FinalDoubleMatch && match.Phase == Phase.Finals)
 		{
             var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(matchId, match.Visitor);
             var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(matchId, match.Home);
-            if(match.PreviousMatch != 0)
+            if(match.PreviousMatch != 0 && valid)
             {
                 if(aggregateVisitorPoints == aggregateHomePoints && match.Winner == 0)
                 {
@@ -508,25 +528,33 @@ public class MatchService
     {
         var winners = new List<int>();
         var aux = 1;
-        var matches = await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Id", new {championship.Id, phase});
+        var matches = await _dbService.GetAll<Match>("SELECT * FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Id", new {championshipId = championship.Id, phase});
         if((championship.DoubleMatchEliminations && phase != Phase.Finals) || (championship.FinalDoubleMatch && phase == Phase.Finals))
             aux = 2;
 
         for (int i = 0; i < matches.Count(); i = i + aux)
         {
-            var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Visitor);
-            var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Home);
-            if(aggregateVisitorPoints > aggregateHomePoints)
+            if(!matches[i].Tied)
             {
-                winners.Add(matches[i].Visitor);
+                var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Visitor);
+                var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(matches[i].Id, matches[i].Home);
+                if(aggregateVisitorPoints > aggregateHomePoints)
+                {
+                    winners.Add(matches[i].Visitor);
+                }
+                else if(aggregateVisitorPoints < aggregateHomePoints)
+                {
+                    winners.Add(matches[i].Home);
+                }
+                else
+                {
+                    winners.Add(matches[i].Winner);
+                }
             }
-            else if(aggregateVisitorPoints < aggregateHomePoints)
-            {
-                winners.Add(matches[i].Home);
-            }
+
             else
             {
-                winners.Add(matches[i].Winner);
+                winners.Add(matches[i+1].Winner);
             }
         }
         return winners;
@@ -592,36 +620,36 @@ public class MatchService
     private async Task<bool> CheckIfThereIsWinner(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND Winner IS NOT NULL)", new {matchId});
 
-    public async Task EndGameToLeagueSystemValidationAsync(int matchId)
+    public async Task EndGameToLeagueSystemValidationAsync(int matchId, bool valid)
     {
         var match = await GetMatchById(matchId);
         var championship = await GetChampionshipByMatchId(matchId);
-        if(match is null)
+        if(match is null && valid)
         {
             throw new ApplicationException("Partida passada não existe.");
         }
-        if(await DepartureDateNotSet(matchId))
+        if(await DepartureDateNotSet(matchId) && valid)
         {
             throw new ApplicationException("Data da partida não definida.");
         }
-        if(match.Date.ToUniversalTime() >= DateTime.UtcNow)
+        if(match.Date.ToUniversalTime() >= DateTime.UtcNow && valid)
         {
             throw new ApplicationException("Partida ainda não inciou");
         }
-        if(match.Winner != 0)
+        if(match.Winner != 0 && valid)
         {
             throw new ApplicationException("Partida já possui um vencedor.");
         }
-        if(match.Tied)
+        if(match.Tied && valid)
         {
             throw new ApplicationException("Partida já terminou em empate.");
         }
-        if(match.HomeUniform is null || match.VisitorUniform is null)
+        if((match.HomeUniform is null || match.VisitorUniform is null) && valid)
             throw new ApplicationException("É necessário definir os uniformes das equipes antes");
         
-        if(match.Road is null)
+        if(match.Road is null && valid)
             throw new ApplicationException("É necessário definir o local da partida antes");
-        if(await CheckIfLastMatchHasEnded(match))
+        if(await CheckIfLastMatchHasEnded(match) && valid)
             throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
 
         var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
@@ -762,9 +790,8 @@ public class MatchService
             @"SELECT COUNT(g.Id)
             FROM Goals g
             JOIN Matches m ON g.MatchId = m.Id
-            WHERE m.ChampionshipId = @championshipId AND 
-            (g.TeamId = @teamId AND g.OwnGoal = false OR g.TeamId <> @teamId AND g.OwnGoal = true)
-            GROUP BY g.TeamId;",
+            WHERE m.ChampionshipId = @championshipId AND (m.Visitor = @teamId OR m.Home = @teamId) AND
+            ((g.TeamId = @teamId AND g.OwnGoal = false) OR (g.TeamId <> @teamId AND g.OwnGoal = true))",
             new { championshipId, teamId });
     private async Task<int> HeadToHeadWins(int teamId1, int teamId2, int championshipId)
         => await _dbService.GetAsync<int>(
@@ -1084,38 +1111,38 @@ public class MatchService
         return tempCards + userCards;
     }
 
-    public async Task EndGameToGroupStageValidationAsync(int matchId)
+    public async Task EndGameToGroupStageValidationAsync(int matchId, bool valid)
     {
         var match = await GetMatchById(matchId);
         var championship = await GetChampionshipByMatchId(matchId);
-        if(match is null)
+        if(match is null && valid)
         {
             throw new ApplicationException("Partida passada não existe.");
         }
-        if(await DepartureDateNotSet(matchId))
+        if(await DepartureDateNotSet(matchId) && valid)
         {
             throw new ApplicationException("Data da partida não definida.");
         }
-        if(match.Date.ToUniversalTime() >= DateTime.UtcNow)
+        if(match.Date.ToUniversalTime() >= DateTime.UtcNow && valid)
         {
             throw new ApplicationException("Partida ainda não inciou");
         }
-        if(match.Winner != 0)
+        if(match.Winner != 0 && valid)
         {
             throw new ApplicationException("Partida já possui um vencedor.");
         }
-        if(match.Tied)
+        if(match.Tied && valid)
         {
             throw new ApplicationException("Partida já terminou em empate.");
         }
 
-        if(match.HomeUniform is null || match.VisitorUniform is null)
+        if((match.HomeUniform is null || match.VisitorUniform is null) && valid)
             throw new ApplicationException("É necessário definir os uniformes das equipes antes");
         
-        if (match.Road is null)
+        if (match.Road is null && valid)
             throw new ApplicationException("É necessário definir o local da partida antes antes");
         
-        if(await CheckIfLastMatchHasEnded(match))
+        if(await CheckIfLastMatchHasEnded(match) && valid)
             throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
 
         var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
@@ -1257,7 +1284,26 @@ public class MatchService
             if(!await CheckIfUniformBelongsToTeam(oldMatch.Visitor, match.VisitorUniform))
                 throw new ApplicationException("Time não apresenta o uniforme passado");
         }
-        
+
+        if(oldMatch.Round > 1)
+        {
+            var highestLastRoundDate = await _dbService.GetAsync<DateTime>(
+                    @"SELECT Date FROM matches WHERE ChampionshipId = @championshipId AND Round = @round ORDER BY Date DESC LIMIT 1", 
+                    new {round = oldMatch.Round - 1, championshipId = championship.Id}
+                );
+            if(highestLastRoundDate > match.Date)
+                throw new ApplicationException("Data da partida atual deve ser posterior à data da última partida da rodada anterior");
+        }
+
+        else if(oldMatch.Phase != 0)
+        {
+            var highestLastRoundDate = await _dbService.GetAsync<DateTime>(
+                    @"SELECT Date FROM matches WHERE ChampionshipId = @championshipId AND Phase = @phase ORDER BY Date DESC LIMIT 1", 
+                    new {phase = oldMatch.Phase - 1, championshipId = championship.Id}
+                );
+            if(highestLastRoundDate > match.Date)
+                throw new ApplicationException("Data da partida atual deve ser posterior à data da última partida da fase anterior");
+        }
 
         await UpdateSend(match);
         return new();
@@ -1335,9 +1381,11 @@ public class MatchService
             matchDTO.HomeEmblem = home.Emblem;
             matchDTO.HomeName = home.Name;
             matchDTO.HomeId = home.Id;
+            matchDTO.HomeUniform = match.HomeUniform;
             matchDTO.HomeGoals = await GetPointsFromTeamById(match.Id, match.Home);
             matchDTO.VisitorEmblem = visitor.Emblem;
             matchDTO.VisitorName = visitor.Name;
+            matchDTO.VisitorUniform = match.VisitorUniform;
             matchDTO.VisitorGoals = await GetPointsFromTeamById(match.Id, match.Visitor);
             matchDTO.VisitorId = visitor.Id;
             matchDTO.Cep = match.Cep;
@@ -1347,6 +1395,7 @@ public class MatchService
             matchDTO.MatchReport = match.MatchReport;
             matchDTO.Arbitrator = match.Arbitrator;
             matchDTO.Date = match.Date;
+            matchDTO.Penalties = match.Penalties;
             matchDTO.ChampionshipId = match.ChampionshipId;
             matchDTO.Finished = (match.Winner != 0 || match.Tied == true) ? true : false;
 			return matchDTO;
@@ -1826,9 +1875,10 @@ public class MatchService
                     PlayerId = (foul.PlayerId == Guid.Empty) ? foul.PlayerTempId : foul.PlayerId,
                     Minutes = foul.Minutes,
                     YellowCard = foul.YellowCard,
+                    TeamId = teamId,
                     Goal = false,
                     Foul = true,
-                    Penalty = false,
+                    Penalty = false
                 };
                 events.Add(foulEvent);
             }
@@ -1889,7 +1939,7 @@ public class MatchService
     private async Task<List<Goal>> GetAllGoalsByMatchId(int matchId)
         => await _dbService.GetAll<Goal>("SELECT * FROM Goals WHERE MatchId = @matchId", new {matchId});
     private async Task<List<Foul>> GetAllFoulsByMatcId(int matchId)
-        => await _dbService.GetAll<Foul>("SELECT * FROM Fouls WHERE MatchId = @matchId", new {matchId});
+        => await _dbService.GetAll<Foul>("SELECT * FROM Fouls WHERE MatchId = @matchId ORDER BY Id DESC", new {matchId});
     private async Task<List<Penalty>> GetAllPenaltiesByMatchId(int matchId)
         => await _dbService.GetAll<Penalty>("SELECT * FROM Penalties WHERE MatchId = @matchId ORDER BY Id", new {matchId});
     private async Task<PlayerTempProfile> GetTempById(Guid id)
@@ -1897,7 +1947,7 @@ public class MatchService
     private async Task<User> GetUserById(Guid id)
         => await _dbService.GetAsync<User>("SELECT * FROM Users WHERE Id = @id", new {id});
 
-    public async Task WoValidation(int matchId, int teamId, bool bypassStartingValidation = false)
+    public async Task WoValidation(int matchId, int teamId, bool valid)
     {
         var match = await GetMatchById(matchId);
         var championship = await GetChampionshipByMatchId(matchId);
@@ -1910,15 +1960,28 @@ public class MatchService
             if (validationResult != string.Empty)
                 throw new ApplicationException(validationResult);
         }
+        if(match is null && valid)
+            throw new ApplicationException("Partida passada não existe");
+        if(await DepartureDateNotSet(matchId) && valid)
+            throw new ApplicationException("Data da partida não definida.");
+        if(match.Date.ToUniversalTime() >= DateTime.UtcNow && valid)
+            throw new ApplicationException("Partida ainda não inciou");
+        if(match.Winner != 0 && valid)
+            throw new ApplicationException("Partida já possui um vencedor.");
+        if((match.HomeUniform is null || match.VisitorUniform is null) && valid)
+            throw new ApplicationException("É necessário definir os uniformes das equipes antes");
+        if (match.Road is null && valid)
+            throw new ApplicationException("É necessário definir o local da partida antes antes");
 
         if(match.Round != 0 && championship.Format == Format.GroupStage)
         {
-            if(match.Tied)
+            if(match.Tied && valid)
                 throw new ApplicationException("Partida já terminou em empate.");
-            if(await CheckIfLastMatchHasEnded(match))
+            if(await CheckIfLastMatchHasEnded(match) && valid)
                 throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
             
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
+            await _dbService.EditData("DELETE FROM Fouls WHERE MatchId = @matchId", new {matchId = match.Id});
 
             if(string.IsNullOrWhiteSpace(player.Username))
             {
@@ -1948,16 +2011,17 @@ public class MatchService
                 }
             }
             
-            await EndGameToGroupStageValidationAsync(match.Id);
+            await EndGameToGroupStageValidationAsync(match.Id, false);
         }
         else if(match.Round != 0 && championship.Format == Format.LeagueSystem)
         {
-            if(match.Tied)
+            if(match.Tied && valid)
                 throw new ApplicationException("Partida já terminou em empate.");
-            if(await CheckIfLastMatchHasEnded(match))
+            if(await CheckIfLastMatchHasEnded(match) && valid)
                 throw new ApplicationException("Partida anterior de um dos times anda não foi finalizada");
             
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
+            await _dbService.EditData("DELETE FROM Fouls WHERE MatchId = @matchId", new {matchId = match.Id});
 
             if(string.IsNullOrWhiteSpace(player.Username))
             {
@@ -1987,12 +2051,13 @@ public class MatchService
                 }
             }
 
-            await EndGameToLeagueSystemValidationAsync(match.Id);
+            await EndGameToLeagueSystemValidationAsync(match.Id, false);
         }
 
         else
         {
             await _goalService.RemoveAllGoalOfMatchValidation(match.Id);
+            await _dbService.EditData("DELETE FROM Fouls WHERE MatchId = @matchId", new {matchId = match.Id});
 
             if(string.IsNullOrWhiteSpace(player.Username))
             {
@@ -2021,7 +2086,7 @@ public class MatchService
                     await CreateGoalToPlayerSend(goal);
                 }
             }
-            await EndGameToKnockoutValidationAsync(matchId);
+            await EndGameToKnockoutValidationAsync(matchId, false);
         }
     }
 
@@ -2094,6 +2159,54 @@ public class MatchService
 			goal);
         }
         return id;
+    }
+
+    public async Task ActivePenaltiesValidationAsync(int matchId)
+    {
+        var match = await GetMatchById(matchId);
+        var championship = await GetChampionshipByMatchId(matchId);
+
+        if(match is null)
+            throw new ApplicationException("Partida passada não existe");
+
+        if(championship.SportsId == Sports.Volleyball)
+            throw new ApplicationException("Vôlei não apresenta disputa de pênaltis");
+        
+        if(championship.Format == Format.LeagueSystem)
+            throw new ApplicationException("Esse formato de campeonato não apresenta disputa de pênaltis");
+        
+        if(championship.Format == Format.GroupStage && match.Round != 0)
+            throw new ApplicationException("Fase atual do campeonato não apresenta disputa de pênaltis");
+
+        if(match.Phase != Phase.Finals && championship.DoubleMatchEliminations ||
+            match.Phase == Phase.Finals && championship.FinalDoubleMatch)
+        {
+            var aggregateVisitorPoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Visitor);
+            var aggregateHomePoints = await GetPointsFromTeamByIdInTwoMatches(match.Id, match.Home);
+            if(match.PreviousMatch == 0)
+            {
+                throw new ApplicationException("Primeira partida não pode apresentar disputa de pênaltis");
+            }
+            else if(await CheckIfFirstMatchHasNotFinished(match.PreviousMatch))
+            {
+               throw new ApplicationException("Primeira partida ainda não foi finalizada");
+            }
+            else if(aggregateHomePoints != aggregateVisitorPoints)
+            {
+                throw new ApplicationException("Partida precisa estar empatada para iniciar a disputa de pênaltis");
+            }
+        }
+
+        else
+        {
+            var visitorPoints = await GetPointsFromTeamById(matchId, match.Visitor);
+            var homePoints = await GetPointsFromTeamById(matchId, match.Home);
+
+            if(visitorPoints != homePoints)
+                throw new ApplicationException("Partida precisa estar empatada para iniciar a disputa de pênaltis");
+        }
+        
+        await _dbService.EditData("UPDATE Matches SET Penalties = true WHERE id=@matchId", new {matchId});
     }
       
 }

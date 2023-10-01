@@ -67,6 +67,7 @@ public class DbService
 			return result;
 		}
 		catch (Exception)
+		
 		{
 			throw new ApplicationException(Resource.GenericErrorMessage);
 		}

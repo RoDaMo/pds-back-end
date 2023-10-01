@@ -228,4 +228,38 @@ public class OrganizerController  : ApiBaseController
             return ApiBadRequest(Generic.GenericErrorMessage);
         }
     }
+
+    ///  <summary>
+    ///  Usado para obter todos os campeonatos os quais o usuário com o ID fornecido administra.
+    ///  </summary>
+    ///  <param name="id"></param>
+    ///  <remarks>
+    ///  Exemplo de requisição:
+    ///  
+    /// 		GET /organizer/championship/75ff2f9e-ae41-487c-8316-791213de27fd
+    /// 		
+    ///  </remarks>
+    ///  <response code="200">Obtém todos os campeonatos administrados pelo usuário.</response>
+    ///  <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+    ///  <returns>
+    ///  </returns>
+    [HttpGet]
+    [Route("/organizer/{id:guid}/championship")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAllChampionshipsFromOrganizer(Guid id)
+    {
+	    try
+	    {
+		    var isUser = await _organizerService.IsUserAnOrganizerValidation(id);
+		    if (isUser is null)
+			    return ApiBadRequest("Usuário com o ID fornecido não possui nenhum campeonato organizado");
+
+		    return ApiOk(await _organizerService.GetAllChampionshipsByOrganizerValidation(id));
+	    }
+	    catch (ApplicationException ex)
+	    {
+		    await _error.HandleExceptionValidationAsync(HttpContext, ex);
+		    return ApiBadRequest(Generic.GenericErrorMessage);
+	    }
+    }
 }
