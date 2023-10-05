@@ -98,4 +98,9 @@ public class ReportService
     public async Task<List<Report>> GetReportsFromUserValidation(Guid id) => await GetReportsFromUserSend(id);
 
     private async Task<List<Report>> GetReportsFromUserSend(Guid id) => await _dbService.GetAll<Report>("SELECT id, authorid, completed, description, reporttype, reporteduserid, reportedteamid, reportedchampionshipid FROM Reports WHERE authorid = @id", new { id });
+
+    public async Task<bool> VerifyReportedEntity(Guid idUser, int id, Guid userId) =>
+        await _dbService.GetAsync<int>(
+            "SELECT COUNT(*) FROM reports WHERE authorid = @userId AND (reportedchampionshipid = @id OR reportedteamid = @id OR reporteduserid = @idUser)",
+            new { userId, id, idUser }) == 0;
 }

@@ -256,4 +256,39 @@ public class ReportController : ApiBaseController
             return ApiBadRequest(ex.Message);
         }
     }
+
+    /// <summary>
+    /// Verifica se o usuário logado atualmente já possui uma denúncia naquela entidade.
+    /// </summary>
+    /// <remarks>
+    /// Exemplo de requisição:
+    ///
+    ///     GET /reports/verify?id=3
+    /// 
+    /// </remarks>
+    /// <param name="idUser"></param>
+    /// <param name="id"></param>
+    /// <returns>
+    ///     {
+    ///         "message": "",
+    ///         "succeed": true,
+    ///         "results": true
+    ///     }
+    /// </returns>
+    [HttpGet]
+    [Authorize]
+    [Route("/reports/verify")]
+    public async Task<IActionResult> VerifyIfUserHasReportedEntity(Guid idUser = new(), int id = 0)
+    {
+        try
+        {
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            return ApiOk(await _reportService.VerifyReportedEntity(idUser, id, userId));
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
+        }
+    }
 }
