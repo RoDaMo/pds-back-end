@@ -38,6 +38,7 @@ public class ReportController : ApiBaseController
     ///        "ReportedTeamId": 0,
     ///        "ReportedChampionshipId": 5,
     ///        "Description": "Teste"
+    ///        "Violation": 1
     ///     }
     ///		
     /// </remarks>
@@ -76,10 +77,11 @@ public class ReportController : ApiBaseController
     /// </summary>
     /// <param name="type"></param>
     /// <param name="completed"></param>
+    /// <param name="typeOfViolation"></param>
     /// <remarks>
     /// Exemplo de requisição:
-    ///
-    ///     GET /reports?type=0&amp;completed=false
+    /// 
+    ///     GET /reports?type=0&amp;completed=false&amp;typeOfActivity=0
     /// 
     /// </remarks>
     /// <returns>\
@@ -104,11 +106,11 @@ public class ReportController : ApiBaseController
     /// </returns>
     [HttpGet]
     [Authorize(Roles = "admin")]
-    public async Task<IActionResult> GetReportsByType(ReportType type, bool completed)
+    public async Task<IActionResult> GetReportsByType(ReportType type, bool completed, TypeOfViolation typeOfViolation)
     {
         try
         {
-            return ApiOk(await _reportService.GetAllByTypeValidation(type, completed));
+            return ApiOk(await _reportService.GetAllByTypeValidation(type, completed, typeOfViolation));
         }
         catch (ApplicationException ex)
         {
