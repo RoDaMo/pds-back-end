@@ -100,64 +100,41 @@ public class ModerationController : ApiBaseController
         }
     }
 
-    /// <summary>
-	/// Usado para excluir um usuário.
-	/// </summary>
-    /// <param name="id"></param>
-	/// <remarks>
-	/// Exemplo de requisição:
-	/// 
-	///		DELETE /moderation/teams/{id}
-	///		
-	/// </remarks>
-	/// <response code="200">Exclui o usuário.</response>
-	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
-	/// <returns>
-	/// </returns>
+    ///  <summary>
+    ///  Usado para excluir um usuário.
+    ///  </summary>
+    ///  <param name="id"></param>
+    ///  <param name="usuarioTemporario"></param>
+    ///  <remarks>
+    ///  Exemplo de requisição:
+    ///  
+    /// 		DELETE /moderation/teams?id={id}&amp;usuarioTemporario=false
+    /// 		
+    ///  </remarks>
+    ///  <response code="200">Exclui o usuário.</response>
+    ///  <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
+    ///  <returns>
+    ///  </returns>
     [HttpDelete]
-    [Route("/moderation/users/{id:guid}")]
+    [Route("/moderation/users")]
     [AllowAnonymous]
-    public async Task<IActionResult> DeleteUser(Guid id)
+    public async Task<IActionResult> DeleteUser(Guid id, bool usuarioTemporario)
     {
         try
         {
+	        if (usuarioTemporario)
+	        {
+		        await _playerTempService.DeletePlayerTempValidation(id);
+		        return ApiOk(Resource3.DeleteUsuarioExcluidoComSucesso);
+	        }
+	        
 	        var user = await _authService.GetUserByIdAsync(id);
             if (user.TeamManagementId != 0)
 				await _woService.DeleteTeamValidation(user.TeamManagementId, user.Id);
             if (user.ChampionshipId != 0)
 				await _organizerService.DeleteValidation(new() { ChampionshipId = user.ChampionshipId, OrganizerId = user.Id });
             await _authService.DeleteCurrentUserValidation(user);
-	            
-            return ApiOk(Resource3.DeleteUsuarioExcluidoComSucesso);
-        }
-        catch (ApplicationException ex)
-        {
-            await _error.HandleExceptionValidationAsync(HttpContext, ex);
-            return ApiBadRequest(ex.Message);
-        }
-    }
 
-    /// <summary>
-	/// Usado para excluir um jogador temporário.
-	/// </summary>
-    /// <param name="id"></param>
-	/// <remarks>
-	/// Exemplo de requisição:
-	/// 
-	///		DELETE /moderation/teams/{id}
-	///		
-	/// </remarks>
-	/// <response code="200">Exclui o jogador temporário.</response>
-	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
-	/// <returns>
-	/// </returns>
-    [HttpDelete]
-    [Route("/moderation/playertempprofiles/{id:guid}")]
-    public async Task<IActionResult> DeletePlayerTemp(Guid id)
-    {
-        try
-        {        
-            await _playerTempService.DeletePlayerTempValidation(id);
             return ApiOk(Resource3.DeleteUsuarioExcluidoComSucesso);
         }
         catch (ApplicationException ex)
