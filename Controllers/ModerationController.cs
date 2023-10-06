@@ -104,11 +104,11 @@ public class ModerationController : ApiBaseController
     ///  Usado para excluir um usuário.
     ///  </summary>
     ///  <param name="id"></param>
-    ///  <param name="usuarioTemporario"></param>
+    ///  <param name="tempUser"></param>
     ///  <remarks>
     ///  Exemplo de requisição:
     ///  
-    /// 		DELETE /moderation/teams?id={id}&amp;usuarioTemporario=false
+    /// 		DELETE /moderation/teams?id={id}&amp;tempUser=false
     /// 		
     ///  </remarks>
     ///  <response code="200">Exclui o usuário.</response>
@@ -118,11 +118,11 @@ public class ModerationController : ApiBaseController
     [HttpDelete]
     [Route("/moderation/users")]
     [AllowAnonymous]
-    public async Task<IActionResult> DeleteUser(Guid id, bool usuarioTemporario)
+    public async Task<IActionResult> DeleteUser(Guid id, bool tempUser)
     {
         try
         {
-	        if (usuarioTemporario)
+	        if (tempUser)
 	        {
 		        await _playerTempService.DeletePlayerTempValidation(id);
 		        return ApiOk(Resource3.DeleteUsuarioExcluidoComSucesso);
