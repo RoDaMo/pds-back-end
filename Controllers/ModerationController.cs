@@ -104,11 +104,10 @@ public class ModerationController : ApiBaseController
     ///  Usado para excluir um usuário.
     ///  </summary>
     ///  <param name="id"></param>
-    ///  <param name="tempUser"></param>
     ///  <remarks>
     ///  Exemplo de requisição:
     ///  
-    /// 		DELETE /moderation/teams?id={id}&amp;tempUser=false
+    /// 		DELETE /moderation/teams/{id}
     /// 		
     ///  </remarks>
     ///  <response code="200">Exclui o usuário.</response>
@@ -116,19 +115,23 @@ public class ModerationController : ApiBaseController
     ///  <returns>
     ///  </returns>
     [HttpDelete]
-    [Route("/moderation/users")]
+    [Route("/moderation/users/{id:guid}")]
     [AllowAnonymous]
-    public async Task<IActionResult> DeleteUser(Guid id, bool tempUser)
+    public async Task<IActionResult> DeleteUser(Guid id)
     {
         try
         {
-	        if (tempUser)
+	        var user = await _authService.GetUserByIdAsync(id);
+	        if (user is null)
 	        {
+		        var playerTemp = await _playerTempService.GetTempPlayerById(id);
+		        if (playerTemp is null)
+			        throw new ApplicationException("Usuário não existe");
+		        
 		        await _playerTempService.DeletePlayerTempValidation(id);
 		        return ApiOk(Resource3.DeleteUsuarioExcluidoComSucesso);
 	        }
 	        
-	        var user = await _authService.GetUserByIdAsync(id);
             if (user.TeamManagementId != 0)
 				await _woService.DeleteTeamValidation(user.TeamManagementId, user.Id);
             if (user.ChampionshipId != 0)
