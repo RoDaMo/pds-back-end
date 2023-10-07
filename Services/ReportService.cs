@@ -85,7 +85,26 @@ public class ReportService
     public async Task<List<Report>> GetAllByTypeValidation(ReportType type, bool completed, TypeOfViolation typeOfViolation) => await GetAllByTypeSend(type, completed, typeOfViolation);
 
     private async Task<List<Report>> GetAllByTypeSend(ReportType type, bool completed, TypeOfViolation typeOfViolation) 
-        => await _dbService.GetAll<Report>($"SELECT id, authorid, completed, description, reporttype, reporteduserid, reportedteamid, reportedchampionshipid, violation FROM Reports WHERE {(type == ReportType.All ? "" : "reporttype = @type AND")} {(typeOfViolation == TypeOfViolation.All ? "" : "violation = @typeOfViolation AND")} completed = @completed", new { type, typeOfViolation, completed });
+        => await _dbService.GetAll<Report>(@$"
+    SELECT 
+        r.id, 
+        r.authorid, 
+        r.completed, 
+        r.description, 
+        r.reporttype, 
+        r.reporteduserid, 
+        r.reportedteamid, 
+        r.reportedchampionshipid, 
+        r.violation,
+        t.name AS ReportedTeamName,
+        c.name AS ReportedChampionsipName,
+        COALESCE(u.username, p.name) AS ReportedUserName
+    FROM Reports AS r
+    LEFT JOIN users AS u ON r.reporteduserid = u.id
+    LEFT JOIN teams AS t ON r.reportedteamid = t.id
+    LEFT JOIN championships AS c ON r.reportedchampionshipid = c.id
+    LEFT JOIN playertempprofiles p on r.reporteduserid = p.id
+    WHERE {(type == ReportType.All ? "" : "reporttype = @type AND")} {(typeOfViolation == TypeOfViolation.All ? "" : "violation = @typeOfViolation AND")} completed = @completed", new { type, typeOfViolation, completed });
 
     public async Task<Report> GetByIdValidation(int id) => await GetByIdSend(id);
 
