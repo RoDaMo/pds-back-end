@@ -265,14 +265,13 @@ public class TeamService
 
 		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
 
-		foreach (var championshipId in championshipsId)
-		{
-			await RemoveTeamFromChampionshipValidation(team.Id, championshipId);
-		}
+		var arrayTasks = championshipsId.Select(championshipId => RemoveTeamFromChampionshipValidation(team.Id, championshipId)).ToList();
+		arrayTasks.Add(UpdateUser(user));
+		arrayTasks.Add(RemoveTeamOfAllPlayerTempProfiled(team.Id));
+		arrayTasks.Add(RemoveTeamOfAllUsers(team.Id));
 
-		await UpdateUser(user);
-		await RemoveTeamOfAllPlayerTempProfiled(team.Id);
-		await RemoveTeamOfAllUsers(team.Id);
+		Task.WaitAll(arrayTasks.ToArray());
+		
 		await DeleteTeamSend(id);
 		await _elasticService._client.IndexAsync(team, _index);
 	}
