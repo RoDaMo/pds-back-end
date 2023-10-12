@@ -41,7 +41,7 @@ public class StatisticsController : ApiBaseController
     ///     {
     ///         "teamId": 3,
     ///         "position": 1,
-    ///         "emblem": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpzsTC6YHwy_5CTTv27jKJYHxVMgofSsL1WA&usqp=CAU",
+    ///         "emblem": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpzsTC6YHwy_5CTTv27jKJYHxVMgofSsL1WA",
     ///         "name": "FC Bayern München",
     ///         "points": 3,
     ///         "amountOfMatches": 1,
@@ -59,7 +59,7 @@ public class StatisticsController : ApiBaseController
     ///                 "id": 4817,
     ///                 "homeName": "FC Bayern München",
     ///                 "visitorName": "alex",
-    ///                 "homeEmblem": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpzsTC6YHwy_5CTTv27jKJYHxVMgofSsL1WA&usqp=CAU",
+    ///                 "homeEmblem": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpzsTC6YHwy_5CTTv27jKJYHxVMgofSsL1WACAU",
     ///                 "visitorEmblem": "oi",
     ///                 "homeGoals": 2,
     ///                 "visitorGoals": 0,

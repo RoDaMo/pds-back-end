@@ -112,9 +112,9 @@ public class MatchService
         }
     }
     private async Task<List<User>> GetAllUsersByTeamsId(int id1, int id2)
-        => await _dbService.GetAll<User>("SELECT * FROM Users WHERE PlayerTeamId = @id1 OR PlayerTeamId = @id2", new {id1, id2});
+        => await _dbService.GetAll<User>("SELECT * FROM Users WHERE PlayerTeamId = @id1 OR PlayerTeamId = @id2 AND accepted = true", new {id1, id2});
     private async Task<List<PlayerTempProfile>> GetAllTempProfileByTeamsId(int id1, int id2)
-        =>  await _dbService.GetAll<PlayerTempProfile>("SELECT * FROM PlayerTempProfiles WHERE TeamsId = @id1 OR TeamsId = @id2", new {id1, id2});
+        =>  await _dbService.GetAll<PlayerTempProfile>("SELECT * FROM PlayerTempProfiles WHERE TeamsId = @id1 OR TeamsId = @id2 AND accepted = true", new {id1, id2});
     private async Task InvalidingUserCards(User user, Championship championship, Match match)
     {
         if(match.Phase != 0)
@@ -1788,9 +1788,9 @@ public class MatchService
     private async Task<List<User>> GetPlayersOfteamSend(int id) =>
 		await _dbService.GetAll<User>(
 			@"
-			SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id
+			SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id AND accepted = true
 			UNION ALL
-			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id;",
+			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id AND accepted = true;",
 			new { id });
     
     public async Task AddMatchReportValidation(Match match)
@@ -2086,9 +2086,9 @@ public class MatchService
     private async Task<User> GetPlayerOfteamSend(int id) =>
 		await _dbService.GetAsync<User>(
 			@"
-			SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id
+			SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id AND accepted = true
 			UNION ALL
-			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id;",
+			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id AND accepted = true;",
 			new { id });
     private async Task<int> CreateGoalToPlayerTempSend(Goal goal)
     {
