@@ -167,5 +167,36 @@ public class PlayerController : ApiBaseController
             result.Add(ex.Message);
             return ApiBadRequest(result);
         }
-    }    
+    }
+
+    /// <summary>
+	/// Usado para confirmar entrada em time.
+	/// </summary>
+    /// <param name="token"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /players/confirm-entry-to-team-?token={token}
+	///		
+	/// </remarks>
+	/// <response code="200">Confirma entrada do jogador no time</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
+	[HttpGet]
+	[Route("/players/confirm-entry-to-team")] 
+	public async Task<IActionResult> ConfirmEntry(string token)
+	{
+		try
+		{
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            await _playerService.ConfirmEmail(token, userId);
+			return ApiOk();
+		}
+		catch (ApplicationException ex)
+		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
+			return ApiBadRequest(ex.Message, "Erro ao confirmar entrada no time");
+		}
+	}    
 }

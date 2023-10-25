@@ -236,7 +236,7 @@ public class ChampionshipService
 	public async Task<List<Team>> GetAllTeamsOfChampionshipValidation(int championshipId) => await GetAllTeamsOfChampionshipSend(championshipId);
 
 	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)
-		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId;", new { championshipId });
+		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId AND ct.Accepted = true;", new { championshipId });
 
 	public async Task DeleteValidation(Championship championship)
 	{
@@ -254,12 +254,12 @@ public class ChampionshipService
 
 	public async Task<bool> CanMoreTeamsBeAddedValidation(int championshipId) => await CanMoreTeamsBeAddedSend(championshipId);
 
-	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT COALESCE((SELECT COUNT(*) FROM championships_teams WHERE championshipid = @championshipId) < teamquantity, 'true') FROM championships WHERE id = @championshipId;", new { championshipId });
+	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT COALESCE((SELECT COUNT(*) FROM championships_teams WHERE championshipid = @championshipId AND Accepted = true) < teamquantity, 'true') FROM championships WHERE id = @championshipId;", new { championshipId });
 
 	public async Task<List<int>> GetAllTeamsLinkedToValidation(int championshipId) =>
 		await GetAllTeamsLinkedToSend(championshipId);
 
-	private async Task<List<int>> GetAllTeamsLinkedToSend(int championshipId) => await _dbService.GetAll<int>("SELECT teamid FROM championships_teams WHERE championshipid = @championshipid;", new { championshipId });
+	private async Task<List<int>> GetAllTeamsLinkedToSend(int championshipId) => await _dbService.GetAll<int>("SELECT teamid FROM championships_teams WHERE championshipid = @championshipid AND accepted = true;", new { championshipId });
 
 	public async Task IndexAllChampionshipsValidation()
 	{
