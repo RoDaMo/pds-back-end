@@ -38,6 +38,7 @@ public class ReportController : ApiBaseController
     ///        "ReportedTeamId": 0,
     ///        "ReportedChampionshipId": 5,
     ///        "Description": "Teste"
+    ///        "Violation": 1
     ///     }
     ///		
     /// </remarks>
@@ -76,10 +77,11 @@ public class ReportController : ApiBaseController
     /// </summary>
     /// <param name="type"></param>
     /// <param name="completed"></param>
+    /// <param name="typeOfViolation"></param>
     /// <remarks>
     /// Exemplo de requisição:
-    ///
-    ///     GET /reports?type=0&amp;completed=false
+    /// 
+    ///     GET /reports?type=0&amp;completed=false&amp;typeOfActivity=0
     /// 
     /// </remarks>
     /// <returns>\
@@ -104,11 +106,11 @@ public class ReportController : ApiBaseController
     /// </returns>
     [HttpGet]
     [Authorize(Roles = "admin")]
-    public async Task<IActionResult> GetReportsByType(ReportType type, bool completed)
+    public async Task<IActionResult> GetReportsByType(ReportType type, bool completed, TypeOfViolation typeOfViolation)
     {
         try
         {
-            return ApiOk(await _reportService.GetAllByTypeValidation(type, completed));
+            return ApiOk(await _reportService.GetAllByTypeValidation(type, completed, typeOfViolation));
         }
         catch (ApplicationException ex)
         {
@@ -249,6 +251,41 @@ public class ReportController : ApiBaseController
         {
             await _reportService.SetReportAsCompletedValidation(report.Id, report.Completed);
             return ApiOk();
+        }
+        catch (ApplicationException ex)
+        {
+            await _error.HandleExceptionValidationAsync(HttpContext, ex);
+            return ApiBadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Verifica se o usuário logado atualmente já possui uma denúncia naquela entidade.
+    /// </summary>
+    /// <remarks>
+    /// Exemplo de requisição:
+    ///
+    ///     GET /reports/verify?id=3
+    /// 
+    /// </remarks>
+    /// <param name="idUser"></param>
+    /// <param name="id"></param>
+    /// <returns>
+    ///     {
+    ///         "message": "",
+    ///         "succeed": true,
+    ///         "results": true
+    ///     }
+    /// </returns>
+    [HttpGet]
+    [Authorize]
+    [Route("/reports/verify")]
+    public async Task<IActionResult> VerifyIfUserHasReportedEntity(Guid idUser = new(), int id = 0)
+    {
+        try
+        {
+            var userId =  Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            return ApiOk(await _reportService.VerifyReportedEntity(idUser, id, userId));
         }
         catch (ApplicationException ex)
         {
