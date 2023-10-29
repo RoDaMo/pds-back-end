@@ -135,9 +135,9 @@ public class TeamController : ApiBaseController
                 sportsId = result.SportsId,
                 name = result.Name,
                 technician = new {
-                    name = result.Technician.Name,
-                    picture = result.Technician.Picture,
-                    id = result.Technician.Id
+                    name = result.Technician?.Name,
+                    picture = result.Technician?.Picture,
+                    id = result.Technician?.Id
                 }
             });
         }
