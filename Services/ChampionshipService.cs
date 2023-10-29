@@ -236,7 +236,7 @@ public class ChampionshipService
 	public async Task<List<Team>> GetAllTeamsOfChampionshipValidation(int championshipId) => await GetAllTeamsOfChampionshipSend(championshipId);
 
 	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)
-		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId AND ct.Accepted = true;", new { championshipId });
+		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId AND ct.Accepted = true WHERE c.deleted = false;", new { championshipId });
 
 	public async Task DeleteValidation(Championship championship)
 	{
