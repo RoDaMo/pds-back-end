@@ -264,15 +264,14 @@ public class TeamService
 		
 		var championship = await _championshipService.GetByIdValidation(championshipId);
 
-		if(await BracketingExists(championshipId) && (championship.Status == Enum.ChampionshipStatus.Active || championship.Status == Enum.ChampionshipStatus.Pendent) && championship.Deleted == false)
+		if(await BracketingExists(championshipId) && championship.Status is Enum.ChampionshipStatus.Active or Enum.ChampionshipStatus.Pendent && championship.Deleted == false)
 		{
 			var matches = await _dbService.GetAll<Match>(
 				@"SELECT * FROM Matches WHERE (Visitor = @teamId OR Home = @teamId) AND ChampionshipId = @championshipId AND Winner IS NULL AND Tied <> true", new { teamId, championshipId });
-			
-			foreach (var match in matches)
+
+			foreach (var match in matches.Where(match => match.Winner == 0 && !match.Tied))
 			{
-				if(match.Winner == 0 && !match.Tied)
-					await _bracketingMatchService.WoValidation(match.Id, match.Visitor == teamId ? match.Home : match.Visitor);
+				await _bracketingMatchService.WoValidation(match.Id, match.Visitor == teamId ? match.Home : match.Visitor);
 			}
 		}
 
@@ -364,12 +363,15 @@ public class TeamService
 
 		var championshipsId = await GetAllIdsOfChampionshipsThatTeamIsParticipatingIn(team.Id);
 
-		var arrayTasks = championshipsId.Select(championshipId => RemoveTeamFromChampionshipValidation(team.Id, championshipId)).ToList();
-		arrayTasks.Add(UpdateUser(user));
-		arrayTasks.Add(RemoveTeamOfAllPlayerTempProfiled(team.Id));
-		arrayTasks.Add(RemoveTeamOfAllUsers(team.Id));
+		foreach (var championshipId in championshipsId)
+		{
+			await RemoveTeamFromChampionshipValidation(team.Id, championshipId);
+		}
 
-		Task.WaitAll(arrayTasks.ToArray());
+		await UpdateUser(user);
+		await RemoveTeamOfAllPlayerTempProfiled(team.Id);
+		await RemoveTeamOfAllUsers(team.Id);
+
 		
 		await DeleteTeamSend(id);
 		await _elasticService._client.IndexAsync(team, _index);
