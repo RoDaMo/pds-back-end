@@ -123,7 +123,7 @@ public class TeamController : ApiBaseController
     {
         try
         {
-            var result = await _teamService.GetByIdValidationAsync(id);
+            var result = await _teamService.GetByIdValidationAsync(id, true);
 
             return result is null ? ApiBadRequest(Resource.ShowTimeNaoExistente) : ApiOk(new
             {

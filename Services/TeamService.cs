@@ -75,9 +75,9 @@ public class TeamService
 
 	private async Task<List<Team>> GetAllSendAsync(Sports sport) => await _dbService.GetAll<Team>("SELECT * FROM teams WHERE sportId = @sport AND Deleted <> true", new { sport });
 
-	public async Task<Team> GetByIdValidationAsync(int id)
+	public async Task<Team> GetByIdValidationAsync(int id, bool getDeletedTeam = false)
 	{
-		var team = await GetByIdSendAsync(id);
+		var team = await GetByIdSendAsync(id, getDeletedTeam);
 		if (team is null)
 			return null;
 		
@@ -85,7 +85,7 @@ public class TeamService
 		return team;
 	}
 
-	public async Task<Team> GetByIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
+	public async Task<Team> GetByIdSendAsync(int id, bool getDeletedTeam) => await _dbService.GetAsync<Team>($"SELECT * FROM teams where id=@id {(getDeletedTeam ? "" : "AND deleted = false")}", new {id});
 
 	private async Task<bool> IsAlreadyTechOfAnotherTeam(Guid userId) => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT TeamManagementId FROM users WHERE Id = @userId AND (TeamManagementId IS NOT NULL OR TeamManagementId <> 0));", new {userId});
 
