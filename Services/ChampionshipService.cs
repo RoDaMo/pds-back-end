@@ -32,7 +32,7 @@ public class ChampionshipService
 		_organizerService = organizerService;
         _logger = logger;
         var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
-        _index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "championships" : "championships-dev";
+        _index = isDevelopment == "false" ? "championships" : "championships-dev";
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
 	{

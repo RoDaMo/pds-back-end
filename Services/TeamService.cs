@@ -27,8 +27,8 @@ public class TeamService
         _championshipService = championshipService;
 		_bracketingMatchService = bracketingMatchService;
 		var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
-		_index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "teams" : "teams-dev";
-		_userIndex = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "users" : "users-dev";
+		_index = isDevelopment == "false" ? "teams" : "teams-dev";
+		_userIndex = isDevelopment == "false" ? "users" : "users-dev";
 	}
 
     public async Task<List<string>> CreateValidationAsync(TeamDTO teamDto, Guid userId)
@@ -163,12 +163,10 @@ public class TeamService
 		
 		var championship = await _championshipService.GetByIdValidation(championshipId);
 
-		if(await BracketingExists(championshipId) && 
-		(championship.Status == Enum.ChampionshipStatus.Active || championship.Status == Enum.ChampionshipStatus.Pendent) &&
-		championship.Deleted == false)
+		if(await BracketingExists(championshipId) && (championship.Status == Enum.ChampionshipStatus.Active || championship.Status == Enum.ChampionshipStatus.Pendent) && championship.Deleted == false)
 		{
 			var matches = await _dbService.GetAll<Match>(
-				@"SELECT * FROM Matches WHERE (Visitor = @teamId OR Home = @teamId) AND ChampionshipId = @championshipId AND Winner IS NULL AND Tied <> true", new {teamId, championshipId});
+				@"SELECT * FROM Matches WHERE (Visitor = @teamId OR Home = @teamId) AND ChampionshipId = @championshipId AND Winner IS NULL AND Tied <> true", new { teamId, championshipId });
 			
 			foreach (var match in matches)
 			{
