@@ -37,7 +37,7 @@ public class PlayerService
         if (!await ChecksIfTeamExists(user.PlayerTeamId))
 	        throw new ApplicationException(Resource.CreateValidationAsyncDoesntExist);
         
-		var team = await _teamService.GetByIdSendAsync(user.PlayerTeamId);
+		var team = await _teamService.GetByIdValidationAsync(user.PlayerTeamId);
 
         var playerValidator = new PlayerValidator();
 

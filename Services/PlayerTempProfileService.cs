@@ -33,7 +33,7 @@ public class PlayerTempProfileService
 			throw new ApplicationException(Resource.CreateValidationAsyncTeamDoesntExist);
         }
 		
-		var team = await _teamService.GetByIdSendAsync(playerTempProfile.TeamsId);
+		var team = await _teamService.GetByIdValidationAsync(playerTempProfile.TeamsId);
 
 		var playerTempProfileValidator = new PlayerTempProfileValidator();
 		playerTempProfile.Picture ??= "https://playoffs-api.up.railway.app/img/e82930b9-b71c-442a-9bc9-95b189c19afb";
