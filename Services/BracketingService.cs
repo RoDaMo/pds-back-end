@@ -109,7 +109,7 @@ public class BracketingService
 		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
 	}
 	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)
-		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId;", new { championshipId });
+		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId WHERE ct.Accepted = true;", new { championshipId });
 	private async Task<bool> CheckIfChampionhipExists(int championshipId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM championships WHERE id = @championshipId)", new {championshipId});
 

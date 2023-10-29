@@ -560,7 +560,7 @@ public class MatchController : ApiBaseController
     ///     }  
 	///		
 	/// </remarks>
-	/// <response code="200">Adiciona súmula a uma partida./response>
+	/// <response code="200">Adiciona súmula a uma partida.</response>
 	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
     ///   Exemplo de retorno:
@@ -598,7 +598,7 @@ public class MatchController : ApiBaseController
 	///		GET /matches/{matchId:int}/get-all-events 
 	///		
 	/// </remarks>
-	/// <response code="200">Retorna todos os eventos de uma partida/response>
+	/// <response code="200">Retorna todos os eventos de uma partida</response>
 	/// <response code="400">Retorna uma falha indicando algum erro cometido na requisição.</response>
 	/// <returns>
     ///   Exemplo de retorno:

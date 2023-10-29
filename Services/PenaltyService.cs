@@ -125,9 +125,9 @@ public class PenaltyService
         return errorMessages;
     }
     private async Task<bool> CheckRelationshipBetweenPlayerTempAndTeam(Guid playerTempId, int teamId)
-        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM playertempprofiles WHERE id = @playerTempId AND TeamsId = @teamId);", new {playerTempId, teamId});
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM playertempprofiles WHERE id = @playerTempId AND TeamsId = @teamId AND accepted = true);", new {playerTempId, teamId});
     private async Task<bool> CheckRelationshipBetweenPlayerAndTeam(Guid playerId, int teamId)
-        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE id = @playerId AND PlayerTeamId = @teamId);", new {playerId, teamId});
+        => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM users WHERE id = @playerId AND PlayerTeamId = @teamId AND accepted = true);", new {playerId, teamId});
     private async Task<bool> CheckRelationshipBetweenTeamAndMatch(int teamId, int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId AND (home = @teamId OR visitor = @teamId) );", new {matchId, teamId});
     private async Task<bool> DepartureDateNotSet(int matchId)
@@ -352,8 +352,8 @@ public class PenaltyService
     private async Task<bool> CheckIfPlayerTempHasAlreadyTakenPenalty(Guid playerTempId, int teamId, int matchId)
     {
         //quantidade de jogadores vai mudar em função dos cartões
-        var numberOfPlayersOnTeam = await _dbService.GetAsync<int>("SELECT COUNT(*) FROM playertempprofiles WHERE TeamsId = @teamId", new {teamId});
-        numberOfPlayersOnTeam = numberOfPlayersOnTeam + await _dbService.GetAsync<int>("SELECT COUNT(*) FROM users WHERE PlayerTeamId = @teamId", new {teamId});
+        var numberOfPlayersOnTeam = await _dbService.GetAsync<int>("SELECT COUNT(*) FROM playertempprofiles WHERE TeamsId = @teamId AND accepted = true", new {teamId});
+        numberOfPlayersOnTeam = numberOfPlayersOnTeam + await _dbService.GetAsync<int>("SELECT COUNT(*) FROM users WHERE PlayerTeamId = @teamId AND accepted = true", new {teamId});
         var penalties = await _dbService.GetAll<Penalty>("SELECT * FROM penalties WHERE MatchId = @matchId AND TeamId = @teamId ORDER BY Id", new {matchId, teamId});
         var quotient = (int)(penalties.Count() / numberOfPlayersOnTeam);
         quotient = quotient * numberOfPlayersOnTeam;
@@ -370,8 +370,8 @@ public class PenaltyService
     }
     private async Task<bool> CheckIfPlayerHasAlreadyTakenPenalty(Guid playerId, int teamId, int matchId)
     {
-        var numberOfPlayersOnTeam = await _dbService.GetAsync<int>("SELECT COUNT(*) FROM users WHERE PlayerTeamId = @teamId", new {teamId});
-        numberOfPlayersOnTeam = numberOfPlayersOnTeam + await _dbService.GetAsync<int>("SELECT COUNT(*) FROM playertempprofiles WHERE TeamsId = @teamId", new {teamId});
+        var numberOfPlayersOnTeam = await _dbService.GetAsync<int>("SELECT COUNT(*) FROM users WHERE PlayerTeamId = @teamId AND accepted = true", new {teamId});
+        numberOfPlayersOnTeam = numberOfPlayersOnTeam + await _dbService.GetAsync<int>("SELECT COUNT(*) FROM playertempprofiles WHERE TeamsId = @teamId AND accepted = true", new {teamId});
         var penalties = await _dbService.GetAll<Penalty>("SELECT * FROM penalties WHERE MatchId = @matchId AND TeamId = @teamId ORDER BY Id", new {matchId, teamId});
         var quotient = (int)(penalties.Count() / numberOfPlayersOnTeam);
         quotient = quotient * numberOfPlayersOnTeam;
