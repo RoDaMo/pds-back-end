@@ -97,6 +97,7 @@ public class ReportController : ApiBaseController
     ///             "completed": false,
     ///             "reportType": 0,
     ///             "reportedUserId": null,
+    ///             "reportedPlayerTempId": null,
     ///             "reportedTeamId": null,
     ///             "reportedChampionshipId": 5,
     ///             "description": "Teste"
@@ -142,6 +143,7 @@ public class ReportController : ApiBaseController
     ///             "reportType": 0,
     ///             "reportedUserId": null,
     ///             "reportedTeamId": null,
+    ///             "reportedPlayerTempId": null,
     ///             "reportedChampionshipId": 5,
     ///             "description": "Teste"
     ///         }
@@ -188,6 +190,7 @@ public class ReportController : ApiBaseController
     ///             "reportedUserId": null,
     ///             "reportedTeamId": null,
     ///             "reportedChampionshipId": 5,
+    ///             "reportedPlayerTempId": null,
     ///             "description": "Teste"
     ///         }
     ///         ]
@@ -229,18 +232,7 @@ public class ReportController : ApiBaseController
     ///     {
     ///         "message": "",
     ///         "succeed": true,
-    ///         "results": [
-    ///         {
-    ///             "id": 3,
-    ///             "authorId": "140804b5-e3b5-495e-92e8-8f6c534972ee",
-    ///             "completed": false,
-    ///             "reportType": 0,
-    ///             "reportedUserId": null,
-    ///             "reportedTeamId": null,
-    ///             "reportedChampionshipId": 5,
-    ///             "description": "Teste"
-    ///         }
-    ///         ]
+    ///         "results": { }
     ///     }
     /// </returns>
     [HttpPut]
