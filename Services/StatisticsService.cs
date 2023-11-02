@@ -238,8 +238,12 @@ public class StatisticsService
         foreach (var match in matches)
         {
             var matchDTO = new MatchDTO();
-            var homeTeam = await GetByTeamIdSendAsync(match.Home, true);
-            var visitorTeam = await GetByTeamIdSendAsync(match.Visitor, true);
+            var homeTeam = await GetByTeamIdSendAsync(match.Home);
+            var visitorTeam = await GetByTeamIdSendAsync(match.Visitor);
+
+            if (homeTeam is null || visitorTeam is null)
+                continue;
+            
             matchDTO.Id = match.Id;
             matchDTO.HomeEmblem = homeTeam.Emblem;
             matchDTO.HomeName = homeTeam.Name;
