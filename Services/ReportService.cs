@@ -64,14 +64,21 @@ public class ReportService
                 if (report.AuthorId == report.ReportedUserId)
                     throw new ApplicationException("Você não pode denunciar à si mesmo.");
                 
-                var reportedUser = await _authService.GetUserByIdAsync(report.ReportedUserId.Value);
                 var reportedTempUser = await _tempProfileService.GetTempPlayerById(report.ReportedUserId.Value);
-                if (report.ReportedUserId == Guid.Empty || (reportedUser is null && reportedTempUser is null))
-                    throw new ApplicationException("Usuário denunciado não é válido");
+                if (reportedTempUser is null)
+                {
+                    var reportedUser = await _authService.GetUserByIdAsync(report.ReportedUserId.Value);
+                    if (report.ReportedUserId == Guid.Empty || reportedUser is null)
+                        throw new ApplicationException("Usuário denunciado não é válido");
+                    
+                    report.ReportedUserId = report.ReportedUserId;
+                }
+                else
+                {
+                    report.ReportedPlayerTempId = report.ReportedUserId;
+                    report.ReportedUserId = null;
+                }
 
-                report.ReportedUserId = reportedTempUser is null ? report.ReportedUserId : null;
-                report.ReportedPlayerTempId = reportedUser is null ? report.ReportedPlayerTempId : null;
-                
                 report.ReportedTeamId = null;
                 report.ReportedChampionshipId = null;
                 await CreateReportSend(report);

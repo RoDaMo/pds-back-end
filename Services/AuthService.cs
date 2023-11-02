@@ -153,7 +153,7 @@ public class AuthService
 			@"SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, iscaptain, picture, null as username FROM playertempprofiles WHERE id = @Id", 
 			new User { Id = userId });
 
-		return (user is null) ? player : user;
+		return user ?? player;
 	}
 
 	public async Task SendEmailToConfirmAccount(Guid userId)

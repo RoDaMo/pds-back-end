@@ -566,10 +566,7 @@ public class ChampionshipService
 		
 		if(championship is null)
 			throw new ApplicationException("Campeonato passado não existe");
-		
-		if(championship.Format == Format.LeagueSystem)
-			throw new ApplicationException("Formato de campeonato inválido");
-		
+
 		var matches =  await GetMatchesByChampionship(championshipId);
 		var matchesDTO = new List<MatchDTO>();
 
