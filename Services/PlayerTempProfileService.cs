@@ -205,5 +205,5 @@ public class PlayerTempProfileService
 	    => await _dbService.EditData("UPDATE playertempprofiles SET IsCaptain = true WHERE Id = @playerId", new {playerId});
 	
 	public async Task DeletePlayerTempValidation(Guid id) => await DeletePlayerTempSend(id);
-	private async Task DeletePlayerTempSend(Guid id) => await _dbService.EditData("DELETE FROM PlayerTempProfiles WHERE Id = @id; DELETE FROM Reports WHERE reportedplayertempid = @id;", new {id});
+	private async Task DeletePlayerTempSend(Guid id) => await _dbService.EditData("DELETE FROM Reports WHERE reportedplayertempid = @id; DELETE FROM PlayerTempProfiles WHERE Id = @id;", new {id});
 }
