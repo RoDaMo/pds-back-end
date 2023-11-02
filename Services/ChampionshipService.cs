@@ -290,6 +290,9 @@ public class ChampionshipService
 				var matchDTO = new MatchDTO();
 				var home = await GetByTeamIdSendAsync(match.Home);
 				var visitor = await GetByTeamIdSendAsync(match.Visitor);
+				if (home is null || visitor is null)
+					continue;
+				
 				matchDTO.Id = match.Id;
 				matchDTO.IsSoccer = true;
 				matchDTO.HomeEmblem = home.Emblem;
