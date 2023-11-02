@@ -33,6 +33,9 @@ public class StatisticsService
                 {
                     var classificationDTO = new ClassificationDTO();
                     var team = await GetByTeamIdSendAsync(classification.TeamId);
+                    if (team is null)
+                        continue;
+                    
                     classificationDTO.Position = classification.Position;
                     classificationDTO.Points = classification.Points;
                     classificationDTO.Emblem = team.Emblem;
