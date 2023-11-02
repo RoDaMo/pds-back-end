@@ -109,7 +109,7 @@ public class ReportService
         r.violation,
         t.name AS ReportedTeamName,
         c.name AS ReportedChampionsipName,
-        COALESCE(u.username, p.name) AS ReportedUserName
+        COALESCE(u.name, p.name) AS ReportedUserName
     FROM Reports AS r
     LEFT JOIN users AS u ON r.reporteduserid = u.id
     LEFT JOIN teams AS t ON r.reportedteamid = t.id

@@ -107,7 +107,7 @@ public class ModerationController : ApiBaseController
     ///  <remarks>
     ///  Exemplo de requisição:
     ///  
-    /// 		DELETE /moderation/teams/{id}
+    /// 		DELETE /moderation/users/{id}
     /// 		
     ///  </remarks>
     ///  <response code="200">Exclui o usuário.</response>
@@ -116,7 +116,6 @@ public class ModerationController : ApiBaseController
     ///  </returns>
     [HttpDelete]
     [Route("/moderation/users/{id:guid}")]
-    [AllowAnonymous]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
         try
