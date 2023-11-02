@@ -664,6 +664,9 @@ public class StatisticsService
             {
                 var playerTemp = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Id = @id", new {id = player.PlayerIdOrTempId});
                 var team = await GetByTeamIdSendAsync(playerTemp.TeamsId);
+                if (playerTemp is null || team is null)
+                    continue;
+                
                 var striker = new StrikerDTO
                 {
                     Goals = player.Goals,
