@@ -186,7 +186,7 @@ public class StatisticsService
 	    => await _dbService.GetAsync<Championship>("SELECT * FROM championships WHERE id = @id", new { id });
 	private async Task<List<Classification>> GetAllClassificationsByChampionshipId(int championshipId)
         => await _dbService.GetAll<Classification>("SELECT * FROM classifications WHERE ChampionshipId = @ChampionshipId ORDER BY Id", new {championshipId});
-	private async Task<Team> GetByTeamIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
+	private async Task<Team> GetByTeamIdSendAsync(int id, bool returnDeletedTeams = false) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = @deleted", new { id, deleted = returnDeletedTeams});
     private async Task<int> AmountOfWins(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
             "SELECT COUNT(*) FROM matches WHERE ChampionshipId = @championshipId AND Winner = @teamId", 
@@ -238,8 +238,8 @@ public class StatisticsService
         foreach (var match in matches)
         {
             var matchDTO = new MatchDTO();
-            var homeTeam = await GetByTeamIdSendAsync(match.Home);
-            var visitorTeam = await GetByTeamIdSendAsync(match.Visitor);
+            var homeTeam = await GetByTeamIdSendAsync(match.Home, true);
+            var visitorTeam = await GetByTeamIdSendAsync(match.Visitor, true);
             matchDTO.Id = match.Id;
             matchDTO.HomeEmblem = homeTeam.Emblem;
             matchDTO.HomeName = homeTeam.Name;
