@@ -121,23 +121,24 @@ public class ModerationController : ApiBaseController
     {
         try
         {
-	        var user = await _authService.GetUserByIdAsync(id);
-	        if (user is null)
+	        var playerTemp = await _playerTempService.GetTempPlayerById(id);
+	        if (playerTemp is null)
 	        {
-		        var playerTemp = await _playerTempService.GetTempPlayerById(id);
-		        if (playerTemp is null)
-			        throw new ApplicationException("Usuário não existe");
-		        
-		        await _playerTempService.DeletePlayerTempValidation(id);
+				var user = await _authService.GetUserByIdAsync(id);
+		        if (user.TeamManagementId != 0)
+			        await _woService.DeleteTeamValidation(user.TeamManagementId, user.Id);
+		        if (user.ChampionshipId != 0)
+			        await _organizerService.DeleteValidation(new()
+				        { ChampionshipId = user.ChampionshipId, OrganizerId = user.Id });
+		        await _authService.DeleteCurrentUserValidation(user);
+
 		        return ApiOk(Resource3.DeleteUsuarioExcluidoComSucesso);
 	        }
-	        
-            if (user.TeamManagementId != 0)
-				await _woService.DeleteTeamValidation(user.TeamManagementId, user.Id);
-            if (user.ChampionshipId != 0)
-				await _organizerService.DeleteValidation(new() { ChampionshipId = user.ChampionshipId, OrganizerId = user.Id });
-            await _authService.DeleteCurrentUserValidation(user);
 
+            if (playerTemp is null)
+	            throw new ApplicationException("Usuário não existe");
+		        
+            await _playerTempService.DeletePlayerTempValidation(id);
             return ApiOk(Resource3.DeleteUsuarioExcluidoComSucesso);
         }
         catch (ApplicationException ex)
