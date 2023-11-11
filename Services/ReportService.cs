@@ -131,6 +131,6 @@ public class ReportService
 
     public async Task<bool> VerifyReportedEntity(Guid idUser, int id, Guid userId) =>
         await _dbService.GetAsync<int>(
-            "SELECT COUNT(1) FROM reports WHERE authorid = @userId AND (reportedchampionshipid = @id OR reportedteamid = @id OR reporteduserid = @idUser)",
+            "SELECT COUNT(1) FROM reports WHERE authorid = @userId AND (reportedchampionshipid = @id OR reportedteamid = @id OR reporteduserid = @idUser OR reportedplayertempid = @idUser)",
             new { userId, id, idUser }) > 0;
 }
