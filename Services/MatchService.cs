@@ -1492,7 +1492,7 @@ public class MatchService
             return matchDTO;
 		}
     }
-	private async Task<Team> GetByTeamIdSendAsync(int id, bool refuseDeleted = true) => await _dbService.GetAsync<Team>($"SELECT * FROM teams where id=@id{(refuseDeleted ? " AND deleted = false" : "")}`", new {id});
+	private async Task<Team> GetByTeamIdSendAsync(int id, bool refuseDeleted = true) => await _dbService.GetAsync<Team>($"SELECT * FROM teams where id=@id{(refuseDeleted ? " AND deleted = false" : "")}", new {id});
     private async Task<bool> IsItFirstSet(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM goals WHERE MatchId = @matchId);", new {matchId});
     private async Task<int> GetLastSet(int matchId)
