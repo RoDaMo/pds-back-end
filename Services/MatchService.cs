@@ -812,7 +812,7 @@ public class MatchService
             new { championshipId, teamId });
     private async Task ChangePosition(List<Classification> classifications, Classification homeClassification)
     {
-        var team = await GetByTeamIdSendAsync(homeClassification.TeamId);
+        var team = await GetByTeamIdSendAsync(homeClassification.TeamId, false);
         for (int i = 0; i < classifications.Count(); i++)
         {
             if(classifications[i].Points < homeClassification.Points)
@@ -1492,7 +1492,7 @@ public class MatchService
             return matchDTO;
 		}
     }
-	private async Task<Team> GetByTeamIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
+	private async Task<Team> GetByTeamIdSendAsync(int id, bool refuseDeleted = true) => await _dbService.GetAsync<Team>($"SELECT * FROM teams where id=@id{(refuseDeleted ? " AND deleted = false" : "")}`", new {id});
     private async Task<bool> IsItFirstSet(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM goals WHERE MatchId = @matchId);", new {matchId});
     private async Task<int> GetLastSet(int matchId)

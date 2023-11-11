@@ -371,7 +371,6 @@ public class TeamService
 		await UpdateUser(user);
 		await RemoveTeamOfAllPlayerTempProfiled(team.Id);
 		await RemoveTeamOfAllUsers(team.Id);
-
 		
 		await DeleteTeamSend(id);
 		await _elasticService._client.IndexAsync(team, _index);
