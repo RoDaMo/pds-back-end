@@ -38,5 +38,7 @@ public class User
 	public string CaptchaToken { get; set; }
 
 	public bool IsOrganizer { get; set; }
+	public int Position { get; set; }
+	public int Line { get; set; }
 	public string Cnpj { get; set; }
 }

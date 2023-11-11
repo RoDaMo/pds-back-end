@@ -6,10 +6,12 @@ namespace PlayOffsApi.Services;
 public class BracketingService
 {
     private readonly DbService _dbService;
+    private readonly FirstStringService _firstStringService;
 
     public BracketingService(DbService dbService)
 	{
 		_dbService = dbService;
+		// _firstStringService = firstStringService;
 	}
 
 	public async Task<List<Match>> CreateKnockoutValidationAsync(int championshipId)
@@ -99,6 +101,11 @@ public class BracketingService
 		var id = await _dbService.EditData(
 			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase, Round) VALUES(@ChampionshipId, @Home, @Visitor, @Phase, @Round) returning id", match
 			);
+
+		// var firstTask = _firstStringService.InsertPlayersAsSecondStringMassValidation(match.Home, id);
+		// var secondTask = _firstStringService.InsertPlayersAsSecondStringMassValidation(match.Visitor, id);
+		// await Task.WhenAll(firstTask, secondTask);
+		
 		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
 	}
 	private async Task<Match> CreateMatchSend2(Match match)
@@ -106,6 +113,11 @@ public class BracketingService
 		var id = await _dbService.EditData(
 			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase, Round, PreviousMatch) VALUES(@ChampionshipId, @Home, @Visitor, @Phase, @Round, @PreviousMatch) returning id", match
 			);
+		
+		// var firstTask = _firstStringService.InsertPlayersAsSecondStringMassValidation(match.Home, id);
+		// var secondTask = _firstStringService.InsertPlayersAsSecondStringMassValidation(match.Visitor, id);
+		// await Task.WhenAll(firstTask, secondTask);
+		
 		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
 	}
 	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)

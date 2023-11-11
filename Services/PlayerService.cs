@@ -261,8 +261,9 @@ public class PlayerService
 		return new();
 	}
 
-	private async Task<User> GetUserByIdAsync(Guid userId) 
+	public async Task<User> GetUserByIdAsync(Guid userId) 
 		=> await _dbService.GetAsync<User>("SELECT id, name, username, email, passwordhash, deleted, birthday, cpf, teammanagementid, artisticname, number, playerteamid, iscaptain, picture, championshipid, bio, confirmemail, role, playerposition, cnpj FROM users WHERE id = @Id AND deleted = false", new User { Id = userId });
+
 	private async Task RemoveCaptainByTeamId(int teamId)
 	{
 		await _dbService.EditData(
