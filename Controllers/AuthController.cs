@@ -77,8 +77,8 @@ public class AuthController : ApiBaseController
 	{
 		try
 		{
-			// if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken)) 
-			// 	throw new ApplicationException(Resource.InvalidCaptcha);
+			if (!await _captcha.VerifyValidityCaptcha(user.CaptchaToken)) 
+				throw new ApplicationException(Resource.InvalidCaptcha);
 			
 			await using var redis = await _redisService.GetDatabase();
 			user = await _authService.VerifyCredentials(user);

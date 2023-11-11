@@ -98,7 +98,7 @@ public class AuthService
 
 		newUser.Id = await RegisterUserAsync(newUser);
 		
-		if (newUser.Role != "admin" || Environment.GetEnvironmentVariable("IS_DEVELOPMENT") != "true")
+		if (newUser.Role != "admin" && Environment.GetEnvironmentVariable("IS_DEVELOPMENT") != "true")
 			await SendEmailToConfirmAccount(newUser.Id);
 		else
 			newUser.ConfirmEmail = true;
