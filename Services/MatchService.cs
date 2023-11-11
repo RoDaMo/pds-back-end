@@ -1953,13 +1953,7 @@ public class MatchService
         var championship = await GetChampionshipByMatchId(matchId);
 
         var player = await GetPlayerOfteamSend(teamId != match.Visitor ? match.Visitor : match.Home );
-
-        if (!bypassStartingValidation)
-        {
-            var validationResult = await HasMatchStarted(matchId, match);
-            if (validationResult != string.Empty)
-                throw new ApplicationException(validationResult);
-        }
+        
         if(match is null && valid)
             throw new ApplicationException("Partida passada não existe");
         if(await DepartureDateNotSet(matchId) && valid)
@@ -2096,8 +2090,6 @@ public class MatchService
             return "Partida passada não existe";
         if (await DepartureDateNotSet(matchId))
             return "Data da partida não definida.";
-        if (match.Date.ToUniversalTime() >= DateTime.UtcNow)
-            return "Partida ainda não inciou";
         if (match.Winner != 0)
             return "Partida já possui um vencedor.";
         if (match.HomeUniform is null || match.VisitorUniform is null)

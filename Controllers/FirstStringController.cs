@@ -23,15 +23,34 @@ public class FirstStringController : ApiBaseController
         _error = errorLog;
     }
     
+    // [HttpPost]
+    // [Authorize]
+    // public async Task<IActionResult> InsertFirstStringPlayer(FirstStringPlayer firstStringPlayer)
+    // {
+    //     try
+    //     {
+    //         var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+    //
+    //         await _firstStringService.InsertFirstStringPlayerValidation(firstStringPlayer, userId);
+    //         return ApiOk();
+    //     }
+    //     catch (ApplicationException ex)
+    //     {
+    //         await _error.HandleExceptionValidationAsync(HttpContext, ex);
+    //         return ApiBadRequest(ex.Message);
+    //     }
+    // }
+    
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> InsertFirstStringPlayer(FirstStringPlayer firstStringPlayer)
+    public async Task<IActionResult> InsertFirstStringPlayers(List<FirstStringPlayer> firstStringPlayers)
     {
         try
         {
             var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-
-            await _firstStringService.InsertFirstStringPlayerValidation(firstStringPlayer, userId);
+            foreach (var player in firstStringPlayers) 
+                await _firstStringService.InsertFirstStringPlayerValidation(player, userId);
+            
             return ApiOk();
         }
         catch (ApplicationException ex)
@@ -47,7 +66,19 @@ public class FirstStringController : ApiBaseController
     {
         try
         {
-            return ApiOk(await _firstStringService.GetAllFirstAndSecondStringsValidation(teamId, matchId));
+            var players = await _firstStringService.GetAllFirstAndSecondStringsValidation(teamId, matchId);
+            return ApiOk(players.Select(player => new
+            {
+                id = player.Id, 
+                name = player.Name, 
+                artisticName = player.ArtisticName, 
+                number = player.Number, 
+                position = player.Position, 
+                line = player.Line, 
+                picture = player.Picture, 
+                captain = player.IsCaptain,
+                playerPosition = player.PlayerPosition
+            }));
         }
         catch (ApplicationException ex)
         {

@@ -8,12 +8,14 @@ public class FirstStringService
     private readonly MatchService _matchService;
     private readonly TeamService _teamService;
     private readonly OrganizerService _organizerService;
-    public FirstStringService(DbService dbService, MatchService matchService, TeamService teamService, OrganizerService organizerService)
+    private readonly PlayerTempProfileService _playerTempProfileService;
+    public FirstStringService(DbService dbService, MatchService matchService, TeamService teamService, OrganizerService organizerService, PlayerTempProfileService playerTempProfileService)
     {
         _dbService = dbService;
         _matchService = matchService;
         _teamService = teamService;
         _organizerService = organizerService;
+        _playerTempProfileService = playerTempProfileService;
     }
 
     public async Task InsertFirstStringPlayerValidation(FirstStringPlayer newFirstString, Guid organizerId)
@@ -21,7 +23,17 @@ public class FirstStringService
         var match = await _matchService.GetMatchById(newFirstString.MatchId);
         if (await _organizerService.IsUserAnOrganizerValidation(new Organizer { ChampionshipId = match.ChampionshipId, OrganizerId = organizerId }) is null)
             throw new ApplicationException("Você não possui permissão para alterar as táticas dessa partida");
+
+        if (newFirstString.PlayerId is null)
+            throw new ApplicationException("Informe o ID do jogador!");
         
+        var tempOrUser = await _playerTempProfileService.GetTempPlayerById(newFirstString.PlayerId.Value);
+        if (tempOrUser is not null)
+        {
+            newFirstString.PlayerTempId = newFirstString.PlayerId;
+            newFirstString.PlayerId = null;
+        }
+
         var validPlayers = await _matchService.GetAllPlayersValidInTeamValidation(newFirstString.MatchId, newFirstString.TeamId);
         if (!validPlayers.Any())
             throw new ApplicationException("Não há jogadores válidos nesse time para esta partida!");
@@ -29,16 +41,20 @@ public class FirstStringService
         if (validPlayers.All(a => a.Id != newFirstString.PlayerId && a.Id != newFirstString.PlayerTempId))
             throw new ApplicationException("Jogador não é válido para vinculo como titular nessa partida.");
 
-        if (newFirstString.Position > 6 || newFirstString.Position < 0 || newFirstString.Line > 4 || newFirstString.Line < 0)
+        if ((newFirstString.Position > 6 || newFirstString.Position < 0 || newFirstString.Line > 4 || newFirstString.Line < 0) && newFirstString.Line != 99 && newFirstString.Position != 99)
             throw new ApplicationException("Posição do jogador inválida!");
-
-        var team = _teamService.GetByIdValidationAsync(newFirstString.TeamId);
-        var hasMatchStarted = _matchService.HasMatchStarted(newFirstString.MatchId, match);
         
-        await Task.WhenAll(team, hasMatchStarted);
+        var team = await _teamService.GetByIdValidationAsync(newFirstString.TeamId);
+        var hasMatchStarted = await _matchService.HasMatchStarted(newFirstString.MatchId, match);
         
         if (match.Tied || match.Winner > 0)
             throw new ApplicationException("Não é permitido alterar o esquema tático após a finalização da partida.");
+
+        if (hasMatchStarted != string.Empty)
+            throw new ApplicationException(hasMatchStarted);
+
+        if (team is null)
+            throw new ApplicationException("Time inválido");
         
         await DeleteFromPlayerToUpdate(newFirstString);
         await InsertFirstStringPlayerSend(newFirstString);
@@ -100,5 +116,5 @@ public class FirstStringService
             FROM users u
             INNER JOIN firstStringPlayers fsp
             ON fsp.playerid = u.id
-            WHERE u.playerteamid = @id AND fsp.matchid = @matchId;", new {  });
+            WHERE u.playerteamid = @id AND fsp.matchid = @matchId;", new { id = teamId, matchId });
 }
