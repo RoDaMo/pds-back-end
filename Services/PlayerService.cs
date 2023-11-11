@@ -74,16 +74,16 @@ public class PlayerService
 	        throw new ApplicationException(Resource.CreateValidationAsyncAlreadyBelongsTeam);
 
         await CreateSendAsync(user);
-        user = await GetUserByIdAsync(user.Id);
-		await SendEmailToConfirmPermission(user, team);
-        await _elasticService._client.IndexAsync(user, _index);
+  //       user = await GetUserByIdAsync(user.Id);
+		// await SendEmailToConfirmPermission(user, team);
+  //       await _elasticService._client.IndexAsync(user, _index);
 		return errorMessages;
 	}
 
     private async Task CreateSendAsync(User user)
 	{
 		await _dbService.EditData(
-            "UPDATE users SET artisticname = @ArtisticName, number = @Number, playerposition = @PlayerPosition, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId WHERE id = @Id;", user
+            "UPDATE users SET artisticname = @ArtisticName, number = @Number, playerposition = @PlayerPosition, iscaptain = @IsCaptain, playerteamId = @PlayerTeamId, accepted = true WHERE id = @Id;", user
             );
 	}
 

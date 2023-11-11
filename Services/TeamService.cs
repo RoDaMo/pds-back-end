@@ -144,9 +144,9 @@ public class TeamService
 			
 		await AddTeamToChampionshipSend(teamId, championshipId);
 
-		var championship = await _championshipService.GetByIdValidation(championshipId);
-		var user = await GetTechnicianFromTeam(teamId);
-		await SendEmailToConfirmPermission(user, championship);
+		// var championship = await _championshipService.GetByIdValidation(championshipId);
+		// var user = await GetTechnicianFromTeam(teamId);
+		// await SendEmailToConfirmPermission(user, championship);
 	}
 
 	public async Task SendEmailToConfirmPermission(User user, Championship championship)
@@ -247,7 +247,7 @@ public class TeamService
 	private async Task AddTeamToChampionshipSend(int teamId, int championshipId)
 	{
 		await _dbService.EditData(
-			"INSERT INTO championships_teams (teamId, championshipId) VALUES (@teamId, @championshipId)",
+			"INSERT INTO championships_teams (teamId, championshipId, Accepted) VALUES (@teamId, @championshipId, true)",
 			new { teamId, championshipId });
 	}
 

@@ -80,7 +80,7 @@ public class PlayerTempProfileService
 		}
 
 		var player = await CreateSendAsync(playerTempProfile);
-		await SendEmailToConfirmPermission(player, team);
+		// await SendEmailToConfirmPermission(player, team);
 
 		return errorMessages;
 	}
@@ -88,7 +88,7 @@ public class PlayerTempProfileService
     private async Task<PlayerTempProfile> CreateSendAsync(PlayerTempProfile playerTempProfile)
 	{
 		var id = await _dbService.EditData2(
-			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, playerPosition, picture) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @PlayerPosition, @Picture) returning id", playerTempProfile);
+			"INSERT INTO playertempprofiles (name, artisticname, number, email, teamsid, playerPosition, picture, accepted) VALUES (@Name, @ArtisticName, @Number, @Email, @TeamsId, @PlayerPosition, @Picture, true) returning id", playerTempProfile);
 		return await GetTempPlayerById(id);
 	}
 

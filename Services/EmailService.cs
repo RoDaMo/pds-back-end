@@ -92,6 +92,7 @@ public class EmailService
 
     public static bool SendConfirmationPermissionToJoinInTeam(string userEmail, string userName, string nameOfTeam, string link)
     {
+        return true;
         var mailMessage = new MailMessage();
         mailMessage.From = new MailAddress(Email);
         mailMessage.To.Add(new MailAddress(userEmail));
@@ -131,7 +132,8 @@ public class EmailService
     }
 
      public static bool SendConfirmationPermissionToJoinInChampionship(string userEmail, string userName, string nameOfChampionship, string link)
-    {
+     {
+         return true;
         var mailMessage = new MailMessage();
         mailMessage.From = new MailAddress(Email);
         mailMessage.To.Add(new MailAddress(userEmail));
