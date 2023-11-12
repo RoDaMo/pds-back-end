@@ -64,10 +64,20 @@ public class ReportService
                 if (report.AuthorId == report.ReportedUserId)
                     throw new ApplicationException("Você não pode denunciar à si mesmo.");
                 
-                var reportedUser = await _authService.GetUserByIdAsync(report.ReportedUserId.Value);
                 var reportedTempUser = await _tempProfileService.GetTempPlayerById(report.ReportedUserId.Value);
-                if (report.ReportedUserId == Guid.Empty || (reportedUser is null && reportedTempUser is null))
-                    throw new ApplicationException("Usuário denunciado não é válido");
+                if (reportedTempUser is null)
+                {
+                    var reportedUser = await _authService.GetUserByIdAsync(report.ReportedUserId.Value);
+                    if (report.ReportedUserId == Guid.Empty || reportedUser is null)
+                        throw new ApplicationException("Usuário denunciado não é válido");
+                    
+                    report.ReportedUserId = report.ReportedUserId;
+                }
+                else
+                {
+                    report.ReportedPlayerTempId = report.ReportedUserId;
+                    report.ReportedUserId = null;
+                }
 
                 report.ReportedTeamId = null;
                 report.ReportedChampionshipId = null;
@@ -80,7 +90,7 @@ public class ReportService
     }
 
     private async Task CreateReportSend(Report report) 
-        => await _dbService.EditData("INSERT INTO Reports (AuthorId, Completed, Description, reporttype, ReportedUserId, ReportedTeamId, ReportedChampionshipId, Violation) VALUES (@AuthorId, @Completed, @Description, @ReportType, @ReportedUserId, @ReportedTeamId, @ReportedChampionshipId, @Violation)", report);
+        => await _dbService.EditData("INSERT INTO Reports (AuthorId, Completed, Description, reporttype, ReportedUserId, ReportedTeamId, ReportedChampionshipId, reportedplayertempid, Violation) VALUES (@AuthorId, @Completed, @Description, @ReportType, @ReportedUserId, @ReportedTeamId, @ReportedChampionshipId, @ReportedPlayerTempId, @Violation)", report);
 
     public async Task<List<Report>> GetAllByTypeValidation(ReportType type, bool completed, TypeOfViolation typeOfViolation) => await GetAllByTypeSend(type, completed, typeOfViolation);
 
@@ -92,23 +102,24 @@ public class ReportService
         r.completed, 
         r.description, 
         r.reporttype, 
-        r.reporteduserid, 
+        r.reporteduserid,
+        r.reportedplayertempid,
         r.reportedteamid, 
         r.reportedchampionshipid, 
         r.violation,
         t.name AS ReportedTeamName,
         c.name AS ReportedChampionsipName,
-        COALESCE(u.username, p.name) AS ReportedUserName
+        COALESCE(u.name, p.name) AS ReportedUserName
     FROM Reports AS r
     LEFT JOIN users AS u ON r.reporteduserid = u.id
     LEFT JOIN teams AS t ON r.reportedteamid = t.id
     LEFT JOIN championships AS c ON r.reportedchampionshipid = c.id
-    LEFT JOIN playertempprofiles p on r.reporteduserid = p.id
+    LEFT JOIN playertempprofiles p on r.reportedplayertempid = p.id
     WHERE {(type == ReportType.All ? "" : "reporttype = @type AND")} {(typeOfViolation == TypeOfViolation.All ? "" : "violation = @typeOfViolation AND")} completed = @completed", new { type, typeOfViolation, completed });
 
     public async Task<Report> GetByIdValidation(int id) => await GetByIdSend(id);
 
-    private async Task<Report> GetByIdSend(int id) => await _dbService.GetAsync<Report>("SELECT id, authorid, completed, description, reporttype, reporteduserid, reportedteamid, reportedchampionshipid, violation FROM Reports WHERE Id = @id", new { id });
+    private async Task<Report> GetByIdSend(int id) => await _dbService.GetAsync<Report>("SELECT id, authorid, completed, description, reporttype, reporteduserid, reportedteamid, reportedchampionshipid, reportedplayertempid, violation FROM Reports WHERE Id = @id", new { id });
 
     public async Task SetReportAsCompletedValidation(int id, bool newStatus) => await SetReportAsCompletedSend(id, newStatus);
 
@@ -116,10 +127,10 @@ public class ReportService
 
     public async Task<List<Report>> GetReportsFromUserValidation(Guid id) => await GetReportsFromUserSend(id);
 
-    private async Task<List<Report>> GetReportsFromUserSend(Guid id) => await _dbService.GetAll<Report>("SELECT id, authorid, completed, description, reporttype, reporteduserid, reportedteamid, reportedchampionshipid, violation FROM Reports WHERE authorid = @id", new { id });
+    private async Task<List<Report>> GetReportsFromUserSend(Guid id) => await _dbService.GetAll<Report>("SELECT id, authorid, completed, description, reporttype, reporteduserid, reportedteamid, reportedchampionshipid, reportedplayertempid, violation FROM Reports WHERE authorid = @id", new { id });
 
     public async Task<bool> VerifyReportedEntity(Guid idUser, int id, Guid userId) =>
         await _dbService.GetAsync<int>(
-            "SELECT COUNT(*) FROM reports WHERE authorid = @userId AND (reportedchampionshipid = @id OR reportedteamid = @id OR reporteduserid = @idUser)",
+            "SELECT COUNT(1) FROM reports WHERE authorid = @userId AND (reportedchampionshipid = @id OR reportedteamid = @id OR reporteduserid = @idUser OR reportedplayertempid = @idUser)",
             new { userId, id, idUser }) > 0;
 }

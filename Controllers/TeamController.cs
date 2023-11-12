@@ -123,7 +123,7 @@ public class TeamController : ApiBaseController
     {
         try
         {
-            var result = await _teamService.GetByIdValidationAsync(id);
+            var result = await _teamService.GetByIdValidationAsync(id, true);
 
             return result is null ? ApiBadRequest(Resource.ShowTimeNaoExistente) : ApiOk(new
             {
@@ -135,9 +135,9 @@ public class TeamController : ApiBaseController
                 sportsId = result.SportsId,
                 name = result.Name,
                 technician = new {
-                    name = result.Technician.Name,
-                    picture = result.Technician.Picture,
-                    id = result.Technician.Id
+                    name = result.Technician?.Name,
+                    picture = result.Technician?.Picture,
+                    id = result.Technician?.Id
                 }
             });
         }
@@ -401,4 +401,35 @@ public class TeamController : ApiBaseController
             return ApiBadRequest(ex.Message);
         }
     }
+
+    /// <summary>
+	/// Usado para confirmar participação em campeonato.
+	/// </summary>
+    /// <param name="token"></param>
+	/// <remarks>
+	/// Exemplo de requisição:
+	/// 
+	///		GET /teams/confirm-entry-to-championship-?token={token}
+	///		
+	/// </remarks>
+	/// <response code="200">Confirma participação no campeonato</response>
+	/// <response code="401">Retorna uma falha indicando algum erro cometido na requisição.</response>
+	/// <returns>
+	/// </returns>
+	[HttpGet]
+	[Route("/teams/confirm-entry-to-championship")] 
+	public async Task<IActionResult> ConfirmEntry(string token)
+	{
+		try
+		{
+            var userId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            await _teamService.ConfirmEmail(token, userId);
+			return ApiOk();
+		}
+		catch (ApplicationException ex)
+		{
+			await _error.HandleExceptionValidationAsync(HttpContext, ex);
+			return ApiBadRequest(ex.Message, "Erro ao confirmar entrada no campeonato");
+		}
+	} 
 }

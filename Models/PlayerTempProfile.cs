@@ -15,6 +15,7 @@ public class PlayerTempProfile
 	public int TeamsId { get; set; }
 	public PlayerPosition PlayerPosition { get; set; }
 	public bool IsCaptain { get; set; }
+	public bool Accepted { get; set; }
 
 	public PlayerTempProfile(string name, string artisticName, int number, string email, string picture)
 	{

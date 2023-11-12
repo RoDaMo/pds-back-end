@@ -32,7 +32,7 @@ public class ChampionshipService
 		_organizerService = organizerService;
         _logger = logger;
         var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
-        _index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "championships" : "championships-dev";
+        _index = isDevelopment == "false" ? "championships" : "championships-dev";
 	}
 	public async Task<List<string>> CreateValidationAsync(Championship championship)
 	{
@@ -236,7 +236,7 @@ public class ChampionshipService
 	public async Task<List<Team>> GetAllTeamsOfChampionshipValidation(int championshipId) => await GetAllTeamsOfChampionshipSend(championshipId);
 
 	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)
-		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId;", new { championshipId });
+		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId AND ct.Accepted = true WHERE c.deleted = false;", new { championshipId });
 
 	public async Task DeleteValidation(Championship championship)
 	{
@@ -254,12 +254,12 @@ public class ChampionshipService
 
 	public async Task<bool> CanMoreTeamsBeAddedValidation(int championshipId) => await CanMoreTeamsBeAddedSend(championshipId);
 
-	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT COALESCE((SELECT COUNT(*) FROM championships_teams WHERE championshipid = @championshipId) < teamquantity, 'true') FROM championships WHERE id = @championshipId;", new { championshipId });
+	private async Task<bool> CanMoreTeamsBeAddedSend(int championshipId) => await _dbService.GetAsync<bool>("SELECT COALESCE((SELECT COUNT(*) FROM championships_teams WHERE championshipid = @championshipId AND Accepted = true) < teamquantity, 'true') FROM championships WHERE id = @championshipId;", new { championshipId });
 
 	public async Task<List<int>> GetAllTeamsLinkedToValidation(int championshipId) =>
 		await GetAllTeamsLinkedToSend(championshipId);
 
-	private async Task<List<int>> GetAllTeamsLinkedToSend(int championshipId) => await _dbService.GetAll<int>("SELECT teamid FROM championships_teams WHERE championshipid = @championshipid;", new { championshipId });
+	private async Task<List<int>> GetAllTeamsLinkedToSend(int championshipId) => await _dbService.GetAll<int>("SELECT teamid FROM championships_teams WHERE championshipid = @championshipid AND accepted = true;", new { championshipId });
 
 	public async Task IndexAllChampionshipsValidation()
 	{
@@ -290,6 +290,9 @@ public class ChampionshipService
 				var matchDTO = new MatchDTO();
 				var home = await GetByTeamIdSendAsync(match.Home);
 				var visitor = await GetByTeamIdSendAsync(match.Visitor);
+				if (home is null || visitor is null)
+					continue;
+				
 				matchDTO.Id = match.Id;
 				matchDTO.IsSoccer = true;
 				matchDTO.HomeEmblem = home.Emblem;
@@ -566,10 +569,7 @@ public class ChampionshipService
 		
 		if(championship is null)
 			throw new ApplicationException("Campeonato passado não existe");
-		
-		if(championship.Format == Format.LeagueSystem)
-			throw new ApplicationException("Formato de campeonato inválido");
-		
+
 		var matches =  await GetMatchesByChampionship(championshipId);
 		var matchesDTO = new List<MatchDTO>();
 

@@ -21,6 +21,13 @@ var ISSUER = config["JwtSettings:Issuer"];
 var AUDIENCE = config["JwtSettings:Audience"];
 var KEY = config["JwtSettings:Key"];
 // var CRYPT_KEY = config["CryptKey"].ToUtf8Bytes();
+var jwtSettings = new JwtSettings
+{
+    Issuer = ISSUER,
+    Audience = AUDIENCE,
+    Key = KEY
+};
+
 
 if (builder.Environment.IsProduction())
 {
@@ -60,6 +67,7 @@ builder.Services.AddAuthorization();
 // Add services to the container.
 builder.Services.AddControllers();
 
+builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddHostedService<BackgroundJobs>();
 builder.Services.AddSingleton<IBackgroundJobsService, BackgroundJobs>();
 builder.Services.AddSingleton<RedisService>();
@@ -81,6 +89,8 @@ builder.Services.AddScoped<CaptchaService>();
 builder.Services.AddScoped<OrganizerService>();
 builder.Services.AddScoped<StatisticsService>();
 builder.Services.AddScoped<FoulService>();
+builder.Services.AddScoped<ReplacementService>();
+builder.Services.AddScoped<FirstStringService>();
 // builder.Services.AddScoped<WoService>();
 builder.Services.AddScoped<BracketingMatchService>();
 builder.Services.AddHttpContextAccessor();

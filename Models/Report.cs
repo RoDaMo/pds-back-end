@@ -9,6 +9,7 @@ public class Report
     public bool Completed { get; set; }
     public ReportType ReportType { get; set; }
     public Guid? ReportedUserId { get; set; }
+    public Guid? ReportedPlayerTempId { get; set; }
     public int? ReportedTeamId { get; set; }
     public int? ReportedChampionshipId { get; set; }
     public string Description { get; set; }

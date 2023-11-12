@@ -112,9 +112,9 @@ public class MatchService
         }
     }
     private async Task<List<User>> GetAllUsersByTeamsId(int id1, int id2)
-        => await _dbService.GetAll<User>("SELECT * FROM Users WHERE PlayerTeamId = @id1 OR PlayerTeamId = @id2", new {id1, id2});
+        => await _dbService.GetAll<User>("SELECT * FROM Users WHERE PlayerTeamId = @id1 OR PlayerTeamId = @id2 AND accepted = true", new {id1, id2});
     private async Task<List<PlayerTempProfile>> GetAllTempProfileByTeamsId(int id1, int id2)
-        =>  await _dbService.GetAll<PlayerTempProfile>("SELECT * FROM PlayerTempProfiles WHERE TeamsId = @id1 OR TeamsId = @id2", new {id1, id2});
+        =>  await _dbService.GetAll<PlayerTempProfile>("SELECT * FROM PlayerTempProfiles WHERE TeamsId = @id1 OR TeamsId = @id2 AND accepted = true", new {id1, id2});
     private async Task InvalidingUserCards(User user, Championship championship, Match match)
     {
         if(match.Phase != 0)
@@ -605,7 +605,7 @@ public class MatchService
     }
     private async Task<bool> CheckIfMatchExists(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM matches WHERE id = @matchId)", new {matchId});
-    private async Task<Match> GetMatchById(int matchId)
+    public async Task<Match> GetMatchById(int matchId)
         => await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @matchId", new{matchId});
     private async Task<int> GetPointsFromTeamById(int matchId, int teamId)
         => await _dbService.GetAsync<int>("SELECT COUNT(*) FROM goals WHERE MatchId = @matchId AND (TeamId = @teamId AND OwnGoal = false OR TeamId <> @teamId AND OwnGoal = true)", new {matchId, teamId});
@@ -812,7 +812,7 @@ public class MatchService
             new { championshipId, teamId });
     private async Task ChangePosition(List<Classification> classifications, Classification homeClassification)
     {
-        var team = await GetByTeamIdSendAsync(homeClassification.TeamId);
+        var team = await GetByTeamIdSendAsync(homeClassification.TeamId, false);
         for (int i = 0; i < classifications.Count(); i++)
         {
             if(classifications[i].Points < homeClassification.Points)
@@ -1492,7 +1492,7 @@ public class MatchService
             return matchDTO;
 		}
     }
-	private async Task<Team> GetByTeamIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
+	private async Task<Team> GetByTeamIdSendAsync(int id, bool refuseDeleted = true) => await _dbService.GetAsync<Team>($"SELECT * FROM teams where id=@id{(refuseDeleted ? " AND deleted = false" : "")}", new {id});
     private async Task<bool> IsItFirstSet(int matchId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM goals WHERE MatchId = @matchId);", new {matchId});
     private async Task<int> GetLastSet(int matchId)
@@ -1567,7 +1567,7 @@ public class MatchService
 		return players;
     }
 
-    private async Task<bool> CheckIfIsSuspended(User user, Match match)
+    public async Task<bool> CheckIfIsSuspended(User user, Match match)
 	{
         var championship = await GetChampionshipByMatchId(match.Id);
 		if(!string.IsNullOrWhiteSpace(user.Username))
@@ -1788,9 +1788,9 @@ public class MatchService
     private async Task<List<User>> GetPlayersOfteamSend(int id) =>
 		await _dbService.GetAll<User>(
 			@"
-			SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id
+			SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id AND accepted = true
 			UNION ALL
-			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id;",
+			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id AND accepted = true;",
 			new { id });
     
     public async Task AddMatchReportValidation(Match match)
@@ -1953,7 +1953,7 @@ public class MatchService
         var championship = await GetChampionshipByMatchId(matchId);
 
         var player = await GetPlayerOfteamSend(teamId != match.Visitor ? match.Visitor : match.Home );
-
+        
         if(match is null && valid)
             throw new ApplicationException("Partida passada não existe");
         if(await DepartureDateNotSet(matchId) && valid)
@@ -2083,12 +2083,27 @@ public class MatchService
             await EndGameToKnockoutValidationAsync(matchId, false);
         }
     }
+
+    public async Task<string> HasMatchStarted(int matchId, Match match)
+    {
+        if (match is null)
+            return "Partida passada não existe";
+        if (await DepartureDateNotSet(matchId))
+            return "Data da partida não definida.";
+        if (match.Winner != 0)
+            return "Partida já possui um vencedor.";
+        if (match.HomeUniform is null || match.VisitorUniform is null)
+            return "É necessário definir os uniformes das equipes antes";
+
+        return match.Road is null ? "É necessário definir o local da partida antes antes" : string.Empty;
+    }
+
     private async Task<User> GetPlayerOfteamSend(int id) =>
 		await _dbService.GetAsync<User>(
 			@"
-			SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id
+			SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, false as iscaptain, picture, null as username FROM playertempprofiles WHERE teamsid = @id AND accepted = true
 			UNION ALL
-			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id;",
+			SELECT id, name, artisticname, number, email, playerteamid, playerposition, iscaptain, picture, username FROM users WHERE playerteamid = @id AND accepted = true;",
 			new { id });
     private async Task<int> CreateGoalToPlayerTempSend(Goal goal)
     {

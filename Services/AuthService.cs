@@ -32,8 +32,8 @@ public class AuthService
 		_elastic = elastic;
 		_logger = logger;
 		var isDevelopment = Environment.GetEnvironmentVariable("IS_DEVELOPMENT");
-		_index = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "users" : "users-dev";
-		_championshipIndex = string.IsNullOrEmpty(isDevelopment) || isDevelopment == "false" ? "championships" : "championships-dev";
+		_index = isDevelopment == "false" ? "users" : "users-dev";
+		_championshipIndex = isDevelopment == "false" ? "championships" : "championships-dev";
 	}
 
 	public string GenerateJwtToken(Guid userId, string email, DateTime expirationDate, string role = "user")
@@ -98,7 +98,7 @@ public class AuthService
 
 		newUser.Id = await RegisterUserAsync(newUser);
 		
-		if (newUser.Role != "admin")
+		if (newUser.Role != "admin" && Environment.GetEnvironmentVariable("IS_DEVELOPMENT") != "true")
 			await SendEmailToConfirmAccount(newUser.Id);
 		else
 			newUser.ConfirmEmail = true;
@@ -153,7 +153,7 @@ public class AuthService
 			@"SELECT id, name, artisticname, number, email, teamsid as playerteamid, playerposition, iscaptain, picture, null as username FROM playertempprofiles WHERE id = @Id", 
 			new User { Id = userId });
 
-		return (user is null) ? player : user;
+		return user ?? player;
 	}
 
 	public async Task SendEmailToConfirmAccount(Guid userId)

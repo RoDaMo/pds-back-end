@@ -6,10 +6,12 @@ namespace PlayOffsApi.Services;
 public class BracketingService
 {
     private readonly DbService _dbService;
+    private readonly FirstStringService _firstStringService;
 
     public BracketingService(DbService dbService)
 	{
 		_dbService = dbService;
+		// _firstStringService = firstStringService;
 	}
 
 	public async Task<List<Match>> CreateKnockoutValidationAsync(int championshipId)
@@ -99,6 +101,11 @@ public class BracketingService
 		var id = await _dbService.EditData(
 			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase, Round) VALUES(@ChampionshipId, @Home, @Visitor, @Phase, @Round) returning id", match
 			);
+
+		// var firstTask = _firstStringService.InsertPlayersAsSecondStringMassValidation(match.Home, id);
+		// var secondTask = _firstStringService.InsertPlayersAsSecondStringMassValidation(match.Visitor, id);
+		// await Task.WhenAll(firstTask, secondTask);
+		
 		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
 	}
 	private async Task<Match> CreateMatchSend2(Match match)
@@ -106,10 +113,15 @@ public class BracketingService
 		var id = await _dbService.EditData(
 			"INSERT INTO matches (ChampionshipId, Home, Visitor, Phase, Round, PreviousMatch) VALUES(@ChampionshipId, @Home, @Visitor, @Phase, @Round, @PreviousMatch) returning id", match
 			);
+		
+		// var firstTask = _firstStringService.InsertPlayersAsSecondStringMassValidation(match.Home, id);
+		// var secondTask = _firstStringService.InsertPlayersAsSecondStringMassValidation(match.Visitor, id);
+		// await Task.WhenAll(firstTask, secondTask);
+		
 		return await _dbService.GetAsync<Match>("SELECT * FROM matches WHERE id = @id", new { id });
 	}
 	private async Task<List<Team>> GetAllTeamsOfChampionshipSend(int championshipId)
-		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId;", new { championshipId });
+		=> await _dbService.GetAll<Team>("SELECT c.emblem, c.name, c.id FROM teams c JOIN championships_teams ct ON c.id = ct.teamId AND ct.championshipid = @championshipId WHERE ct.Accepted = true;", new { championshipId });
 	private async Task<bool> CheckIfChampionhipExists(int championshipId)
         => await _dbService.GetAsync<bool>("SELECT EXISTS(SELECT * FROM championships WHERE id = @championshipId)", new {championshipId});
 

@@ -33,6 +33,9 @@ public class StatisticsService
                 {
                     var classificationDTO = new ClassificationDTO();
                     var team = await GetByTeamIdSendAsync(classification.TeamId);
+                    if (team is null)
+                        continue;
+                    
                     classificationDTO.Position = classification.Position;
                     classificationDTO.Points = classification.Points;
                     classificationDTO.Emblem = team.Emblem;
@@ -186,7 +189,7 @@ public class StatisticsService
 	    => await _dbService.GetAsync<Championship>("SELECT * FROM championships WHERE id = @id", new { id });
 	private async Task<List<Classification>> GetAllClassificationsByChampionshipId(int championshipId)
         => await _dbService.GetAll<Classification>("SELECT * FROM classifications WHERE ChampionshipId = @ChampionshipId ORDER BY Id", new {championshipId});
-	private async Task<Team> GetByTeamIdSendAsync(int id) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = false", new {id});
+	private async Task<Team> GetByTeamIdSendAsync(int id, bool returnDeletedTeams = false) => await _dbService.GetAsync<Team>("SELECT * FROM teams where id=@id AND deleted = @deleted", new { id, deleted = returnDeletedTeams});
     private async Task<int> AmountOfWins(int teamId, int championshipId)
         => await _dbService.GetAsync<int>(
             "SELECT COUNT(*) FROM matches WHERE ChampionshipId = @championshipId AND Winner = @teamId", 
@@ -240,6 +243,10 @@ public class StatisticsService
             var matchDTO = new MatchDTO();
             var homeTeam = await GetByTeamIdSendAsync(match.Home);
             var visitorTeam = await GetByTeamIdSendAsync(match.Visitor);
+
+            if (homeTeam is null || visitorTeam is null)
+                continue;
+            
             matchDTO.Id = match.Id;
             matchDTO.HomeEmblem = homeTeam.Emblem;
             matchDTO.HomeName = homeTeam.Name;
@@ -664,6 +671,9 @@ public class StatisticsService
             {
                 var playerTemp = await _dbService.GetAsync<PlayerTempProfile>("SELECT * FROM playertempprofiles WHERE Id = @id", new {id = player.PlayerIdOrTempId});
                 var team = await GetByTeamIdSendAsync(playerTemp.TeamsId);
+                if (playerTemp is null || team is null)
+                    continue;
+                
                 var striker = new StrikerDTO
                 {
                     Goals = player.Goals,
