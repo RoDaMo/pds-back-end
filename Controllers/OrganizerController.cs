@@ -251,10 +251,7 @@ public class OrganizerController  : ApiBaseController
 	    try
 	    {
 		    var isUser = await _organizerService.IsUserAnOrganizerValidation(id);
-		    if (isUser is null)
-			    return ApiBadRequest("Usuário com o ID fornecido não possui nenhum campeonato organizado");
-
-		    return ApiOk(await _organizerService.GetAllChampionshipsByOrganizerValidation(id));
+		    return isUser is null ? ApiOk(Array.Empty<int>()) : ApiOk(await _organizerService.GetAllChampionshipsByOrganizerValidation(id));
 	    }
 	    catch (ApplicationException ex)
 	    {
